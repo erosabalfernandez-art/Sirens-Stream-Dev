@@ -3,7 +3,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
   import { Link } from "wouter";
   import { motion, AnimatePresence } from "framer-motion";
   import {DollarSign, Shield, Smartphone, Users, Clock, TrendingUp, CheckCircle2, Zap, Star, CreditCard, MessageCircle, ArrowRight, Globe, Award, ChevronLeft, ChevronRight, Wifi, Camera, Heart} from "lucide-react";
-  import { useGetAgencyStats } from "@/lib/api-client";
   import { useShowAgencia } from "@/hooks/useShowAgencia";
 
   const slides_es = [
@@ -222,7 +221,14 @@ import { useLanguage } from "@/contexts/LanguageContext";
       agenciaCardDesc: lang === 'pt' ? "Lidere um time de streamers e multiplique sua renda. Torne-se manager e construa seu negócio." : "Lidera un equipo de streamers y multiplica tus ingresos. Conviértete en manager y construye tu negocio.",
       agenciaCardBtn: lang === 'pt' ? "Ver requisitos" : "Ver requisitos",
     };
-    const { data: stats } = useGetAgencyStats();
+    const [stats, setStats] = useState<{ streamersRepresented: number; yearsActive: number; platforms: string[] } | undefined>(undefined);
+      useEffect(() => {
+        const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '');
+        fetch(`${apiBase}/api/stats`)
+          .then(r => r.json())
+          .then(data => setStats(data))
+          .catch(() => {});
+      }, []);
     const [current, setCurrent] = useState(0);
     const [direction, setDirection] = useState(1);
 
