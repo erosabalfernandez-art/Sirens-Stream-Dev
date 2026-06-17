@@ -15,7 +15,7 @@ import { Router } from 'express';
 
   async function getActiveApps(): Promise<string[]> {
     try {
-      const r = await fetch(sbUrl('apps_catalog?select=name&active=eq.true&order=order_index.asc,name.asc'), { headers: sbH() });
+      const r = await fetch(sbUrl('apps_catalog?select=name&is_active=eq.true&order=sort_order.asc,name.asc'), { headers: sbH() });
       if (!r.ok) return ALL_APPS;
       const rows = await r.json() as { name: string }[];
       return rows.length > 0 ? rows.map((row: { name: string }) => row.name) : ALL_APPS;
