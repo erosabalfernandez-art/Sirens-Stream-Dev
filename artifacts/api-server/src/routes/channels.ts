@@ -13,15 +13,6 @@ import { Router } from 'express';
 
   const ALL_APPS = ['Waha', 'Layla', 'Howdy'];
 
-  async function getActiveApps(): Promise<string[]> {
-    try {
-      const r = await fetch(sbUrl('apps_catalog?select=name&is_active=eq.true&order=sort_order.asc,name.asc'), { headers: sbH() });
-      if (!r.ok) return ALL_APPS;
-      const rows = await r.json() as { name: string }[];
-      return rows.length > 0 ? rows.map((row: { name: string }) => row.name) : ALL_APPS;
-    } catch { return ALL_APPS; }
-  }
-
   // GET /api/channel-access?user_id=X
   router.get('/channel-access', async (req, res) => {
     const user_id = req.query.user_id as string | undefined;
@@ -29,21 +20,20 @@ import { Router } from 'express';
     try {
       // Check user role — agents/coliders/admins get auto-access to all channels by role
       const profileRes = await fetch(sbUrl(`profiles?id=eq.${encodeURIComponent(user_id)}&select=is_admin,is_agent,is_colider&limit=1`), { headers: sbH() });
-      const profiles: {is_admin:boolean;is_agent:boolean;is_colider:boolean}[] = profileRes.ok ? await profileRes.json() as any[] : [];
+      const profiles: {is_admin:boolean;is_agent:boolean;is_colider:boolean}[] = profileRes.ok ? await profileRes.json() : [];
       const p = profiles[0];
 
       // Only admins get auto-access to all channels
       if (p?.is_admin) {
-        const activeApps = await getActiveApps();
         return res.json({
-          requests: activeApps.map(app => ({ app_name: app, status: 'approved' })),
+          requests: ALL_APPS.map(app => ({ app_name: app, status: 'approved' })),
         });
       }
 
       // Agents and coliders: check channel_requests — admin assigns via dar-canales button
       if (p?.is_agent || p?.is_colider) {
         const crRes = await fetch(sbUrl(`channel_requests?user_id=eq.${encodeURIComponent(user_id)}&select=app_name,status`), { headers: sbH() });
-        const requests: { app_name: string; status: string }[] = crRes.ok ? await crRes.json() as any[] : [];
+        const requests: { app_name: string; status: string }[] = crRes.ok ? await crRes.json() : [];
         return res.json({ requests });
       }
       // Workers: cross-reference with worker_entries so they only see channels
@@ -52,8 +42,8 @@ import { Router } from 'express';
         fetch(sbUrl(`channel_requests?user_id=eq.${encodeURIComponent(user_id)}&select=app_name,status`), { headers: sbH() }),
         fetch(sbUrl(`worker_entries?user_id=eq.${encodeURIComponent(user_id)}&select=app_name`), { headers: sbH() }),
       ]);
-      const allReqs: { app_name: string; status: string }[] = crRes.ok ? await crRes.json() as any[] : [];
-      const workerApps = new Set<string>((weRes.ok ? await weRes.json() as any[] : []).map((w: { app_name: string }) => w.app_name));
+      const allReqs: { app_name: string; status: string }[] = crRes.ok ? await crRes.json() : [];
+      const workerApps = new Set<string>((weRes.ok ? await weRes.json() : []).map((w: { app_name: string }) => w.app_name));
       // Only surface requests for apps the worker is currently registered on
       const requests = allReqs.filter(r => workerApps.has(r.app_name));
       return res.json({ requests });
@@ -72,7 +62,7 @@ import { Router } from 'express';
         { headers: sbH() }
       );
       if (!r.ok) return res.status(r.status).json({ error: await r.text() });
-      const rows: { user_id: string }[] = await r.json() as any[];
+      const rows: { user_id: string }[] = await r.json();
       return res.json({ user_ids: rows.map((row) => row.user_id) });
     } catch (e: unknown) {
       return res.status(500).json({ error: e instanceof Error ? e.message : 'error' });
@@ -99,15 +89,15 @@ import { Router } from 'express';
         }),
       });
       if (!msgR.ok) return res.status(msgR.status).json({ error: await msgR.text() });
-      const _msgs = await msgR.json() as any[]; const msg = _msgs[0];
+      const [msg] = await msgR.json();
 
       // Notify users with approved channel_requests for this app + all admins
       const [usersR, adminsR] = await Promise.all([
         fetch(sbUrl(`channel_requests?app_name=eq.${encodeURIComponent(app_name)}&status=eq.approved&select=user_id`), { headers: sbH() }),
         fetch(sbUrl(`profiles?is_admin=eq.true&select=id`), { headers: sbH() }),
       ]);
-      const usersRows: { user_id: string }[] = usersR.ok ? await usersR.json() as any[] : [];
-      const adminRows: { id: string }[] = adminsR.ok ? await adminsR.json() as any[] : [];
+      const usersRows: { user_id: string }[] = usersR.ok ? await usersR.json() : [];
+      const adminRows: { id: string }[] = adminsR.ok ? await adminsR.json() : [];
       const idsSet = new Set<string>([
         ...usersRows.map((u) => u.user_id),
         ...adminRows.map((r) => r.id),
@@ -145,7 +135,7 @@ import { Router } from 'express';
           sbUrl(`profiles?id=eq.${encodeURIComponent(user_id)}&select=is_admin,is_agent,is_colider&limit=1`),
           { headers: sbH() }
         );
-        const profiles: { is_admin: boolean; is_agent: boolean; is_colider: boolean }[] = profileR.ok ? await profileR.json() as any[] : [];
+        const profiles: { is_admin: boolean; is_agent: boolean; is_colider: boolean }[] = profileR.ok ? await profileR.json() : [];
         const prof = profiles[0];
         if (prof?.is_admin) {
           const allMsgsR = await fetch(
@@ -161,7 +151,7 @@ import { Router } from 'express';
           { headers: sbH() }
         );
         if (!accessR.ok) return res.status(accessR.status).json({ error: await accessR.text() });
-        const approvedApps: { app_name: string }[] = await accessR.json() as any[];
+        const approvedApps: { app_name: string }[] = await accessR.json();
         if (approvedApps.length === 0) return res.json({ messages: [] });
         const appNames = approvedApps.map(a => a.app_name);
         const msgsR = await fetch(
@@ -183,15 +173,15 @@ import { Router } from 'express';
       const { user_id } = req.body as { user_id?: string };
       if (!user_id) return res.status(400).json({ error: 'user_id requerido' });
       try {
-        // Grant all active app channels from catalog
-        const appNames = await getActiveApps();
+        // Always grant all 3 app channels — admin assigns directly, no need for messages to exist yet
+        const appNames = ['Waha', 'Layla', 'Howdy'];
 
         // Get existing channel_requests for this user
         const existingRes = await fetch(
           sbUrl(`channel_requests?user_id=eq.${encodeURIComponent(user_id)}&select=id,app_name,status`),
           { headers: sbH() }
         );
-        const existing: { id: string; app_name: string; status: string }[] = existingRes.ok ? await existingRes.json() as any[] : [];
+        const existing: { id: string; app_name: string; status: string }[] = existingRes.ok ? await existingRes.json() : [];
         const existingMap = new Map(existing.map((e) => [e.app_name, e]));
 
         const toInsert: string[] = [];
@@ -340,7 +330,7 @@ import { Router } from 'express';
         sbUrl(`channel_reactions?message_id=eq.${encodeURIComponent(message_id)}&user_id=eq.${encodeURIComponent(user_id)}&reaction_type=eq.${reaction_type}&select=id`),
         { headers: sbH() }
       );
-      const existing: { id: string }[] = existsRes.ok ? await existsRes.json() as any[] : [];
+      const existing: { id: string }[] = existsRes.ok ? await existsRes.json() : [];
       if (Array.isArray(existing) && existing.length > 0) {
         // Toggle off — delete
         await fetch(
@@ -360,7 +350,7 @@ import { Router } from 'express';
         sbUrl(`channel_reactions?message_id=eq.${encodeURIComponent(message_id)}&select=reaction_type,user_id`),
         { headers: sbH() }
       );
-      const all: { reaction_type: string; user_id: string }[] = summaryRes.ok ? await summaryRes.json() as any[] : [];
+      const all: { reaction_type: string; user_id: string }[] = summaryRes.ok ? await summaryRes.json() : [];
       return res.json({
         ok: true,
         summary: {
@@ -388,7 +378,7 @@ import { Router } from 'express';
         sbUrl(`channel_reactions?message_id=in.(${encodedIds})&select=message_id,reaction_type,user_id`),
         { headers: sbH() }
       );
-      const all: { message_id: string; reaction_type: string; user_id: string }[] = r.ok ? await r.json() as any[] : [];
+      const all: { message_id: string; reaction_type: string; user_id: string }[] = r.ok ? await r.json() : [];
       const result: Record<string, { heart: number; like: number; user_heart: boolean; user_like: boolean }> = {};
       for (const msgId of messageIds) {
         const rows = all.filter(r => r.message_id === msgId);
@@ -440,7 +430,7 @@ import { Router } from 'express';
         setImmediate(async () => {
           try {
             const admRes2 = await fetch(sbUrl('profiles?is_admin=eq.true&select=id'), { headers: sbH() });
-            const admins2: Array<{ id: string }> = admRes2.ok ? await admRes2.json() as any[] : [];
+            const admins2: Array<{ id: string }> = admRes2.ok ? await admRes2.json() : [];
             const adminIds2 = admins2.map((a) => a.id);
             if (adminIds2.length > 0) {
               const displayName = nombre_en_app ?? 'Una trabajadora';
