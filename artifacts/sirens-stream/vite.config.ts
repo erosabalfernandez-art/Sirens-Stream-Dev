@@ -34,12 +34,23 @@ export default defineConfig({
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),
     },
-    dedupe: ["react", "react-dom"],
+    // Include react/jsx-runtime to prevent duplicate React instances
+    // (React 19 + framer-motion v12 + Vite 7 production build bug)
+    dedupe: ["react", "react-dom", "react/jsx-runtime"],
   },
   root: path.resolve(import.meta.dirname),
   build: {
     outDir: path.resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        // Keep React in its own chunk so it is always loaded first,
+        // preventing "Cannot read properties of null (reading 'useState')"
+        manualChunks: {
+          "react-vendor": ["react", "react-dom", "react/jsx-runtime"],
+        },
+      },
+    },
   },
   server: {
     port,
