@@ -104,7 +104,7 @@ import { Router } from 'express';
         { headers: sbHeaders() as Record<string, string> }
       );
       if (!profileRes.ok) return res.status(profileRes.status).json({ error: await profileRes.text() });
-      const profiles = await profileRes.json() as { id: string; agent_code: string | null; is_agent: boolean; is_colider: boolean; agent_name?: string }[];
+      const profiles = await profileRes.json() as { id: string; agent_code: string | null; is_agent: boolean; is_colider: boolean }[];
       const profile = profiles[0];
       if (!profile?.is_agent && !profile?.is_colider) return res.json({ entries: [] });
 
