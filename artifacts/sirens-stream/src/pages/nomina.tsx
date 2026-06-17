@@ -686,7 +686,7 @@ const APP_COLORS = {
   }
 
   
-function AppNominaSection({ app, reloadKey, exchangeRates = {} }: { app: string; reloadKey: number; exchangeRates?: Record<string,number> }) {
+function AppNominaSection({ app, reloadKey, exchangeRates = {} }: { app: 'Waha' | 'Layla' | 'Howdy'; reloadKey: number; exchangeRates?: Record<string,number> }) {
   const color = APP_COLORS[app]
 
   // Accordion open state — default closed, persists user's explicit choice

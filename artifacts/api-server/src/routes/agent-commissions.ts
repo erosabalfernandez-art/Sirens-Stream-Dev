@@ -47,8 +47,8 @@ import { Router } from 'express';
 
       // Build query: always match by agent_user_id; also match by agent_name if available
       let commsQuery: string;
-      const encName = profile.agent_name ? encodeURIComponent(profile.agent_name) : null;
-      if (encName) {
+      if (profile.agent_name) {
+        const encName = encodeURIComponent(profile.agent_name);
         commsQuery = `agent_commissions?or=(agent_user_id.eq.${encId},agent_name.eq.${encName})&order=created_at.desc`;
       } else {
         commsQuery = `agent_commissions?agent_user_id=eq.${encId}&order=created_at.desc`;

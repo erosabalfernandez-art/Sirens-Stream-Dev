@@ -40,7 +40,7 @@ import { Link, useLocation } from "wouter";
       );
     }
 
-    type PendingItem = { type: string; app: string; name: string; phone?: string; codigoPais?: string };
+    type PendingItem = { type: string; app: string; name: string };
     type CierreResult = {
       ok: boolean;
       allConfirmed?: boolean;

@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from 'react';
     const prevLang = useRef<string | null>(null);
     const [show, setShow] = useState(false);
     const [bannerLang, setBannerLang] = useState<'es' | 'pt'>(lang);
-    const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+    const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
     useEffect(() => {
       if (prevLang.current === null) {

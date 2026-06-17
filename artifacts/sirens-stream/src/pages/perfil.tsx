@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
     import { Plus, Pencil, Trash2, LogOut, ChevronDown, ChevronUp, AlertTriangle, X, Check, Copy } from 'lucide-react'
 import { TelegramLinkCard } from '@/components/layout/TelegramLinkCard'
 
-    const [APPS, setAPPS] = useState(['Waha', 'Layla', 'Howdy'])
+    const APPS = ['Waha', 'Layla', 'Howdy']
 
     interface EntryFormData {
       app_name: string
@@ -20,15 +20,6 @@ import { TelegramLinkCard } from '@/components/layout/TelegramLinkCard'
       billetera: string
       agente: string
     }
-
-    // Load apps dynamically from catalog
-    useEffect(() => {
-      const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
-      fetch(`${apiBase}/api/apps-catalog`)
-        .then(r => r.json())
-        .then(data => { if (data.apps?.length) setAPPS(data.apps.map((a: { name: string }) => a.name)) })
-        .catch(() => {})
-    }, [])
 
     const EMPTY_FORM: EntryFormData = {
       app_name: '', nombre_real: '', nombre_en_app: '',
@@ -556,7 +547,7 @@ import { TelegramLinkCard } from '@/components/layout/TelegramLinkCard'
       return <div><label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-1.5">{label}</label>{children}</div>
     }
 
-    function FInput({ value, onChange, onBlur, placeholder, className = '', style }: { value: string; onChange: (v: string) => void; onBlur?: () => void; placeholder?: string; className?: string; style?: React.CSSProperties }) {
-      return <input type="text" value={value} onChange={e => onChange(e.target.value)} onBlur={onBlur} placeholder={placeholder} style={style}
+    function FInput({ value, onChange, onBlur, placeholder, className = '' }: { value: string; onChange: (v: string) => void; onBlur?: () => void; placeholder?: string; className?: string }) {
+      return <input type="text" value={value} onChange={e => onChange(e.target.value)} onBlur={onBlur} placeholder={placeholder}
         className={`bg-[#07070f] border border-purple-500/20 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-purple-500/50 transition-colors ${className}`} />
     }

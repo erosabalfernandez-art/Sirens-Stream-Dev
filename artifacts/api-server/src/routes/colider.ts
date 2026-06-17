@@ -7,7 +7,7 @@ import { Router } from 'express'
   function h(extra: Record<string,string> = {}) {
     return { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json', ...extra }
   }
-  async function sbGet(tbl: string): Promise<any> {
+  async function sbGet(tbl: string): Promise<any[]> {
     const r = await fetch(`${SB}/rest/v1/${tbl}`, { headers: h() })
     if (!r.ok) throw new Error(`SB ${r.status}: ${await r.text()}`)
     return r.json()
@@ -57,7 +57,7 @@ import { Router } from 'express'
         body: JSON.stringify({ email, password, email_confirm: true })
       })
       if (!ar.ok) { res.status(400).json({ error: await ar.text() }); return }
-      const { id } = await ar.json() as { id: string }
+      const { id } = await ar.json()
 
       // Generate unique agent_code for this colider
       let agentCode = generateAgentCode()
@@ -159,7 +159,7 @@ import { Router } from 'express'
           // If no workers directly linked to colider code, fall back to ALL published weeks
           const weeksToReturn = allWeeks.length > 0
             ? allWeeks.filter((w: string) => pubSemanas.has(w))
-            : [...pubSemanas].sort((a: string, b: string) => b.localeCompare(a))
+            : [...pubSemanas].sort((a, b) => b.localeCompare(a))
           res.json({ weeks: weeksToReturn, agent_code: agentCode })
           return
         }
@@ -174,7 +174,7 @@ import { Router } from 'express'
             const allW2 = [...new Set<string>([...salData2.map((r: any) => r.semana as string), ...agData2.map((r: any) => r.semana as string)])]
               .filter((w: string) => pubSet2.has(w))
               .sort((a, b) => b.localeCompare(a))
-            const finalW = allW2.length > 0 ? allW2 : [...pubSet2].sort((a: string, b: string) => b.localeCompare(a))
+            const finalW = allW2.length > 0 ? allW2 : [...pubSet2].sort((a, b) => b.localeCompare(a))
             res.json({ weeks: finalW, agent_code: null })
           } catch {
             res.json({ weeks: [], agent_code: null })

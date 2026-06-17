@@ -36,7 +36,7 @@ import { Router } from 'express';
         body: JSON.stringify({ app_name: 'sistema', content: content.trim(), created_by: created_by ?? null }),
       });
       if (!r.ok) return res.status(r.status).json({ error: await r.text() });
-      const _msgs = await r.json() as any[]; const msg = _msgs[0];
+      const [msg] = await r.json();
       return res.json({ ok: true, message: msg });
     } catch (e) {
       return res.status(500).json({ error: String(e) });

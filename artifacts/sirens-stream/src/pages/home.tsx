@@ -3,6 +3,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
   import { Link } from "wouter";
   import { motion, AnimatePresence } from "framer-motion";
   import {DollarSign, Shield, Smartphone, Users, Clock, TrendingUp, CheckCircle2, Zap, Star, CreditCard, MessageCircle, ArrowRight, Globe, Award, ChevronLeft, ChevronRight, Wifi, Camera, Heart} from "lucide-react";
+  import { useGetAgencyStats } from "@/lib/api-client";
   import { useShowAgencia } from "@/hooks/useShowAgencia";
 
   const slides_es = [
@@ -138,28 +139,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
     const showAgencia = useShowAgencia();
     const { lang } = useLanguage();
     const slides = lang === 'pt' ? slides_pt : slides_es;
-      const [catalogApps, setCatalogApps] = useState<string[]>([])
-      useEffect(() => {
-        const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
-        fetch(`${apiBase}/api/apps-catalog`)
-          .then(r => r.json())
-          .then(data => { if (data.apps?.length) setCatalogApps(data.apps.map((a: { name: string }) => a.name)) })
-          .catch(() => {})
-      }, [])
-      // Override slide 3 with dynamic app names when catalog is loaded
-      const dynamicSlides = catalogApps.length > 0
-        ? slides.map(s =>
-            s.bg === '/images/slide-bg-3.png'
-              ? {
-                  ...s,
-                  title: catalogApps.join(', '),
-                  items: lang === 'pt'
-                    ? catalogApps.map(a => `${a}: mensagens + streaming`)
-                    : catalogApps.map(a => `${a}: mensajes + streaming`),
-                }
-              : s
-          )
-        : slides;
     const benefits = lang === 'pt' ? benefits_pt : benefits_es;
     const steps = lang === 'pt' ? steps_pt : steps_es;
     const earnings = lang === 'pt' ? earnings_pt : earnings_es;
@@ -221,14 +200,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
       agenciaCardDesc: lang === 'pt' ? "Lidere um time de streamers e multiplique sua renda. Torne-se manager e construa seu negócio." : "Lidera un equipo de streamers y multiplica tus ingresos. Conviértete en manager y construye tu negocio.",
       agenciaCardBtn: lang === 'pt' ? "Ver requisitos" : "Ver requisitos",
     };
-    const [stats, setStats] = useState<{ streamersRepresented: number; yearsActive: number; platforms: string[] } | undefined>(undefined);
-      useEffect(() => {
-        const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '');
-        fetch(`${apiBase}/api/stats`)
-          .then(r => r.json())
-          .then(data => setStats(data))
-          .catch(() => {});
-      }, []);
+    const { data: stats } = useGetAgencyStats();
     const [current, setCurrent] = useState(0);
     const [direction, setDirection] = useState(1);
 
@@ -359,9 +331,9 @@ import { useLanguage } from "@/contexts/LanguageContext";
                     style={{ background: 'rgba(255,255,255,0.04)' }}>
                     <div className={`absolute inset-0 bg-gradient-to-br ${slide.accent} opacity-10`} />
                     <div className="relative">
-                      {(slide as any).appIcons ? (
+                      {slide.appIcons ? (
                           <div className="flex gap-3">
-                            {((slide as any).appIcons as string[]).map((src: string, idx: number) => (
+                            {slide.appIcons.map((src: string, idx: number) => (
                               <img key={idx} src={src} alt="" className="w-14 h-14 rounded-full object-cover ring-2 ring-white/20 shadow-lg" />
                             ))}
                           </div>

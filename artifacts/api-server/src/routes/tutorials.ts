@@ -1,60 +1,34 @@
 import { Router } from "express";
 
-  const router = Router();
+const router = Router();
 
-  const TUTORIALS_FALLBACK = [
-    { id: 1, title: "Cómo configurar tu perfil en Waha", description: "Aprende paso a paso cómo configurar tu perfil en Waha para maximizar tus ganancias desde el primer día.", category: "setup", duration: "20 min", level: "beginner", imageUrl: "/images/waha-guide.png", videoUrl: null, tags: ["Waha", "perfil", "configuración", "principiantes"] },
-    { id: 2, title: "Cómo registrarte en Layla con código de agencia", description: "Guía completa para registrarte en Layla e ingresar el código de agencia correctamente para poder monetizar.", category: "setup", duration: "15 min", level: "beginner", imageUrl: "/images/layla-guide.png", videoUrl: null, tags: ["Layla", "registro", "código de agencia"] },
-    { id: 3, title: "Primeros pasos en Howdy", description: "Todo lo que necesitas saber para comenzar en Howdy: instalación, verificación y activación de tu cuenta.", category: "setup", duration: "25 min", level: "beginner", imageUrl: "/images/howdy-guide-1.jpg", videoUrl: null, tags: ["Howdy", "instalación", "verificación"] },
-    { id: 4, title: "Cómo maximizar ganancias en salas de audio", description: "Estrategias para estar más tiempo visible en salas de audio y aumentar tus diamantes semanales.", category: "monetization", duration: "30 min", level: "intermediate", imageUrl: null, videoUrl: null, tags: ["salas de audio", "ganancias", "estrategia"] },
-    { id: 5, title: "Métodos de pago: Binance y Pix", description: "Aprende a recibir tus pagos en Binance (USDT) o Pix y cómo configurar tu billetera correctamente.", category: "payments", duration: "20 min", level: "beginner", imageUrl: null, videoUrl: null, tags: ["Binance", "Pix", "pagos", "billetera"] },
-    { id: 6, title: "Errores comunes y cómo evitarlos", description: "Los errores más frecuentes de las nuevas trabajadoras y cómo solucionarlos rápidamente.", category: "troubleshooting", duration: "25 min", level: "beginner", imageUrl: null, videoUrl: null, tags: ["errores", "soluciones", "FAQ"] }
-  ];
+const tutorials = [
+  { id: 1, title: "Cómo configurar tu primer stream en Twitch", description: "Aprende paso a paso cómo configurar OBS, ajustar la calidad de video y empezar a transmitir en Twitch desde cero.", category: "setup", duration: "45 min", level: "beginner", imageUrl: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&q=80", videoUrl: null, tags: ["OBS", "Twitch", "configuración", "principiantes"] },
+  { id: 2, title: "Estrategias de monetización para streamers", description: "Descubre las mejores estrategias para monetizar tu canal: suscripciones, donaciones, patrocinios y merchandise.", category: "monetization", duration: "60 min", level: "intermediate", imageUrl: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=800&q=80", videoUrl: null, tags: ["monetización", "patrocinios", "ingresos"] },
+  { id: 3, title: "Cómo hacer crecer tu comunidad en YouTube", description: "Técnicas avanzadas para aumentar tu audiencia en YouTube Gaming y convertir viewers en fans leales.", category: "growth", duration: "75 min", level: "advanced", imageUrl: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&q=80", videoUrl: null, tags: ["YouTube", "comunidad", "crecimiento"] },
+  { id: 4, title: "Configuración técnica avanzada de audio", description: "Optimiza la calidad de tu audio con configuraciones profesionales de micrófono, filtros y ecualizadores.", category: "technical", duration: "30 min", level: "intermediate", imageUrl: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800&q=80", videoUrl: null, tags: ["audio", "micrófono", "calidad"] },
+  { id: 5, title: "Construye tu marca personal como streamer", description: "Crea una identidad visual única y coherente que te diferencie en el competitivo mundo del streaming.", category: "branding", duration: "90 min", level: "beginner", imageUrl: "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=800&q=80", videoUrl: null, tags: ["marca", "identidad", "diseño"] },
+  { id: 6, title: "TikTok Live: Cómo maximizar tus ingresos", description: "Todo lo que necesitas saber para triunfar en TikTok Live y aprovechar al máximo las funciones de monetización.", category: "monetization", duration: "50 min", level: "intermediate", imageUrl: "https://images.unsplash.com/photo-1611605698335-8b1569810432?w=800&q=80", videoUrl: null, tags: ["TikTok", "Live", "monetización"] },
+];
 
-  function sbH() {
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
-    return { apikey: key, Authorization: `Bearer ${key}` };
+router.get("/tutorials", (_req, res) => {
+  res.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+  res.json(tutorials);
+});
+
+router.get("/tutorials/:id", (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
   }
+  const tutorial = tutorials.find((t) => t.id === id);
+  if (!tutorial) {
+    res.status(404).json({ error: "Tutorial not found" });
+    return;
+  }
+  res.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+  res.json(tutorial);
+});
 
-  router.get("/tutorials", async (_req, res) => {
-    res.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
-    try {
-      const r = await fetch(
-        `${process.env.SUPABASE_URL}/rest/v1/tutorials?is_active=eq.true&order=sort_order.asc,created_at.asc`,
-        { headers: sbH() }
-      );
-      if (r.ok) {
-        const data = await r.json() as unknown[];
-        if (Array.isArray(data) && data.length > 0) {
-          res.json(data);
-          return;
-        }
-      }
-    } catch { /* fallback */ }
-    res.json(TUTORIALS_FALLBACK);
-  });
-
-  router.get("/tutorials/:id", async (req, res) => {
-    const id = req.params.id;
-    try {
-      const r = await fetch(
-        `${process.env.SUPABASE_URL}/rest/v1/tutorials?id=eq.${encodeURIComponent(id)}&is_active=eq.true&limit=1`,
-        { headers: sbH() }
-      );
-      if (r.ok) {
-        const data = await r.json() as unknown[];
-        if (Array.isArray(data) && data.length > 0) {
-          res.json(data[0]);
-          return;
-        }
-      }
-    } catch { /* fallback to static */ }
-    // Fallback: try numeric id from static list
-    const numId = Number(id);
-    const tutorial = TUTORIALS_FALLBACK.find((t: { id: number }) => t.id === numId);
-    if (!tutorial) { res.status(404).json({ error: "Tutorial not found" }); return; }
-    res.json(tutorial);
-  });
-
-  export default router;
-  
+export default router;

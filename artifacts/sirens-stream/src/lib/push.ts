@@ -88,7 +88,7 @@ export async function subscribeToPush(userId: string): Promise<'granted' | 'deni
     if (!subscription) {
       subscription = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
     }
 

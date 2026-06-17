@@ -17,8 +17,8 @@ import { Router } from 'express';
   // GET /api/nomina-state?app=Waha
   router.get('/nomina-state', async (req, res) => {
     const app = req.query.app as string;
-    if (!app) {
-      return res.status(400).json({ error: 'app requerido' });
+    if (!app || !['Waha', 'Layla', 'Howdy'].includes(app)) {
+      return res.status(400).json({ error: 'Invalid app' });
     }
     try {
       const r = await fetch(
@@ -53,8 +53,8 @@ import { Router } from 'express';
   // POST /api/nomina-state
   router.post('/nomina-state', async (req, res) => {
     const { app_name, semana, cobradas, noCobro, sinPerfil, total_usd, total_diamantes, file_name } = req.body as Record<string,unknown>;
-    if (!app_name) {
-      return res.status(400).json({ error: 'app_name requerido' });
+    if (!app_name || !['Waha', 'Layla', 'Howdy'].includes(app_name as string)) {
+      return res.status(400).json({ error: 'Invalid app_name' });
     }
     try {
       const cobradasArr = (cobradas as unknown[]) ?? [];

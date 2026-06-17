@@ -58,8 +58,8 @@ import { Router } from 'express';
                     fetch(sbUrl(`profiles?id=in.(${ids})&select=id,email`), { headers: sbHeaders() as Record<string, string> }),
                     fetch(sbUrl(`worker_entries?app_name=eq.${encodeURIComponent(app_name)}&user_id=in.(${ids})&select=user_id,nombre_en_app,nombre_real`), { headers: sbHeaders() as Record<string, string> }),
                   ]);
-                  const profs: any[] = profRes.ok ? await profRes.json() as any[] : [];
-                  const wData: any[] = workerRes.ok ? await workerRes.json() as any[] : [];
+                  const profs: any[] = profRes.ok ? await profRes.json() : [];
+                  const wData: any[] = workerRes.ok ? await workerRes.json() : [];
                   const emailMap: Record<string,string> = Object.fromEntries(profs.map((p:any)=>[p.id, p.email??'']));
                   const workerMap: Record<string,any> = Object.fromEntries(wData.map((w:any)=>[w.user_id, w]));
                   const rows = zeroEarners.map(w => ({
@@ -97,8 +97,8 @@ import { Router } from 'express';
                       fetch(sbUrl(`profiles?id=in.(${ids})&select=id,email`), { headers: sbHeaders() as Record<string, string> }),
                       fetch(sbUrl(`worker_entries?app_name=eq.Layla&user_id=in.(${ids})&select=user_id,nombre_en_app,nombre_real`), { headers: sbHeaders() as Record<string, string> }),
                     ]);
-                    const profs: any[] = profRes.ok ? await profRes.json() as any[] : [];
-                    const wData: any[] = workerRes.ok ? await workerRes.json() as any[] : [];
+                    const profs: any[] = profRes.ok ? await profRes.json() : [];
+                    const wData: any[] = workerRes.ok ? await workerRes.json() : [];
                     const emailMap: Record<string,string> = Object.fromEntries(profs.map((p:any)=>[p.id, p.email??'']));
                     const workerMap: Record<string,any> = Object.fromEntries(wData.map((w:any)=>[w.user_id, w]));
                     const rows = laylaNoEarners.map(w => ({
@@ -158,8 +158,8 @@ import { Router } from 'express';
               fetch(sbUrl('profiles?is_agent=eq.true&select=id'), { headers: sbHeaders() as Record<string,string> }),
               fetch(sbUrl('profiles?is_colider=eq.true&select=id'), { headers: sbHeaders() as Record<string,string> }),
             ]);
-            const agents: {id:string}[] = agentsRes.ok ? await agentsRes.json() as {id:string}[] : [];
-            const coliders: {id:string}[] = colidersRes.ok ? await colidersRes.json() as {id:string}[] : [];
+            const agents: {id:string}[] = agentsRes.ok ? await agentsRes.json() : [];
+            const coliders: {id:string}[] = colidersRes.ok ? await colidersRes.json() : [];
             const ids = [...new Set([...agents.map(a => a.id), ...coliders.map(c => c.id)])];
             if (ids.length > 0) {
               await dispatchPush(ids,
@@ -352,7 +352,7 @@ import { Router } from 'express';
           // 1. No-cobro entries
           const r = await fetch(sbUrl('weekly_no_cobro?select=*&order=semana.desc,created_at.desc'), { headers: h });
           if (!r.ok) { const e = await r.text(); return res.status(r.status).json({ error: e }); }
-          const entries: any[] = await r.json() as any[];
+          const entries: any[] = await r.json();
           if (!entries.length) return res.json({ ok: true, entries: [] });
 
           // 2. Worker entries for this set of users (id_aplicacion, telefono, agente code)
@@ -361,7 +361,7 @@ import { Router } from 'express';
             sbUrl(`worker_entries?user_id=in.(${userIds.join(',')})&select=user_id,app_name,id_aplicacion,telefono,codigo_pais,agente`),
             { headers: h }
           );
-          const workers: any[] = wRes.ok ? await wRes.json() as any[] : [];
+          const workers: any[] = wRes.ok ? await wRes.json() : [];
 
           // 3. Agent profiles by code (name + phone)
           const agentCodes = [...new Set(workers.map((w: any) => w.agente).filter(Boolean))];
@@ -371,7 +371,7 @@ import { Router } from 'express';
               sbUrl(`profiles?agent_code=in.(${agentCodes.join(',')})&select=agent_code,agent_name,colider_name,telefono,phone`),
               { headers: h }
             );
-            if (aRes.ok) agentProfiles = await aRes.json() as any[];
+            if (aRes.ok) agentProfiles = await aRes.json();
           }
 
           // 4. Lookup maps

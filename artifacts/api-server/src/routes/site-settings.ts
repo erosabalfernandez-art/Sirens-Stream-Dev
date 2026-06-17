@@ -16,8 +16,8 @@ import { Router } from 'express';
       const data = await r.json() as { key: string; value: string }[];
       const map: Record<string, string> = {};
       for (const row of data) map[row.key] = row.value;
-      return res.json(map);
-    } catch (e: unknown) { return res.status(500).json({ error: e instanceof Error ? e.message : 'unknown' }); }
+      res.json(map);
+    } catch (e: unknown) { res.status(500).json({ error: e instanceof Error ? e.message : 'unknown' }); }
   });
 
   // GET /api/site-settings/:key
@@ -25,9 +25,9 @@ import { Router } from 'express';
     try {
       const r = await fetch(sbUrl(`site_settings?key=eq.${encodeURIComponent(req.params.key)}&select=value&limit=1`), { headers: sbH() });
       if (!r.ok) return res.status(r.status).json({ error: await r.text() });
-      const data = await r.json() as {value:string}[];
-      return res.json({ value: data[0]?.value ?? null });
-    } catch (e: unknown) { return res.status(500).json({ error: e instanceof Error ? e.message : 'unknown' }); }
+      const data = await r.json();
+      res.json({ value: data[0]?.value ?? null });
+    } catch (e: unknown) { res.status(500).json({ error: e instanceof Error ? e.message : 'unknown' }); }
   });
 
   // POST /api/site-settings — upsert key/value using service role (bypasses RLS)
@@ -41,8 +41,8 @@ import { Router } from 'express';
         body: JSON.stringify({ key, value: String(value) }),
       });
       if (!r.ok) return res.status(r.status).json({ error: await r.text() });
-      return res.json({ ok: true });
-    } catch (e: unknown) { return res.status(500).json({ error: e instanceof Error ? e.message : 'unknown' }); }
+      res.json({ ok: true });
+    } catch (e: unknown) { res.status(500).json({ error: e instanceof Error ? e.message : 'unknown' }); }
   });
 
   export default router;

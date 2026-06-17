@@ -21,8 +21,14 @@ import { PushNotificationCard } from '@/components/layout/PushNotificationCard'
       error?: string
     }
 
+    const APPS = ['', 'Waha', 'Layla', 'Howdy']
     const PAYMENT_METHODS = ['', 'Binance', 'Pix', 'Efectivo (Cuba)', 'Transferencia Bancaria (Cuba)']
-    const COUNTRIES_FILTER = ['', ...COUNTRIES]
+    const COUNTRIES = [
+      '','Argentina','Bolivia','Brasil','Chile','Colombia','Costa Rica','Cuba',
+      'Ecuador','El Salvador','España','Estados Unidos','Guatemala','Honduras',
+      'México','Nicaragua','Panamá','Paraguay','Perú','Puerto Rico',
+      'República Dominicana','Uruguay','Venezuela','Otro',
+    ]
 
 function cleanNum(s: string | null | undefined): string { return (s ?? '').replace(/[^0-9]/g, '') }
 function cleanFullPhone(code: string | null | undefined, tel: string | null | undefined): string { return (`${code ?? ''}${tel ?? ''}`).replace(/[\s\-\+\(\)]/g, '') }
@@ -81,47 +87,6 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
   const [showAgencia, setShowAgencia] = useState(true);
   const [loadingAgencia, setLoadingAgencia] = useState(false);
   const [agenciaError, setAgenciaError] = useState<string | null>(null);
-  const [catalogApps, setCatalogApps] = useState<string[]>(['Waha', 'Layla', 'Howdy'])
-  const [catalogFull, setCatalogFull] = useState<{id:number;name:string;logo_url:string|null;active:boolean;order_index:number}[]>([])
-  const [catalogLoading, setCatalogLoading] = useState(false)
-  const [catalogSaving, setCatalogSaving] = useState(false)
-  const [catalogMsg, setCatalogMsg] = useState<{ok:boolean;text:string}|null>(null)
-  const [newAppName, setNewAppName] = useState('')
-  const [newAppLogo, setNewAppLogo] = useState('')
-  const [newAppColorHex, setNewAppColorHex] = useState('#8b5cf6')
-  const [newAppDescEs, setNewAppDescEs] = useState('')
-  const [newAppDescPt, setNewAppDescPt] = useState('')
-  const [newAppEarningsEs, setNewAppEarningsEs] = useState('')
-  const [newAppEarningsPt, setNewAppEarningsPt] = useState('')
-  const [newAppAndroid, setNewAppAndroid] = useState('')
-  const [newAppIos, setNewAppIos] = useState('')
-  const [newAppIosName, setNewAppIosName] = useState('')
-  const [newAppTelegram, setNewAppTelegram] = useState('')
-  const [newAppAgencyCode, setNewAppAgencyCode] = useState('')
-  const [editingApp, setEditingApp] = useState<string | null>(null)
-  const [showAdvanced, setShowAdvanced] = useState(false)
-
-  const _apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
-
-  async function fetchCatalog() {
-    setCatalogLoading(true)
-    try {
-      const r = await fetch(_apiBase + '/api/apps-catalog')
-      if (r.ok) {
-        const d = await r.json() as {apps:{id:number;name:string;logo_url:string|null;active:boolean;order_index:number}[]}
-        setCatalogFull(d.apps ?? [])
-        setCatalogApps((d.apps ?? []).filter(a => a.active).map(a => a.name))
-      }
-    } catch { /* ignore */ }
-    finally { setCatalogLoading(false) }
-  }
-
-  useEffect(() => {
-    fetch(_apiBase + '/api/apps-catalog/names')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.names && Array.isArray(d.names) && d.names.length > 0) setCatalogApps(d.names) })
-      .catch(() => {})
-  }, [])
 
   useEffect(() => {
     fetch(((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '') + '/api/site-settings/show_agencia')
@@ -153,14 +118,14 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
       const [filterIdApp, setFilterIdApp] = useState(() => { try { return localStorage.getItem('ea_af_id_app') ?? '' } catch { return '' } })
       const [filterTelefono, setFilterTelefono] = useState(() => { try { return localStorage.getItem('ea_af_telefono') ?? '' } catch { return '' } })
       const [expanded, setExpanded] = useState<string | null>(null)
-      const [tab, setTab] = useState<'list' | 'dupes' | 'config' | 'solicitudes' | 'canales' | 'pagos' | 'agentes' | 'cambio' | 'nocobro' | 'chicas' | 'apps'>('list')
+      const [tab, setTab] = useState<'list' | 'dupes' | 'config' | 'solicitudes' | 'canales' | 'pagos' | 'agentes' | 'cambio' | 'nocobro' | 'chicas'>('list')
         const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
         const [chicasModal, setChicasModal] = useState<WorkerRow[] | null>(null)
 
         // Channel state
         const [solicitudes, setSolicitudes] = useState<{id:string;user_id:string;app_name:string;status:string;created_at:string;profile_email:string}[]>([])
         const [loadingSol, setLoadingSol] = useState(false)
-        const [channelApp, setChannelApp] = useState<string>('Waha')
+        const [channelApp, setChannelApp] = useState<'Waha'|'Layla'|'Howdy'>('Waha')
         const [channelMessages, setChannelMessages] = useState<{id:string;app_name:string;content:string|null;image_url:string|null;created_at:string}[]>([])
         const [channelContent, setChannelContent] = useState('')
         const [channelImage, setChannelImage] = useState('')
@@ -170,12 +135,12 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
         const [channelPosting, setChannelPosting] = useState(false)
           const [adminPayStk, setAdminPayStk] = useState<{id:string;user_id:string;app_name:string;nombre_en_app:string|null;sticker_index:number;created_at:string}[]>([])
           const [loadingPayStk, setLoadingPayStk] = useState(false)
-          const [adminPayApp, setAdminPayApp] = useState<string>('Waha')
+          const [adminPayApp, setAdminPayApp] = useState<'Waha'|'Layla'|'Howdy'>('Waha')
           const [tgOpen, setTgOpen] = useState(true)
           const [waOpen, setWaOpen] = useState(true)
         const [loadingMsgs, setLoadingMsgs] = useState(false)
         const [notifying, setNotifying] = useState<Record<string, boolean>>({})
-          const [agents, setAgents] = useState<{id:string;email:string;agent_name:string|null;colider_name:string|null;agent_code:string|null;is_agent:boolean;phone:string|null}[]>([])
+          const [agents, setAgents] = useState<{id:string;email:string;agent_name:string|null;agent_code:string|null;is_agent:boolean;phone:string|null}[]>([])
             const [grantingChannels, setGrantingChannels] = useState<Record<string,boolean>>({})
             const [channelsGranted, setChannelsGranted] = useState<Record<string,boolean>>({})
             const [grantingColiderChannels, setGrantingColiderChannels] = useState<Record<string,boolean>>({})
@@ -252,7 +217,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
         const [agentNameMap, setAgentNameMap] = useState<Record<string,string>>({})
         const [customRatesByKey, setCustomRatesByKey] = useState<Record<string, {user_id:string;app_name:string;nombre_en_app:string;efectivo_rate:number;transferencia_rate:number}>>({})
         const [customRateInputs, setCustomRateInputs] = useState<Record<string, {efectivo:string;transferencia:string}>>({})
-        const [customRateApp, setCustomRateApp] = useState<string>('Waha')
+        const [customRateApp, setCustomRateApp] = useState<'Waha'|'Layla'|'Howdy'>('Waha')
         const [customRateSearch, setCustomRateSearch] = useState('')
         const [customRateFilterId, setCustomRateFilterId] = useState('')
         const [customRateFilterPhone, setCustomRateFilterPhone] = useState('')
@@ -366,30 +331,6 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
           fetchAgentPayData()
         }
 
-
-          async function doCierre(forzar: boolean) {
-            setCierreLoading(true)
-            setCierreMsg(null)
-            try {
-              const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
-              const r = await fetch(`${apiBase}/api/cierre-semanal`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ forzar }),
-              })
-              const data = await r.json() as { ok?: boolean; error?: string; message?: string }
-              if (!r.ok) {
-                setCierreMsg({ ok: false, text: data.error ?? 'Error al cerrar semana' })
-              } else {
-                setCierreMsg({ ok: true, text: data.message ?? 'Semana cerrada correctamente ✓' })
-                window.dispatchEvent(new Event('ea_cierre_done'))
-              }
-            } catch (e: unknown) {
-              setCierreMsg({ ok: false, text: e instanceof Error ? e.message : 'Error desconocido' })
-            } finally {
-              setCierreLoading(false)
-            }
-          }
 
           async function fetchAllPagosData() {
             setPagosLoading(true); setPagosNeedSetup(false)
@@ -530,7 +471,6 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
             let _agentColiderMap: Record<string, boolean> = {}
             let _agentMetodoMapLocal: Record<string, string> = {}
             let _agentAdminPaidSet = new Set<string>()
-            let _agentBilleteraMapLocal: Record<string, string> = {}
 
               if (_agentUids.length > 0) {
                 const _apiBaseAgent = ((import.meta.env.VITE_API_URL as string|undefined) ?? '').replace(/\/$/, '')
@@ -543,7 +483,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                   ])
                   _agentColiderMap = _coliderApiData.coliderMap ?? {}
                   _agentAdminPaidSet = new Set<string>(_coliderApiData.adminPaidIds ?? [])
-                  _agentBilleteraMapLocal = {}
+                  const _agentBilleteraMapLocal: Record<string, string> = {}
                   // Build profile fallback map (agent_payment_method stored when agent selects method)
                   const _profileMetodoMap: Record<string, string> = {}
                   for (const p of (_agProfiles ?? []) as any[]) {
@@ -712,7 +652,6 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
             const [{ data: channelUsers }, { data: agentProfs }, { data: colProfs }] = await Promise.all([
               supabase.from('channel_requests').select('user_id').eq('app_name', app).eq('status', 'approved'),
               supabase.from('profiles').select('id').eq('is_agent', true),
-              supabase.from('profiles').select('id').eq('is_colider', true),
             ])
             ids = [...new Set([
               ...(channelUsers ?? []).map((r: any) => r.user_id),
@@ -938,6 +877,94 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
           setChannelMessages(prev => prev.filter(m => m.id !== id))
         }
 
+        async function fetchAgentPayData() {
+                setAgentPayLoading(true)
+                const { data: latestComm } = await supabase
+                  .from('agent_commissions').select('semana')
+                  .order('semana', { ascending: false }).limit(1).maybeSingle()
+                if (!latestComm) { setAgentPayData({confirmed: [], pending: []}); setAgentPayLoading(false); return }
+                const semana = latestComm.semana
+                const { data: comms } = await supabase
+                  .from('agent_commissions')
+                  .select('id, agent_name, app_name, semana, total_commission_usd, agent_user_id')
+                  .eq('semana', semana)
+                const { data: confs } = await supabase
+                  .from('agent_payment_confirmations')
+                  .select('commission_id, confirmed_at')
+                  .in('commission_id', (comms ?? []).map((c: any) => c.id))
+                const confSet = new Set(((confs ?? []) as any[]).map((c: any) => c.commission_id))
+                const confMap: Record<string, string> = {}
+                ;((confs ?? []) as any[]).forEach((c: any) => { confMap[c.commission_id] = c.confirmed_at })
+                const all = (comms ?? []) as any[]
+                // Load colider marks, admin paid marks, and metodo_pago on every fetch (ensures reload works)
+                const _agUids2 = all.filter((c: any) => c.agent_user_id).map((c: any) => c.agent_user_id as string)
+                let _coliderMap2: Record<string, boolean> = {}
+                let _metodoMap2: Record<string, string> = {}
+                let _adminPaidSet2 = new Set<string>()
+                if (_agUids2.length > 0) {
+                  const _apiBase2 = ((import.meta.env.VITE_API_URL as string|undefined) ?? '').replace(/\/$/, '')
+                  const [_coliderApiData2, { data: _agW2 }, { data: _agP2 }] = await Promise.all([
+                    fetch(_apiBase2 + '/api/admin/agent-colider-marks?semana=' + encodeURIComponent(semana) + '&agent_uids=' + _agUids2.join(','), { credentials: 'include' })
+                      .then(r => r.ok ? r.json() : { coliderMap: {}, adminPaidIds: [] })
+                      .catch(() => ({ coliderMap: {}, adminPaidIds: [] })),
+                    supabase.from('worker_entries').select('user_id, metodo_pago').in('user_id', _agUids2),
+                    supabase.from('profiles').select('id, agent_payment_method').in('id', _agUids2),
+                  ])
+                  _coliderMap2 = _coliderApiData2.coliderMap ?? {}
+                  _adminPaidSet2 = new Set<string>(_coliderApiData2.adminPaidIds ?? [])
+                  const _profMetodo2: Record<string, string> = {}
+                  for (const p of (_agP2 ?? []) as any[]) { if (p.agent_payment_method) _profMetodo2[p.id] = p.agent_payment_method }
+                  for (const w of (_agW2 ?? []) as any[]) { if ((w as any).metodo_pago) _metodoMap2[(w as any).user_id] = (w as any).metodo_pago }
+                  for (const uid of _agUids2) { if (!_metodoMap2[uid] && _profMetodo2[uid]) _metodoMap2[uid] = _profMetodo2[uid] }
+                }
+                setAgentMetodoMap(_metodoMap2)
+                setAgentAdminPaidIds(_adminPaidSet2)
+                setAgentPayData({
+                  confirmed: all.filter((c: any) => confSet.has(c.id)).map((c: any) => ({ ...c, confirmed_at: confMap[c.id], colider_paid: c.agent_user_id ? ((c.agent_user_id in _coliderMap2) ? _coliderMap2[c.agent_user_id] : null) : null })),
+                  pending: all.filter((c: any) => !confSet.has(c.id)).map((c: any) => ({ ...c, colider_paid: c.agent_user_id ? ((c.agent_user_id in _coliderMap2) ? _coliderMap2[c.agent_user_id] : null) : null })),
+                })
+                setPagosSemana(semana)
+                setAgentPayLoading(false)
+              }
+
+          async function fetchLaylaDirectNotifs() {
+            setLaylaDirectLoading(true)
+            setLaylaDirectNeedSetup(false)
+            const { data: notifs, error } = await supabase
+              .from('direct_payment_notifications')
+              .select('*')
+              .eq('app_name', 'Layla')
+              .order('notified_at', { ascending: false })
+            if (error?.code === '42P01') {
+              setLaylaDirectNeedSetup(true)
+              setLaylaDirectLoading(false)
+              return
+            }
+            if (!notifs || notifs.length === 0) {
+              setLaylaDirectNotifs([])
+              setLaylaDirectLoading(false)
+              return
+            }
+            const userIds = (notifs as any[]).map((n: any) => n.user_id)
+            const [{ data: workers }, { data: profs }] = await Promise.all([
+              supabase.from('worker_entries').select('user_id, nombre_real, nombre_en_app, metodo_pago, billetera, agente').eq('app_name', 'Layla').in('user_id', userIds),
+              supabase.from('profiles').select('id, email').in('id', userIds),
+            ])
+            const wMap: Record<string, any> = Object.fromEntries(((workers ?? []) as any[]).map((w: any) => [w.user_id, w]))
+            const eMap: Record<string, string> = Object.fromEntries(((profs ?? []) as any[]).map((p: any) => [p.id, p.email]))
+            const merged = (notifs as any[]).map((n: any) => ({
+              ...n,
+              nombre_en_app: wMap[n.user_id]?.nombre_en_app ?? null,
+              nombre_real: wMap[n.user_id]?.nombre_real ?? null,
+              email: eMap[n.user_id] ?? '—',
+              metodo_pago: wMap[n.user_id]?.metodo_pago ?? null,
+              billetera: wMap[n.user_id]?.billetera ?? null,
+              agente: wMap[n.user_id]?.agente ?? null,
+            }))
+            setLaylaDirectNotifs(merged)
+            setLaylaDirectLoading(false)
+          }
+
         async function fetchAll() {
         setLoadingData(true)
         fetchRates()
@@ -973,7 +1000,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
           setColiderMarks({ paid: [], pending: [] })
           setAgentPayData({ confirmed: [], pending: [] })
           setLaylaDirectNotifs([])
-          setCierrePending([]); setCierreMsg(null)
+          setCierrePending([]); setCierreMsg('')
           setShowForzarModal(false)
           setEfectivoExpanded(false)
           setAgenciaExpanded(false)
@@ -1035,7 +1062,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
 
       async function fetchAgents() {
             const { data } = await supabase.from('profiles').select('id, email, agent_name, colider_name, agent_code, is_agent, phone').not('agent_code', 'is', null).order('created_at', { ascending: false })
-            setAgents((data ?? []) as {id:string;email:string;agent_name:string|null;colider_name:string|null;agent_code:string|null;is_agent:boolean;phone:string|null}[])
+            setAgents((data ?? []) as {id:string;email:string;agent_name:string|null;agent_code:string|null;is_agent:boolean}[])
             try {
               const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
               const r = await fetch(`${apiBase}/api/agent-details`)
@@ -1276,10 +1303,6 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'nocobro' ? 'bg-red-600 text-white' : 'text-white/40 hover:text-white'}`}>
                 🚨 No Cobraron
               </button>
-              <button onClick={() => { setTab('apps'); fetchCatalog() }}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'apps' ? 'bg-teal-600 text-white' : 'text-white/40 hover:text-white'}`}>
-                📱 Apps
-              </button>
             </div>
 
             {tab === 'config' && (<>
@@ -1357,14 +1380,14 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                       <label className="block text-xs text-white/40 mb-1">App</label>
                       <select value={filterApp} onChange={e => setFilterApp(e.target.value)}
                         className="w-full bg-[#07070f] border border-purple-500/20 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500/50">
-                        {['', ...catalogApps].map(a => <option key={a} value={a}>{a || 'Todas'}</option>)}
+                        {APPS.map(a => <option key={a} value={a}>{a || 'Todas'}</option>)}
                       </select>
                     </div>
                     <div>
                       <label className="block text-xs text-white/40 mb-1">País</label>
                       <select value={filterPais} onChange={e => setFilterPais(e.target.value)}
                         className="w-full bg-[#07070f] border border-purple-500/20 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500/50">
-                        {COUNTRIES_FILTER.map(c => <option key={c} value={c}>{c || 'Todos'}</option>)}
+                        {COUNTRIES.map(c => <option key={c} value={c}>{c || 'Todos'}</option>)}
                       </select>
                     </div>
                     <div>
@@ -1903,7 +1926,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                       const totalDone = coliderDone + agenciaDone
                       const totalTotal = coliderTotal + agenciaTotal
                       const totalPct = totalTotal > 0 ? Math.round(totalDone / totalTotal * 100) : 0
-                      const APPS = catalogApps
+                      const APPS = ['Waha', 'Layla', 'Howdy'] as const
                       return (
                         <div className="space-y-4">
                           {/* ── BARRA EFECTIVO ─────────────────────────────── */}
@@ -2069,8 +2092,8 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                                             const totalD = workerTotalD + agentTotalD
                                             const coliderPaidD = d.agentRow.colider_paid === true
                                             const agentConfirmedD = agentConfirmedIds.has(d.agentRow.id)
-                                            const metodoD = agentMetodoMap[d.agentRow.agent_user_id] ?? d.workerRows[0]?.metodo_pago ?? ''
-                                            const billeteraD = agentBilleteraMap[d.agentRow.agent_user_id] ?? d.workerRows[0]?.billetera ?? ''
+                                            const metodoD = agentMetodoMap[d.agent_user_id] ?? d.workerRows[0]?.metodo_pago ?? ''
+                                            const billeteraD = agentBilleteraMap[d.agent_user_id] ?? d.workerRows[0]?.billetera ?? ''
 
                                               const workerCupD = d.workerRows.reduce((s: number, r: any) => s + (Number(r.cup_amount) || 0), 0)
                                               const agentCupD = (rates['efectivo_agent'] ?? 0) > 0 ? Math.round(agentTotalD * rates['efectivo_agent']) : null
@@ -2078,7 +2101,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
 
                                             return (
 
-                                              <div key={d.agentRow.agent_user_id} className="bg-black/30 border border-violet-500/25 rounded-2xl px-4 py-3">
+                                              <div key={d.agent_user_id} className="bg-black/30 border border-violet-500/25 rounded-2xl px-4 py-3">
                                                 <div className="flex items-start gap-3">
                                                   <div className="w-7 h-7 rounded-xl bg-violet-500/15 flex items-center justify-center shrink-0 mt-0.5">
                                                     {(coliderPaidD && agentConfirmedD) ? <CheckCircle2 className="w-3.5 h-3.5 text-violet-400" /> : <Clock className="w-3.5 h-3.5 text-violet-400/40" />}
@@ -2129,10 +2152,10 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                                                       <span className="text-[10px] text-white/60 font-bold border-t border-white/10 pt-0.5 mt-0.5">= Total: ${totalD.toFixed(2)}{totalCupD ? <span className="text-amber-300/70"> / {totalCupD.toLocaleString('es-ES')} CUP</span> : null}</span>
                                                     </div>
                                                     {billeteraD && (
-                                                      <button onClick={() => { navigator.clipboard.writeText(billeteraD); setCopiedBilletera(d.agentRow.agent_user_id + 'de'); setTimeout(() => setCopiedBilletera(null), 1500) }} className="flex items-center gap-1 group mt-0.5">
+                                                      <button onClick={() => { navigator.clipboard.writeText(billeteraD); setCopiedBilletera(d.agent_user_id + 'de'); setTimeout(() => setCopiedBilletera(null), 1500) }} className="flex items-center gap-1 group mt-0.5">
                                                         <span className="text-[10px] text-white/25 shrink-0 font-semibold">Billetera:</span>
                                                         <span className="text-[10px] font-mono text-violet-300/60 group-hover:text-violet-200 transition-colors truncate max-w-[130px]">{billeteraD}</span>
-                                                        {copiedBilletera === d.agentRow.agent_user_id + 'de' ? <Check className="w-3 h-3 text-green-400 shrink-0" /> : <Copy className="w-3 h-3 text-white/20 group-hover:text-violet-400 shrink-0 transition-colors" />}
+                                                        {copiedBilletera === d.agent_user_id + 'de' ? <Check className="w-3 h-3 text-green-400 shrink-0" /> : <Copy className="w-3 h-3 text-white/20 group-hover:text-violet-400 shrink-0 transition-colors" />}
                                                       </button>
                                                     )}
 
@@ -2341,9 +2364,9 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                                             const agentTotalA = Number(d.agentRow.total_commission_usd||0)
                                             const totalA = workerTotalA + agentTotalA
                                             const agentConfirmedA = agentConfirmedIds.has(d.agentRow.id)
-                                            const adminPaidA = agentAdminPaidIds.has(d.agentRow.agent_user_id)
-                                            const metodoA = agentMetodoMap[d.agentRow.agent_user_id] ?? d.workerRows[0]?.metodo_pago ?? ''
-                                            const billeteraA = agentBilleteraMap[d.agentRow.agent_user_id] ?? d.workerRows[0]?.billetera ?? ''
+                                            const adminPaidA = agentAdminPaidIds.has(d.agent_user_id)
+                                            const metodoA = agentMetodoMap[d.agent_user_id] ?? d.workerRows[0]?.metodo_pago ?? ''
+                                            const billeteraA = agentBilleteraMap[d.agent_user_id] ?? d.workerRows[0]?.billetera ?? ''
                                             const workerCupA = d.workerRows.reduce((s: number, r: any) => s + (Number(r.cup_amount) || 0), 0)
                                               const agentCupA = (rates['transferencia_agent'] ?? 0) > 0 ? Math.round(agentTotalA * rates['transferencia_agent']) : null
                                               const totalCupA = agentCupA !== null || workerCupA > 0 ? Math.round(workerCupA + (agentCupA ?? 0)) : null
@@ -2351,7 +2374,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
 
 
 
-                                              <div key={d.agentRow.agent_user_id} className={`rounded-2xl overflow-hidden border transition-all ${adminPaidA && agentConfirmedA ? 'border-violet-500/30 bg-gradient-to-br from-violet-950/40 to-black/50' : 'border-white/8 bg-gradient-to-br from-white/3 to-black/40'}`}>
+                                              <div key={d.agent_user_id} className={`rounded-2xl overflow-hidden border transition-all ${adminPaidA && agentConfirmedA ? 'border-violet-500/30 bg-gradient-to-br from-violet-950/40 to-black/50' : 'border-white/8 bg-gradient-to-br from-white/3 to-black/40'}`}>
                                                 {/* Top row */}
                                                 <div className="px-4 pt-3 pb-2 flex items-start gap-3">
                                                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-bold text-sm ${adminPaidA && agentConfirmedA ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30' : 'bg-white/6 text-white/50 border border-white/10'}`}>
@@ -2404,10 +2427,10 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                                                       <span className="text-[10px] text-white/60 font-bold border-t border-white/10 pt-0.5 mt-0.5">= Total: ${totalA.toFixed(2)}{totalCupA ? <span className="text-amber-300/70"> / {totalCupA.toLocaleString('es-ES')} CUP</span> : null}</span>
                                                     </div>
                                                     {billeteraA && (
-                                                      <button onClick={() => { navigator.clipboard.writeText(billeteraA); setCopiedBilletera(d.agentRow.agent_user_id + 'd'); setTimeout(() => setCopiedBilletera(null), 1500) }} className="flex items-center gap-1 group mt-0.5">
+                                                      <button onClick={() => { navigator.clipboard.writeText(billeteraA); setCopiedBilletera(d.agent_user_id + 'd'); setTimeout(() => setCopiedBilletera(null), 1500) }} className="flex items-center gap-1 group mt-0.5">
                                                         <span className="text-[10px] text-white/25 shrink-0 font-semibold">Billetera:</span>
                                                         <span className="text-[10px] font-mono text-violet-300/60 group-hover:text-violet-200 transition-colors truncate max-w-[130px]">{billeteraA}</span>
-                                                        {copiedBilletera === d.agentRow.agent_user_id + 'd' ? <Check className="w-3 h-3 text-green-400 shrink-0" /> : <Copy className="w-3 h-3 text-white/20 group-hover:text-violet-400 shrink-0 transition-colors" />}
+                                                        {copiedBilletera === d.agent_user_id + 'd' ? <Check className="w-3 h-3 text-green-400 shrink-0" /> : <Copy className="w-3 h-3 text-white/20 group-hover:text-violet-400 shrink-0 transition-colors" />}
                                                       </button>
                                                     )}
 
@@ -2420,10 +2443,10 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                                                   </div>
                                                   <div className="flex items-center gap-1.5 shrink-0">
                                                     {agentConfirmedA ? <span className="text-[10px] bg-green-500/10 border border-green-500/20 text-green-300 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">Confirmó ✓</span> : <span className="text-[10px] text-white/20 whitespace-nowrap">Sin confirmar</span>}
-                                                    <button onClick={() => toggleAgentAdminPaid(d.agentRow.agent_user_id, d.agentRow.app_name, d.agentRow.semana)} disabled={!d.agentRow.agent_user_id || togglingAgentAdminPaid === d.agentRow.agent_user_id} className={`flex items-center gap-1 transition-all ${!d.agentRow.agent_user_id ? 'opacity-25 cursor-not-allowed' : 'cursor-pointer hover:opacity-80'}`}>
+                                                    <button onClick={() => toggleAgentAdminPaid(d.agent_user_id, d.agentRow.app_name, d.agentRow.semana)} disabled={!d.agent_user_id || togglingAgentAdminPaid === d.agent_user_id} className={`flex items-center gap-1 transition-all ${!d.agent_user_id ? 'opacity-25 cursor-not-allowed' : 'cursor-pointer hover:opacity-80'}`}>
                                                       <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${adminPaidA ? 'bg-purple-500 border-purple-500' : 'border-white/25 hover:border-purple-400/60'}`}>
                                                         {adminPaidA && <Check className="w-2.5 h-2.5 text-white" />}
-                                                        {togglingAgentAdminPaid === d.agentRow.agent_user_id && <div className="w-2 h-2 border border-white/50 border-t-transparent rounded-full animate-spin" />}
+                                                        {togglingAgentAdminPaid === d.agent_user_id && <div className="w-2 h-2 border border-white/50 border-t-transparent rounded-full animate-spin" />}
                                                       </div>
                                                       <span className={`text-[10px] font-medium whitespace-nowrap ${adminPaidA ? 'text-purple-300' : 'text-white/30'}`}>{adminPaidA ? 'Pagado ✓' : 'Marcar'}</span>
                                                     </button>
@@ -3473,212 +3496,6 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                     )}
 
 
-
-          {/* Apps Catalog Tab */}
-          {tab === 'apps' && (
-            <div className="space-y-6 max-w-2xl">
-              <div className="bg-[#0d0d1e] border border-teal-500/20 rounded-2xl p-6">
-                <div className="flex items-center justify-between mb-5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">📱</span>
-                    <span className="text-sm font-semibold text-white/70">Catálogo de Apps</span>
-                  </div>
-                  <button onClick={fetchCatalog} disabled={catalogLoading}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-500/10 border border-teal-500/20 text-teal-300 hover:bg-teal-500/20 transition-all disabled:opacity-50">
-                    {catalogLoading ? <div className="w-3 h-3 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" /> : '↻'} Recargar
-                  </button>
-                </div>
-
-                {catalogMsg && (
-                  <div className={`mb-4 p-3 rounded-xl text-xs font-semibold ${catalogMsg.ok ? 'bg-green-500/10 border border-green-500/25 text-green-300' : 'bg-red-500/10 border border-red-500/25 text-red-300'}`}>
-                    {catalogMsg.text}
-                  </div>
-                )}
-
-                {/* Existing apps list */}
-                {catalogFull.length === 0 && !catalogLoading && (
-                  <p className="text-sm text-white/40 italic mb-4">No hay apps cargadas. Haz clic en "Recargar" para obtener desde la BD, o usa las apps predeterminadas (Waha, Layla, Howdy).</p>
-                )}
-                <div className="space-y-2 mb-6">
-                  {catalogFull.map(app => (
-                    <div key={app.id} className="flex items-center justify-between p-3 bg-[#07070f] rounded-xl border border-white/8 gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        {app.icon_url ? (
-                          <img src={app.icon_url} alt={app.name} className="w-9 h-9 rounded-xl object-cover shrink-0 ring-1 ring-white/10" />
-                        ) : (
-                          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-600 to-purple-600 flex items-center justify-center shrink-0">
-                            <span className="text-base">📱</span>
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-white truncate">{app.name}</p>
-                          <p className="text-xs text-white/40">#{app.sort_order}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                            onClick={() => {
-                              setEditingApp(app.name); setShowAdvanced(true);
-                              setNewAppName(app.name); setNewAppLogo((app as any).icon_url ?? '');
-                              setNewAppColorHex((app as any).color_hex ?? '#8b5cf6');
-                              setNewAppDescEs((app as any).description_es ?? ''); setNewAppDescPt((app as any).description_pt ?? '');
-                              setNewAppEarningsEs((app as any).earnings_info_es ?? ''); setNewAppEarningsPt((app as any).earnings_info_pt ?? '');
-                              setNewAppAndroid((app as any).download_url_android ?? ''); setNewAppIos((app as any).download_url_ios ?? '');
-                              setNewAppIosName((app as any).ios_name ?? ''); setNewAppTelegram((app as any).telegram_channel_url ?? '');
-                              setNewAppAgencyCode((app as any).agency_code ?? '');
-                              setTimeout(() => document.querySelector('#apps-form')?.scrollIntoView({ behavior: 'smooth' }), 100);
-                            }}
-                            className="px-3 py-1 rounded-lg text-xs font-semibold bg-blue-500/10 border border-blue-500/30 text-blue-300 hover:bg-blue-500/20 transition-all"
-                          >
-                            ✏️ Editar
-                          </button>
-                          <button
-                          onClick={async () => {
-                            setCatalogSaving(true); setCatalogMsg(null)
-                            try {
-                              const r = await fetch(_apiBase + `/api/apps-catalog/${app.name}`, {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ is_active: !app.is_active }),
-                              })
-                              if (r.ok) { setCatalogMsg({ ok: true, text: `${app.name} ${!app.is_active ? 'activada' : 'desactivada'} ✓` }); await fetchCatalog() }
-                              else { const d = await r.json() as {error?:string}; setCatalogMsg({ ok: false, text: d.error ?? 'Error' }) }
-                            } catch { setCatalogMsg({ ok: false, text: 'Error de red' }) }
-                            finally { setCatalogSaving(false) }
-                          }}
-                          disabled={catalogSaving}
-                          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${app.active ? 'bg-green-500/15 border border-green-500/25 text-green-300 hover:bg-green-500/25' : 'bg-red-500/15 border border-red-500/25 text-red-300 hover:bg-red-500/25'} disabled:opacity-50`}>
-                          {app.is_active ? '✓ Activa' : '✗ Inactiva'}
-                        </button>
-                        <button
-                          onClick={async () => {
-                            if (!confirm(`¿Eliminar "${app.name}"? Esta acción no se puede deshacer.`)) return
-                            setCatalogSaving(true); setCatalogMsg(null)
-                            try {
-                              const r = await fetch(_apiBase + `/api/apps-catalog/${app.name}`, { method: 'DELETE' })
-                              if (r.ok) { setCatalogMsg({ ok: true, text: `${app.name} eliminada ✓` }); await fetchCatalog() }
-                              else { const d = await r.json() as {error?:string}; setCatalogMsg({ ok: false, text: d.error ?? 'Error' }) }
-                            } catch { setCatalogMsg({ ok: false, text: 'Error de red' }) }
-                            finally { setCatalogSaving(false) }
-                          }}
-                          disabled={catalogSaving}
-                          className="px-3 py-1 rounded-lg text-xs font-semibold bg-red-500/10 border border-red-500/20 text-red-300 hover:bg-red-500/20 transition-all disabled:opacity-50">
-                          Eliminar
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Add / Edit app form */}
-                  <div className="border-t border-white/8 pt-5">
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">
-                        {editingApp ? `✏️ Editando: ${editingApp}` : '➕ Agregar nueva app'}
-                      </p>
-                      {editingApp && (
-                        <button onClick={() => {
-                          setEditingApp(null); setNewAppName(''); setNewAppLogo(''); setNewAppColorHex('#8b5cf6');
-                          setNewAppDescEs(''); setNewAppDescPt(''); setNewAppEarningsEs(''); setNewAppEarningsPt('');
-                          setNewAppAndroid(''); setNewAppIos(''); setNewAppIosName(''); setNewAppTelegram(''); setNewAppAgencyCode('');
-                          setShowAdvanced(false);
-                        }} className="text-xs text-white/40 hover:text-white/70 px-2 py-1 rounded-lg bg-white/5 border border-white/10">
-                          ✕ Cancelar
-                        </button>
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <input type="text" placeholder="Nombre de la app (ej: MiApp)" value={newAppName}
-                        onChange={e => setNewAppName(e.target.value)}
-                        className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50" />
-                      <input type="text" placeholder="URL del logo/ícono (opcional)" value={newAppLogo}
-                        onChange={e => setNewAppLogo(e.target.value)}
-                        className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50" />
-                      <div className="flex gap-2 items-center">
-                        <label className="text-xs text-white/40 shrink-0">Color:</label>
-                        <input type="color" value={newAppColorHex} onChange={e => setNewAppColorHex(e.target.value)}
-                          className="w-10 h-10 rounded-lg border border-white/10 bg-transparent cursor-pointer shrink-0" />
-                        <input type="text" value={newAppColorHex} onChange={e => setNewAppColorHex(e.target.value)}
-                          placeholder="#8b5cf6" className="flex-1 bg-[#07070f] border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50" />
-                      </div>
-                      <button onClick={() => setShowAdvanced(v => !v)}
-                        className="text-xs text-teal-400/70 hover:text-teal-400 text-left py-0.5 flex items-center gap-1">
-                        {showAdvanced ? '▲ Ocultar campos avanzados' : '▼ Mostrar: descripción, ganancias, links de descarga...'}
-                      </button>
-                      {showAdvanced && (<>
-                        <p className="text-[10px] text-white/30 font-bold uppercase tracking-wider mt-1">Descripción</p>
-                        <textarea placeholder="Descripción en español" value={newAppDescEs}
-                          onChange={e => setNewAppDescEs(e.target.value)} className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50 resize-none h-20" />
-                        <textarea placeholder="Descrição em português" value={newAppDescPt}
-                          onChange={e => setNewAppDescPt(e.target.value)} className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50 resize-none h-20" />
-                        <p className="text-[10px] text-white/30 font-bold uppercase tracking-wider mt-1">Ganancias (separa items con |)</p>
-                        <textarea placeholder="Ej: Mensajes VIP: 70 diamantes | Meta mínima: $2.50 USD | Pago: semanal" value={newAppEarningsEs}
-                          onChange={e => setNewAppEarningsEs(e.target.value)} className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50 resize-none h-20" />
-                        <textarea placeholder="Ex: Mensagens VIP: 70 diamantes | Meta mínima: $2,50 | Pagamento: semanal" value={newAppEarningsPt}
-                          onChange={e => setNewAppEarningsPt(e.target.value)} className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50 resize-none h-20" />
-                        <p className="text-[10px] text-white/30 font-bold uppercase tracking-wider mt-1">Links de descarga</p>
-                        <input type="text" placeholder="URL Android (Play Store)" value={newAppAndroid}
-                          onChange={e => setNewAppAndroid(e.target.value)} className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50" />
-                        <input type="text" placeholder="URL iOS (App Store)" value={newAppIos}
-                          onChange={e => setNewAppIos(e.target.value)} className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50" />
-                        <input type="text" placeholder="Nombre en iOS (ej: Liyo)" value={newAppIosName}
-                          onChange={e => setNewAppIosName(e.target.value)} className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50" />
-                        <p className="text-[10px] text-white/30 font-bold uppercase tracking-wider mt-1">Otros datos</p>
-                        <input type="text" placeholder="URL canal Telegram (https://t.me/...)" value={newAppTelegram}
-                          onChange={e => setNewAppTelegram(e.target.value)} className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50" />
-                        <input type="text" placeholder="Código de agencia (ej: G-84Y3AG7HL)" value={newAppAgencyCode}
-                          onChange={e => setNewAppAgencyCode(e.target.value)} className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50" />
-                      </>)}
-                      <button
-                        onClick={async () => {
-                          if (!newAppName.trim()) return
-                          setCatalogSaving(true); setCatalogMsg(null)
-                          const payload: Record<string, unknown> = {
-                            name: newAppName.trim(), display_name: newAppName.trim(),
-                            icon_url: newAppLogo.trim() || null,
-                            color_hex: newAppColorHex || '#8b5cf6',
-                            description_es: newAppDescEs.trim() || null,
-                            description_pt: newAppDescPt.trim() || null,
-                            earnings_info_es: newAppEarningsEs.trim() || null,
-                            earnings_info_pt: newAppEarningsPt.trim() || null,
-                            download_url_android: newAppAndroid.trim() || null,
-                            download_url_ios: newAppIos.trim() || null,
-                            ios_name: newAppIosName.trim() || null,
-                            telegram_channel_url: newAppTelegram.trim() || null,
-                            agency_code: newAppAgencyCode.trim() || null,
-                          }
-                          if (!editingApp) payload.sort_order = catalogFull.length
-                          try {
-                            const url = editingApp ? _apiBase + `/api/apps-catalog/${editingApp}` : _apiBase + '/api/apps-catalog'
-                            const r = await fetch(url, {
-                              method: editingApp ? 'PATCH' : 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify(payload),
-                            })
-                            if (r.ok) {
-                              setCatalogMsg({ ok: true, text: editingApp ? `"${editingApp}" actualizada ✓` : `"${newAppName.trim()}" creada ✓` })
-                              setNewAppName(''); setNewAppLogo(''); setNewAppColorHex('#8b5cf6');
-                              setNewAppDescEs(''); setNewAppDescPt(''); setNewAppEarningsEs(''); setNewAppEarningsPt('');
-                              setNewAppAndroid(''); setNewAppIos(''); setNewAppIosName(''); setNewAppTelegram(''); setNewAppAgencyCode('');
-                              setEditingApp(null); setShowAdvanced(false);
-                              await fetchCatalog()
-                            } else {
-                              const d = await r.json() as {error?:string}
-                              setCatalogMsg({ ok: false, text: d.error ?? 'Error al guardar' })
-                            }
-                          } catch { setCatalogMsg({ ok: false, text: 'Error de red' }) }
-                          finally { setCatalogSaving(false) }
-                        }}
-                        disabled={catalogSaving || !newAppName.trim()}
-                        className="w-full px-4 py-2.5 rounded-xl text-sm font-bold bg-teal-600/20 border border-teal-500/30 text-teal-300 hover:bg-teal-600/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed mt-1"
-                      >
-                        {catalogSaving ? 'Guardando...' : editingApp ? '💾 Guardar cambios' : '+ Agregar App'}
-                      </button>
-                    </div>
-                  </div>
-              </div>
-            </div>
-          )}
 
           {/* Reset History Modal */}
           {showResetModal && (

@@ -29,7 +29,7 @@ import { Router } from 'express'
       if (t.includes('42P01')) throw Object.assign(new Error(t), { code: '42P01' })
       throw new Error(`SB GET ${r.status}: ${t}`)
     }
-    return r.json() as any
+    return r.json()
   }
   async function sbPost(path: string, body: object, prefer = 'return=minimal') {
     const r = await fetch(`${SB}/rest/v1/${path}`, { method: 'POST', headers: h({ Prefer: prefer }), body: JSON.stringify(body) })

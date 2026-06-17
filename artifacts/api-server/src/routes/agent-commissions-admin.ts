@@ -22,10 +22,10 @@ import { Router } from 'express'
   const SB  = process.env.SUPABASE_URL ?? ''
   const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
   function h(ex: Record<string,string> = {}) { return { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json', ...ex } }
-  async function sbGet(path: string): Promise<any> {
+  async function sbGet(path: string): Promise<any[]> {
     const r = await fetch(`${SB}/rest/v1/${path}`, { headers: h() })
     if (!r.ok) throw new Error(`SB GET ${r.status}: ${await r.text()}`)
-    return r.json() as any
+    return r.json()
   }
   async function sbPost(path: string, body: object, prefer = 'return=minimal') {
     const r = await fetch(`${SB}/rest/v1/${path}`, { method: 'POST', headers: h({ Prefer: prefer }), body: JSON.stringify(body) })

@@ -1,5 +1,4 @@
-import webPush from 'web-push';
-  type PushSubscriptionJSON = { endpoint: string; keys: { auth: string; p256dh: string } };
+import webPush, { PushSubscriptionJSON } from 'web-push';
   import { dispatchTelegram, dispatchTelegramAll, dispatchTelegramIndividual } from './telegram-dispatch';
 
   const VAPID_PUBLIC  = process.env.VAPID_PUBLIC_KEY  ?? '';

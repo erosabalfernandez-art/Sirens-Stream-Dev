@@ -160,7 +160,8 @@ import React, { useState, useEffect } from 'react'
       setCommissions([])
       setPublishedComms([])
       setWorkerEntries([])
-      // workersByApp and allWorkerCards are derived (useMemo), reset via underlying state
+      setWorkersByApp(new Map())
+      setAllWorkerCards([])
     }
     window.addEventListener('ea_cierre_done', onCierre)
     return () => window.removeEventListener('ea_cierre_done', onCierre)

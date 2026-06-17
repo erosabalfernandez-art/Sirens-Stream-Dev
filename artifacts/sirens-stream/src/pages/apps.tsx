@@ -648,7 +648,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
           <button onClick={onClose} className="absolute -top-10 right-0 w-9 h-9 rounded-full bg-white/10 border border-white/20 flex items-center justify-center hover:bg-white/20 transition-colors">
             <X className="w-4 h-4 text-white" />
           </button>
-          <ZoomableImage src={images[idx]} alt="" />
+          <ZoomableImage src={images[idx]} alt={title} />
           {images.length > 1 && (
             <div className="flex gap-2">
               {images.map((_, i) => (
@@ -716,25 +716,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
     const [wahaGuide, setWahaGuide] = useState(false);
     const [laylaGuide, setLaylaGuide] = useState(false);
     const [howdyGuide, setHowdyGuide] = useState(false);
-
-    const [extraApps, setExtraApps] = useState<Array<{
-      name: string; icon_url: string | null; color_hex: string;
-      description_es: string | null; description_pt: string | null;
-      earnings_info_es: string | null; earnings_info_pt: string | null;
-      download_url_android: string | null; download_url_ios: string | null;
-      telegram_channel_url: string | null; agency_code: string | null; ios_name: string | null;
-    }>>([]);
-    useEffect(() => {
-      const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '');
-      fetch(`${apiBase}/api/apps-catalog`)
-        .then(r => r.json())
-        .then(data => {
-          if (!data.apps?.length) return;
-          const KNOWN = new Set(['waha', 'layla', 'howdy']);
-          setExtraApps(data.apps.filter((a: { name: string }) => !KNOWN.has(a.name.toLowerCase())));
-        })
-        .catch(() => {});
-    }, []);
 
     return (
       <div className="min-h-screen bg-[#07070f] text-white pt-16">
@@ -1014,85 +995,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
                         </div>
                       </>)}
 
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
-            {/* ── Extra apps from catalog ── */}
-            {extraApps.map((app) => {
-              const isOpen = open === `extra-${app.name}`;
-              const colorHex = app.color_hex ?? '#8b5cf6';
-              const desc = lang === 'pt' ? (app.description_pt ?? app.description_es ?? '') : (app.description_es ?? '');
-              const earnings = lang === 'pt' ? (app.earnings_info_pt ?? app.earnings_info_es ?? '') : (app.earnings_info_es ?? '');
-              return (
-                <div key={app.name} className={`bg-[#0d0d1e] border rounded-2xl overflow-hidden transition-all ${isOpen ? 'border-white/20' : 'border-white/5 hover:border-white/12'}`}>
-                  <button className="w-full flex items-start gap-4 p-6 text-left hover:bg-white/[0.02] transition-colors"
-                    onClick={() => setOpen(isOpen ? null : `extra-${app.name}`)}>
-                    <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 shadow-md flex items-center justify-center"
-                      style={{ backgroundColor: colorHex + '22', border: `2px solid ${colorHex}44` }}>
-                      {app.icon_url
-                        ? <img src={app.icon_url} alt={app.name} className="w-full h-full object-cover" />
-                        : <span className="text-3xl font-black" style={{ color: colorHex }}>{app.name[0]}</span>
-                      }
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 flex-wrap mb-1">
-                        <h2 className="font-extrabold text-xl">{app.name}</h2>
-                        <span className="text-xs font-bold px-2.5 py-1 rounded-full border"
-                          style={{ color: colorHex, borderColor: colorHex + '55', backgroundColor: colorHex + '18' }}>
-                          {lang === 'pt' ? 'Nova Plataforma' : 'Nueva Plataforma'}
-                        </span>
-                      </div>
-                      <p className="text-white/25 text-xs mt-1.5 line-clamp-2">{desc}</p>
-                    </div>
-                    <div className="shrink-0 mt-1 text-white/30">
-                      {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                    </div>
-                  </button>
-                  {isOpen && (
-                    <div className="border-t border-white/5 p-6 space-y-6">
-                      <div className="flex flex-wrap gap-3">
-                        {app.download_url_android && (
-                          <a href={app.download_url_android} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center gap-2 bg-green-600/15 border border-green-500/30 text-green-300 font-bold px-4 py-2.5 rounded-xl text-sm">
-                            <Smartphone className="w-4 h-4" /> Android
-                          </a>
-                        )}
-                        {app.download_url_ios && (
-                          <a href={app.download_url_ios} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center gap-2 bg-sky-600/15 border border-sky-500/30 text-sky-300 font-bold px-4 py-2.5 rounded-xl text-sm">
-                            <Smartphone className="w-4 h-4" /> {app.ios_name ? `iOS (${app.ios_name})` : 'iOS'}
-                          </a>
-                        )}
-                        {app.telegram_channel_url && (
-                          <a href={app.telegram_channel_url} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center gap-2 bg-[#2CA5E0]/15 border border-[#2CA5E0]/30 text-[#2CA5E0] font-bold px-4 py-2.5 rounded-xl text-sm">
-                            <Send className="w-4 h-4" /> Canal de Telegram
-                          </a>
-                        )}
-                        <a href={`https://wa.me/5595984381686?text=Hola%2C+necesito+ayuda+con+${app.name}`}
-                          target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-2 bg-white/6 border border-white/12 text-white/80 font-bold px-4 py-2.5 rounded-xl text-sm">
-                          <MessageCircle className="w-4 h-4" /> {lang === 'pt' ? 'Contatar Tutora' : 'Contactar Tutora'}
-                        </a>
-                      </div>
-                      {desc && <p className="text-white/55 text-sm leading-relaxed">{desc}</p>}
-                      {app.agency_code && <CodeCopy code={app.agency_code} />}
-                      {earnings && (
-                        <div>
-                          <SectionTitle>{lang === 'pt' ? 'Informações de Ganhos' : 'Información de Ganancias'}</SectionTitle>
-                          <div className="bg-[#0a0a14] border border-white/5 rounded-xl p-4 space-y-1">
-                            {earnings.split('|').map((item: string, idx: number) => (
-                              <p key={idx} className="text-white/65 text-sm leading-relaxed flex gap-2">
-                                <span className="shrink-0" style={{ color: colorHex }}>▸</span>
-                                <span>{item.trim()}</span>
-                              </p>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>

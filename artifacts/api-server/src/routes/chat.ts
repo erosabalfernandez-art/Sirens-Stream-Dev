@@ -2,7 +2,7 @@ import { Router } from "express";
 
 const router = Router();
 
-const SYSTEM_ES_FALLBACK = `Eres Ángela, la asistente virtual de Eclipse Angels Agency. Eres amigable, entusiasta, honesta y muy informada. Respondes SIEMPRE en español.
+const SYSTEM_ES = `Eres Ángela, la asistente virtual de Eclipse Angels Agency. Eres amigable, entusiasta, honesta y muy informada. Respondes SIEMPRE en español.
 
 SOBRE ECLIPSE ANGELS AGENCY:
 Eclipse Angels Agency conecta mujeres (+18) con plataformas internacionales de videochat y mensajería para ganar dólares desde el celular, sin inversión y sin experiencia previa. Los hombres pueden unirse como reclutadores o en algunas apps.
@@ -49,7 +49,7 @@ REDES Y CONTACTO:
 
 INSTRUCCIONES: Responde SIEMPRE en español, tono amigable, máximo 5 oraciones salvo que pidan detalle. NUNCA inventes datos. Si no sabes algo con certeza, invita a contactar por WhatsApp.`;
 
-const SYSTEM_PT_FALLBACK = `Você é Ângela, a assistente virtual da Eclipse Angels Agency. Você é amigável, entusiasta, honesta e muito bem informada. Responde SEMPRE em português do Brasil.
+const SYSTEM_PT = `Você é Ângela, a assistente virtual da Eclipse Angels Agency. Você é amigável, entusiasta, honesta e muito bem informada. Responde SEMPRE em português do Brasil.
 
 SOBRE ECLIPSE ANGELS AGENCY:
 A Eclipse Angels Agency conecta mulheres (+18) com plataformas internacionais de videochat e mensagens para ganhar dólares pelo celular, sem investimento e sem experiência prévia. Os homens podem participar como recrutadores ou em alguns apps.
@@ -96,49 +96,7 @@ REDES E CONTATO:
 
 INSTRUÇÕES: Responda SEMPRE em português do Brasil, tom amigável, máximo 5 frases salvo pedido de detalhes. NUNCA invente dados. Se não souber algo com certeza, convide a entrar em contato pelo WhatsApp.`;
 
-
-  async function buildSystemPrompts(): Promise<{ es: string; pt: string }> {
-    try {
-      const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
-      const hdr = { apikey: key, Authorization: `Bearer ${key}` };
-      const r = await fetch(
-        `${process.env.SUPABASE_URL}/rest/v1/apps_catalog?is_active=eq.true&select=name,display_name,ios_name,description_es,description_pt,earnings_info_es,earnings_info_pt,download_url_android,download_url_ios,telegram_channel_url,agency_code&order=sort_order.asc`,
-        { headers: hdr }
-      );
-      if (!r.ok) return { es: SYSTEM_ES_FALLBACK, pt: SYSTEM_PT_FALLBACK };
-      const apps: Array<{
-        name: string; display_name: string; ios_name: string | null;
-        description_es: string | null; description_pt: string | null;
-        earnings_info_es: string | null; earnings_info_pt: string | null;
-        download_url_android: string | null; download_url_ios: string | null;
-        telegram_channel_url: string | null; agency_code: string | null;
-      }> = await r.json();
-      if (!apps.length) return { es: SYSTEM_ES_FALLBACK, pt: SYSTEM_PT_FALLBACK };
-      const appsEs = apps.map((app, i) =>
-        `APP ${i+1} — ${app.name.toUpperCase()}${app.ios_name ? ` (en iOS: ${app.ios_name})` : ''}:\n` +
-        (app.description_es ?? '') + '\n' +
-        `GANANCIAS: ${app.earnings_info_es ?? 'Consultar con el equipo'}\n` +
-        (app.agency_code ? `CÓDIGO AGENCIA (obligatorio): ${app.agency_code}\n` : '') +
-        (app.download_url_android ? `Android: ${app.download_url_android}` : '') +
-        (app.download_url_ios ? ` | iOS: ${app.download_url_ios}` : '') +
-        (app.telegram_channel_url ? `\nTelegram: ${app.telegram_channel_url}` : '')
-      ).join('\n\n');
-      const appsPt = apps.map((app, i) =>
-        `APP ${i+1} — ${app.name.toUpperCase()}${app.ios_name ? ` (no iOS: ${app.ios_name})` : ''}:\n` +
-        (app.description_pt ?? app.description_es ?? '') + '\n' +
-        `GANHOS: ${app.earnings_info_pt ?? app.earnings_info_es ?? 'Consultar com a equipe'}\n` +
-        (app.agency_code ? `CÓDIGO DE AGÊNCIA (obrigatório): ${app.agency_code}\n` : '') +
-        (app.download_url_android ? `Android: ${app.download_url_android}` : '') +
-        (app.download_url_ios ? ` | iOS: ${app.download_url_ios}` : '') +
-        (app.telegram_channel_url ? `\nTelegram: ${app.telegram_channel_url}` : '')
-      ).join('\n\n');
-      const es = `Eres Ángela, la asistente virtual de Eclipse Angels Agency. Eres amigable, entusiasta, honesta y muy informada. Respondes SIEMPRE en español.\n\nSOBRE ECLIPSE ANGELS AGENCY:\nEclipse Angels Agency conecta mujeres (+18) con plataformas internacionales de videochat y mensajería para ganar dólares desde el celular, sin inversión y sin experiencia previa. Los hombres pueden unirse como reclutadores o en algunas apps.\n\n${appsEs}\n\nGANANCIAS GENERALES: $10–$50/día, $100–$500/semana, $1,000–$2,000/mes con dedicación. Sin inversión.\nPAGOS: Binance (USDT/BTC, todos los países), Pix (solo Brasil), efectivo o transferencia bancaria (Cuba). Todos en dólares USD.\nREQUISITOS: mujer mayor de 18 años, smartphone con buena cámara, WiFi estable, 4–5 horas disponibles/día.\nSEGURIDAD: no es obligatorio mostrar cara real, nunca se pide dinero para empezar.\nREDES: WhatsApp https://wa.me/5595984381686 | Instagram https://www.instagram.com/eclipse_angels1 | Email eclipseangelsagency@gmail.com\nINSTRUCCIONES: Responde SIEMPRE en español, tono amigable, máximo 5 oraciones salvo que pidan detalle. NUNCA inventes datos.`;
-      const pt = `Você é Ângela, a assistente virtual da Eclipse Angels Agency. Você é amigável, entusiasta, honesta e muito bem informada. Responde SEMPRE em português do Brasil.\n\n${appsPt}\n\nGANHOS GERAIS: $10–$50/dia, $100–$500/semana, $1.000–$2.000/mês com dedicação. Sem investimento.\nPAGAMENTOS: Binance (USDT/BTC), Pix (Brasil), dinheiro ou transferência bancária (Cuba). Em dólares USD.\nCONTATO: WhatsApp https://wa.me/5595984381686 | Email eclipseangelsagency@gmail.com\nINSTRUÇÕES: Responda SEMPRE em português do Brasil, tom amigável, máximo 5 frases. NUNCA invente dados.`;
-      return { es, pt };
-    } catch { return { es: SYSTEM_ES_FALLBACK, pt: SYSTEM_PT_FALLBACK }; }
-  }
-
-  router.post("/chat", async (req, res) => {
+router.post("/chat", async (req, res) => {
   const body = req.body as { message?: string; history?: Array<{ role: string; content: string }>; lang?: string };
 
   if (!body?.message || typeof body.message !== "string") {
@@ -153,8 +111,7 @@ INSTRUÇÕES: Responda SEMPRE em português do Brasil, tom amigável, máximo 5 
   }
 
   const { message, history = [], lang = "es" } = body;
-  const prompts = await buildSystemPrompts();
-  const systemPrompt = lang === "pt" ? prompts.pt : prompts.es;
+  const systemPrompt = lang === "pt" ? SYSTEM_PT : SYSTEM_ES;
 
   const conversationMessages = [
     { role: "system", content: systemPrompt },
