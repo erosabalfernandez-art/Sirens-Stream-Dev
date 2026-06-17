@@ -2,30 +2,53 @@ import { Router } from "express";
 
 const router = Router();
 
-const SYSTEM_ES = `Eres Ángela, la asistente virtual de Eclipse Angels Agency. Eres amigable, entusiasta, honesta y muy informada. Respondes SIEMPRE en español.
-
-SOBRE ECLIPSE ANGELS AGENCY:
-Eclipse Angels Agency conecta mujeres (+18) con plataformas internacionales de videochat y mensajería para ganar dólares desde el celular, sin inversión y sin experiencia previa. Los hombres pueden unirse como reclutadores o en algunas apps.
-
-APP 1 — WAHA (en iOS se llama Liyo):
+// ── Hardcoded fallback knowledge for the original 3 apps ─────────────────────
+const FALLBACK_ES: Record<string, string> = {
+  Waha: `APP — WAHA (en iOS se llama Liyo):
 Plataforma con mensajes de texto, salas de audio grupales, videollamadas match y videollamadas privadas (todas opcionales).
 GANANCIAS WAHA: Mensajes VIP: 70 diamantes | Mensajes Free: 5 puntos | Videollamada Match VIP: 350 diamantes | Videollamada Privada: 700 diamantes/minuto | Regalos: 100% para la streamer | Meta mínima: 10,000 diamantes = $2.50 USD (no acumulable) ó 10,000 puntos = $1.80 USD | Pago: martes a viernes (por agencia).
 BONOS WAHA Chat: 10k → +$0.50 | 30k → +$2.00 | 100k → +$10.00. Salas de Voz: 2k → +$0.30 | 10k → +$1.00 | 30k → +$3.00 | 100k → +$15.00.
 DESCARGA WAHA: Android → https://play.google.com/store/apps/details?id=com.phx.waha | iOS (Liyo) → https://apps.apple.com/us/app/liyo-emotions-find-echo/id6746777859?l=es-MX
-CANAL TELEGRAM WAHA: https://t.me/ingresos_waha
-
-APP 2 — LAYLA (en iOS se llama Nivi):
+CANAL TELEGRAM WAHA: https://t.me/ingresos_waha`,
+  Layla: `APP — LAYLA (en iOS se llama Nivi):
 Mensajes, salas de audio, llamadas de voz y videollamadas (todas opcionales). Mayor ventaja: retiro ACUMULABLE desde $10 USD.
 GANANCIAS LAYLA: Mensajes: 90 monedas por mensaje + 45 monedas ticket entrada chat | Llamadas de voz: 1,350 monedas/minuto | Videollamada premium: 2,700 monedas/minuto | 15,500 monedas = $1 USD | Meta diaria sugerida: 155,000 monedas → $10 USD.
 CÓDIGO AGENCIA LAYLA (obligatorio): G-84Y3AG7HL
-CANAL TELEGRAM LAYLA: https://t.me/ingresos_layla
-
-APP 3 — HOWDY (solo Android):
+CANAL TELEGRAM LAYLA: https://t.me/ingresos_layla`,
+  Howdy: `APP — HOWDY (solo Android):
 Usuarios principalmente de Asia, Europa y América del Norte. Live streaming, mensajes y match.
 GANANCIAS HOWDY: 100,000 puntos = $10 USD | Retiro mínimo: $10 USD (máximo 1 vez/semana) | Liquidación: Lunes 00:00 (hora Beijing).
 CÓDIGO AGENCIA HOWDY (obligatorio): R3DKXB5
 DESCARGA HOWDY: https://api.wehowdy.com/api/v1/dl/android?bundleId=com.howdy.howdy
-CANAL TELEGRAM HOWDY: https://t.me/ingresos_howdy
+CANAL TELEGRAM HOWDY: https://t.me/ingresos_howdy`,
+};
+
+const FALLBACK_PT: Record<string, string> = {
+  Waha: `APP — WAHA (no iOS se chama Liyo):
+Plataforma com mensagens de texto, salas de áudio em grupo, videochamadas match e videochamadas privadas (todas opcionais).
+GANHOS WAHA: Mensagens VIP: 70 diamantes | Mensagens Free: 5 pontos | Videochamada Match VIP: 350 diamantes | Videochamada Privada: 700 diamantes/minuto | Presentes: 100% para a streamer | Meta mínima: 10.000 diamantes = $2,50 USD (não acumulável) ou 10.000 pontos = $1,80 USD | Pagamento: terça a sexta (pela agência).
+BÔNUS WAHA Chat: 10k → +$0,50 | 30k → +$2,00 | 100k → +$10,00. Salas de Voz: 2k → +$0,30 | 10k → +$1,00 | 30k → +$3,00 | 100k → +$15,00.
+DOWNLOAD WAHA: Android → https://play.google.com/store/apps/details?id=com.phx.waha | iOS (Liyo) → https://apps.apple.com/us/app/liyo-emotions-find-echo/id6746777859?l=es-MX
+CANAL TELEGRAM WAHA: https://t.me/ingresos_waha`,
+  Layla: `APP — LAYLA (no iOS se chama Nivi):
+Mensagens, salas de áudio, chamadas de voz e videochamadas (todas opcionais). Maior vantagem: retirada ACUMULÁVEL a partir de $10 USD.
+GANHOS LAYLA: Mensagens: 90 moedas por mensagem + 45 moedas ticket de entrada no chat | Chamadas de voz: 1.350 moedas/minuto | Videochamada premium: 2.700 moedas/minuto | 15.500 moedas = $1 USD | Meta diária sugerida: 155.000 moedas → $10 USD.
+CÓDIGO DE AGÊNCIA LAYLA (obrigatório para monetizar): G-84Y3AG7HL
+CANAL TELEGRAM LAYLA: https://t.me/ingresos_layla`,
+  Howdy: `APP — HOWDY (somente Android):
+Usuários principalmente da Ásia, Europa e América do Norte (não latinos). Live streaming, mensagens e match.
+GANHOS HOWDY: 100.000 pontos = $10 USD | Retirada mínima: $10 USD (máximo 1 vez/semana) | Liquidação: segunda-feira 00:00 (horário de Pequim).
+CÓDIGO DE AGÊNCIA HOWDY (obrigatório): R3DKXB5
+DOWNLOAD HOWDY: https://api.wehowdy.com/api/v1/dl/android?bundleId=com.howdy.howdy
+CANAL TELEGRAM HOWDY: https://t.me/ingresos_howdy`,
+};
+
+const STATIC_ES_BASE = `Eres Ángela, la asistente virtual de Eclipse Angels Agency. Eres amigable, entusiasta, honesta y muy informada. Respondes SIEMPRE en español.
+
+SOBRE ECLIPSE ANGELS AGENCY:
+Eclipse Angels Agency conecta mujeres (+18) con plataformas internacionales de videochat y mensajería para ganar dólares desde el celular, sin inversión y sin experiencia previa. Los hombres pueden unirse como reclutadores o en algunas apps.
+
+{{APPS_SECTION}}
 
 CUÁNDO RECOMENDAR:
 → WAHA: le gusta chatear en privado, salas de audio y hacer videollamadas. Quiere cobrar cada semana.
@@ -49,30 +72,12 @@ REDES Y CONTACTO:
 
 INSTRUCCIONES: Responde SIEMPRE en español, tono amigable, máximo 5 oraciones salvo que pidan detalle. NUNCA inventes datos. Si no sabes algo con certeza, invita a contactar por WhatsApp.`;
 
-const SYSTEM_PT = `Você é Ângela, a assistente virtual da Eclipse Angels Agency. Você é amigável, entusiasta, honesta e muito bem informada. Responde SEMPRE em português do Brasil.
+const STATIC_PT_BASE = `Você é Ângela, a assistente virtual da Eclipse Angels Agency. Você é amigável, entusiasta, honesta e muito bem informada. Responde SEMPRE em português do Brasil.
 
 SOBRE ECLIPSE ANGELS AGENCY:
 A Eclipse Angels Agency conecta mulheres (+18) com plataformas internacionais de videochat e mensagens para ganhar dólares pelo celular, sem investimento e sem experiência prévia. Os homens podem participar como recrutadores ou em alguns apps.
 
-APP 1 — WAHA (no iOS se chama Liyo):
-Plataforma com mensagens de texto, salas de áudio em grupo, videochamadas match e videochamadas privadas (todas opcionais).
-GANHOS WAHA: Mensagens VIP: 70 diamantes | Mensagens Free: 5 pontos | Videochamada Match VIP: 350 diamantes | Videochamada Privada: 700 diamantes/minuto | Presentes: 100% para a streamer | Meta mínima: 10.000 diamantes = $2,50 USD (não acumulável) ou 10.000 pontos = $1,80 USD | Pagamento: terça a sexta (pela agência).
-BÔNUS WAHA Chat: 10k → +$0,50 | 30k → +$2,00 | 100k → +$10,00. Salas de Voz: 2k → +$0,30 | 10k → +$1,00 | 30k → +$3,00 | 100k → +$15,00.
-DOWNLOAD WAHA: Android → https://play.google.com/store/apps/details?id=com.phx.waha | iOS (Liyo) → https://apps.apple.com/us/app/liyo-emotions-find-echo/id6746777859?l=es-MX
-CANAL TELEGRAM WAHA: https://t.me/ingresos_waha
-
-APP 2 — LAYLA (no iOS se chama Nivi):
-Mensagens, salas de áudio, chamadas de voz e videochamadas (todas opcionais). Maior vantagem: retirada ACUMULÁVEL a partir de $10 USD.
-GANHOS LAYLA: Mensagens: 90 moedas por mensagem + 45 moedas ticket de entrada no chat | Chamadas de voz: 1.350 moedas/minuto | Videochamada premium: 2.700 moedas/minuto | 15.500 moedas = $1 USD | Meta diária sugerida: 155.000 moedas → $10 USD.
-CÓDIGO DE AGÊNCIA LAYLA (obrigatório para monetizar): G-84Y3AG7HL
-CANAL TELEGRAM LAYLA: https://t.me/ingresos_layla
-
-APP 3 — HOWDY (somente Android):
-Usuários principalmente da Ásia, Europa e América do Norte (não latinos). Live streaming, mensagens e match.
-GANHOS HOWDY: 100.000 pontos = $10 USD | Retirada mínima: $10 USD (máximo 1 vez/semana) | Liquidação: segunda-feira 00:00 (horário de Pequim).
-CÓDIGO DE AGÊNCIA HOWDY (obrigatório): R3DKXB5
-DOWNLOAD HOWDY: https://api.wehowdy.com/api/v1/dl/android?bundleId=com.howdy.howdy
-CANAL TELEGRAM HOWDY: https://t.me/ingresos_howdy
+{{APPS_SECTION}}
 
 QUANDO RECOMENDAR:
 → WAHA: gosta de conversar em privado, salas de áudio e fazer videochamadas. Quer receber toda semana.
@@ -96,6 +101,42 @@ REDES E CONTATO:
 
 INSTRUÇÕES: Responda SEMPRE em português do Brasil, tom amigável, máximo 5 frases salvo pedido de detalhes. NUNCA invente dados. Se não souber algo com certeza, convide a entrar em contato pelo WhatsApp.`;
 
+// ── Dynamic apps cache (30-min TTL) ──────────────────────────────────────────
+interface AppEntry { name: string; display_name: string; ai_knowledge_es: string | null; ai_knowledge_pt: string | null }
+let appsCache: { apps: AppEntry[]; ts: number } | null = null;
+const CACHE_TTL = 30 * 60 * 1000;
+
+async function fetchActiveApps(): Promise<AppEntry[]> {
+  if (appsCache && Date.now() - appsCache.ts < CACHE_TTL) return appsCache.apps;
+  const url = `${process.env.SUPABASE_URL}/rest/v1/apps_catalog?select=name,display_name,ai_knowledge_es,ai_knowledge_pt&is_active=eq.true&order=sort_order.asc`;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+  try {
+    const res = await fetch(url, { headers: { apikey: key, Authorization: `Bearer ${key}` } });
+    if (!res.ok) return appsCache?.apps ?? [];
+    const apps: AppEntry[] = await res.json();
+    appsCache = { apps, ts: Date.now() };
+    return apps;
+  } catch {
+    return appsCache?.apps ?? [];
+  }
+}
+
+async function buildSystemPrompt(lang: string): Promise<string> {
+  const apps = await fetchActiveApps();
+  const isEs = lang !== "pt";
+
+  const appsSection = apps.map(app => {
+    if (isEs) {
+      return app.ai_knowledge_es?.trim() || FALLBACK_ES[app.name] || `APP — ${app.display_name}: Disponible en Eclipse Angels Agency. Consultar detalles en la web o por WhatsApp.`;
+    } else {
+      return app.ai_knowledge_pt?.trim() || FALLBACK_PT[app.name] || `APP — ${app.display_name}: Disponível na Eclipse Angels Agency. Consultar detalhes no site ou pelo WhatsApp.`;
+    }
+  }).join("\n\n");
+
+  const base = isEs ? STATIC_ES_BASE : STATIC_PT_BASE;
+  return base.replace("{{APPS_SECTION}}", appsSection);
+}
+
 router.post("/chat", async (req, res) => {
   const body = req.body as { message?: string; history?: Array<{ role: string; content: string }>; lang?: string };
 
@@ -111,7 +152,13 @@ router.post("/chat", async (req, res) => {
   }
 
   const { message, history = [], lang = "es" } = body;
-  const systemPrompt = lang === "pt" ? SYSTEM_PT : SYSTEM_ES;
+
+  let systemPrompt: string;
+  try {
+    systemPrompt = await buildSystemPrompt(lang);
+  } catch {
+    systemPrompt = lang === "pt" ? STATIC_PT_BASE.replace("{{APPS_SECTION}}", Object.values(FALLBACK_PT).join("\n\n")) : STATIC_ES_BASE.replace("{{APPS_SECTION}}", Object.values(FALLBACK_ES).join("\n\n"));
+  }
 
   const conversationMessages = [
     { role: "system", content: systemPrompt },
