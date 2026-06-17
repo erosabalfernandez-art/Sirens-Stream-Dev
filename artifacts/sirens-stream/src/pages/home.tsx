@@ -149,7 +149,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
       }, [])
       // Override slide 3 with dynamic app names when catalog is loaded
       const dynamicSlides = catalogApps.length > 0
-        ? dynamicSlides.map(s =>
+        ? slides.map(s =>
             s.bg === '/images/slide-bg-3.png'
               ? {
                   ...s,
