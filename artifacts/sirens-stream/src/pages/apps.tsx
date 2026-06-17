@@ -708,6 +708,63 @@ import { useLanguage } from "@/contexts/LanguageContext";
     return <h3 className="text-xs font-bold uppercase tracking-widest text-blue-400/70 mb-3">{children}</h3>;
   }
 
+  /* ── Dynamic Guide Modal (for DB-configured apps) ── */
+  function DynamicGuideModal({ app, onClose }: { app: any; onClose: () => void }) {
+    const { lang } = useLanguage();
+    const steps: {step:number;title:string;text:string;image_url?:string}[] = app.guide_steps ?? [];
+    return (
+      <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-black/85 backdrop-blur-sm" onClick={onClose}>
+        <div className="w-full md:max-w-lg max-h-[92vh] bg-[#0d0d1e] border border-blue-500/20 md:rounded-2xl rounded-t-2xl flex flex-col shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-white/8 shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl overflow-hidden shrink-0 flex items-center justify-center text-white font-black text-sm" style={{background:app.color_hex||'#3b3b5c'}}>
+                {app.icon_url ? <img src={app.icon_url} alt={app.display_name} className="w-full h-full object-cover" /> : app.display_name?.[0]}
+              </div>
+              <div>
+                <p className="font-extrabold text-white text-sm">{lang==='pt'?'Guia de Instalação':'Guía de Instalación'}: {app.display_name}</p>
+                <p className="text-white/30 text-xs">{steps.length} {lang==='pt'?'passos':'pasos'}</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"><X className="w-4 h-4" /></button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-5 space-y-3">
+            {steps.length === 0 ? (
+              <div className="text-center py-8 text-white/30 text-sm">{lang==='pt'?'Guia não configurado ainda.':'Guía no configurada aún. Configúrala desde el panel Admin.'}</div>
+            ) : steps.map((step, i) => (
+              <div key={i} className="bg-[#0a0a14] border border-white/5 rounded-xl p-4">
+                <div className="flex gap-3">
+                  <span className="text-blue-400 font-extrabold text-sm shrink-0 w-6">{String(step.step).padStart(2,'0')}</span>
+                  <div className="flex-1">
+                    <p className="font-bold text-white text-sm">{step.title}</p>
+                    {step.text && <p className="text-white/45 text-xs leading-relaxed mt-1">{step.text}</p>}
+                    {app.agency_code && (step.title?.toLowerCase().includes('código') || step.text?.toLowerCase().includes('código')) && (
+                      <div className="mt-2 font-mono text-sm bg-blue-500/10 border border-blue-500/25 rounded-lg px-3 py-2 text-blue-300 font-bold tracking-widest">{app.agency_code}</div>
+                    )}
+                    {step.image_url && <img src={step.image_url} alt={`Paso ${step.step}`} className="mt-3 w-full rounded-xl object-cover max-h-52 border border-white/5" />}
+                  </div>
+                </div>
+              </div>
+            ))}
+            {app.agency_code && !steps.some((s:any) => s.title?.toLowerCase().includes('código') || s.text?.toLowerCase().includes('código')) && (
+              <div className="bg-blue-500/10 border border-blue-500/25 rounded-xl p-4">
+                <p className="text-xs font-bold text-blue-300 mb-2">🔑 {lang==='pt'?'Código da Agência':'Código de Agencia'}</p>
+                <p className="font-mono text-lg text-blue-300 font-extrabold tracking-widest text-center">{app.agency_code}</p>
+              </div>
+            )}
+          </div>
+          {app.guide_whatsapp && (
+            <div className="px-5 py-4 border-t border-white/8 shrink-0">
+              <a href={app.guide_whatsapp} target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-500 text-white font-bold px-5 py-3 rounded-xl text-sm transition-all">
+                <MessageCircle className="w-4 h-4" /> {lang==='pt'?'Enviar captura de tela':'Enviar captura de pantalla'}
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   /* ── Main component ── */
   export default function Apps() {
     const { lang } = useLanguage();
@@ -716,13 +773,29 @@ import { useLanguage } from "@/contexts/LanguageContext";
     const [wahaGuide, setWahaGuide] = useState(false);
     const [laylaGuide, setLaylaGuide] = useState(false);
     const [howdyGuide, setHowdyGuide] = useState(false);
+    const [dynamicApps, setDynamicApps] = useState<any[]>([]);
+    const [dynGuide, setDynGuide] = useState<any | null>(null);
+
+    useEffect(() => {
+      const apiBase = ((window as any).__EA_API_BASE__ || '').replace(/\/$/, '');
+      fetch(`${apiBase}/api/apps-catalog`)
+        .then(r => r.ok ? r.json() : null)
+        .then((d: any) => {
+          if (d?.apps) {
+            const hardcoded = new Set(['waha','layla','howdy']);
+            setDynamicApps(d.apps.filter((a: any) => a.is_active && !hardcoded.has(a.name.toLowerCase())));
+          }
+        })
+        .catch(() => {});
+    }, []);
 
     return (
       <div className="min-h-screen bg-[#07070f] text-white pt-16">
         {guideModal && <GuideModal images={guideModal} onClose={() => setGuideModal(null)} />}
         {wahaGuide && <WahaGuideModal onClose={() => setWahaGuide(false)} />}
-      {laylaGuide && <LaylaGuideModal onClose={() => setLaylaGuide(false)} />}
-      {howdyGuide && <HowdyGuideModal onClose={() => setHowdyGuide(false)} />}
+        {laylaGuide && <LaylaGuideModal onClose={() => setLaylaGuide(false)} />}
+        {howdyGuide && <HowdyGuideModal onClose={() => setHowdyGuide(false)} />}
+        {dynGuide && <DynamicGuideModal app={dynGuide} onClose={() => setDynGuide(null)} />}
 
         {/* Header */}
         <section className="relative py-16 overflow-hidden">
@@ -995,6 +1068,99 @@ import { useLanguage } from "@/contexts/LanguageContext";
                         </div>
                       </>)}
 
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* ── Dynamic apps from DB ── */}
+            {dynamicApps.map(app => {
+              const isOpen = open === app.name;
+              const badgeColorCls = app.badge_color==='red'?'bg-red-500/15 text-red-300 border-red-500/30':app.badge_color==='purple'?'bg-purple-500/15 text-purple-300 border-purple-500/30':app.badge_color==='yellow'?'bg-yellow-500/15 text-yellow-300 border-yellow-500/30':app.badge_color==='green'?'bg-green-500/15 text-green-300 border-green-500/30':app.badge_color==='blue'?'bg-blue-500/15 text-blue-300 border-blue-500/30':app.badge_color==='orange'?'bg-orange-500/15 text-orange-300 border-orange-500/30':'bg-pink-500/15 text-pink-300 border-pink-500/30';
+              return (
+                <div key={app.name} className={`bg-[#0d0d1e] border rounded-2xl overflow-hidden transition-all ${isOpen ? 'border-blue-500/30 shadow-lg' : 'border-blue-500/10'}`}>
+                  <button className="w-full flex items-start gap-4 p-6 text-left hover:bg-white/[0.02] transition-colors" onClick={() => setOpen(isOpen ? null : app.name)}>
+                    <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 shadow-md flex items-center justify-center font-black text-2xl text-white" style={{background:app.color_hex||'#3b3b5c'}}>
+                      {app.icon_url ? <img src={app.icon_url} alt={app.display_name} className="w-full h-full object-cover" /> : app.display_name?.[0]}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 flex-wrap mb-1">
+                        <h2 className="font-extrabold text-xl">{app.display_name}</h2>
+                        {app.badge_label && <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${badgeColorCls}`}>{app.badge_label}</span>}
+                        {app.payment_min_usd && <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-400 whitespace-nowrap">Meta mín. ${app.payment_min_usd} USD</span>}
+                      </div>
+                      {app.tagline && <p className="text-white/45 text-sm">{app.tagline}</p>}
+                      {(lang==='pt' ? app.description_pt : app.description_es) && <p className="text-white/25 text-xs mt-1.5 line-clamp-2">{lang==='pt' ? app.description_pt : app.description_es}</p>}
+                    </div>
+                    <div className="shrink-0 mt-1 text-white/30">{isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}</div>
+                  </button>
+                  {isOpen && (
+                    <div className="border-t border-white/5 p-6 space-y-7">
+                      <div className="flex flex-wrap gap-3">
+                        <button onClick={() => setDynGuide(app)}
+                          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                          <BookOpen className="w-4 h-4" /> {lang==='pt'?'Guia de Instalação':'Guía de Instalación'}
+                        </button>
+                        {app.telegram_channel_url && (
+                          <a href={app.telegram_channel_url} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-2 bg-[#2CA5E0]/15 border border-[#2CA5E0]/30 text-[#2CA5E0] font-bold px-5 py-2.5 rounded-xl text-sm hover:bg-[#2CA5E0]/25 transition-colors">
+                            <Send className="w-4 h-4" /> Canal de Telegram
+                          </a>
+                        )}
+                        {app.download_url_android && (
+                          <a href={app.download_url_android} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-2 bg-green-600/15 border border-green-500/30 text-green-400 font-bold px-5 py-2.5 rounded-xl text-sm hover:bg-green-600/25 transition-colors">
+                            Android
+                          </a>
+                        )}
+                        {app.download_url_ios && (
+                          <a href={app.download_url_ios} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-2 bg-blue-600/15 border border-blue-500/30 text-blue-400 font-bold px-5 py-2.5 rounded-xl text-sm hover:bg-blue-600/25 transition-colors">
+                            iOS
+                          </a>
+                        )}
+                      </div>
+                      {(lang==='pt' ? app.description_pt : app.description_es) && <p className="text-white/55 text-sm leading-relaxed">{lang==='pt' ? app.description_pt : app.description_es}</p>}
+                      {app.specs && app.specs.length > 0 && (
+                        <div>
+                          <SectionTitle>{lang==='pt'?'Informações Gerais':'Información General'}</SectionTitle>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            {app.specs.map((s: any, i: number) => (
+                              <div key={i} className="bg-[#0a0a14] border border-white/5 rounded-xl px-4 py-3">
+                                <p className="text-white/30 text-xs mb-1">{s.label}</p>
+                                <p className="font-semibold text-sm text-white/85">{s.value}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {app.requisitos && app.requisitos.length > 0 && (
+                        <div>
+                          <SectionTitle>{lang==='pt'?'Requisitos Essenciais':'Requisitos Esenciales'}</SectionTitle>
+                          <div className="flex flex-wrap gap-2">
+                            {app.requisitos.map((r: string, i: number) => (
+                              <span key={i} className="flex items-center gap-1.5 bg-white/4 border border-white/8 rounded-full px-3 py-1.5 text-xs text-white/60">
+                                <CheckCircle2 className="w-3 h-3 text-blue-400 shrink-0" />{r}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {(lang==='pt' ? app.earnings_info_pt : app.earnings_info_es) && (
+                        <div>
+                          <SectionTitle>{lang==='pt'?'Ganhos':'Ganancias'}</SectionTitle>
+                          <div className="bg-[#0a0a14] border border-white/5 rounded-xl px-4 py-4">
+                            <pre className="text-white/60 text-sm whitespace-pre-wrap leading-relaxed font-mono">{lang==='pt' ? app.earnings_info_pt : app.earnings_info_es}</pre>
+                          </div>
+                        </div>
+                      )}
+                      {app.agency_code && (
+                        <div>
+                          <SectionTitle>🔑 {lang==='pt'?'Código da Agência':'Código de Agencia'}</SectionTitle>
+                          <div className="font-mono text-xl text-blue-300 font-extrabold tracking-widest bg-blue-500/10 border border-blue-500/25 rounded-xl px-5 py-4 text-center">{app.agency_code}</div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

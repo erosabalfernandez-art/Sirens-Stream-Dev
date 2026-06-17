@@ -99,6 +99,9 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
   }, [])
 
   // Apps catalog management state
+  interface ManualField { key: string; label: string; type: 'number' | 'text'; is_usd_base?: boolean; is_commission_base?: boolean }
+  interface AppSpec { label: string; value: string }
+  interface GuideStep { step: number; title: string; text: string; image_url?: string }
   interface AppCatalogEntry {
     id: string; name: string; display_name: string; ios_name: string | null;
     description_es: string | null; description_pt: string | null;
@@ -107,13 +110,44 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
     icon_url: string | null; download_url_android: string | null;
     download_url_ios: string | null; telegram_channel_url: string | null;
     agency_code: string | null; is_active: boolean; sort_order: number;
+    tagline: string | null; badge_label: string | null; badge_color: string | null;
+    specs: AppSpec[] | null; requisitos: string[] | null;
+    nomina_type: 'upload' | 'manual' | null;
+    nomina_col_uid: string | null; nomina_col_usd: string | null;
+    nomina_col_apodo: string | null; nomina_col_semana: string | null;
+    nomina_col_metric: string | null; nomina_metric_label: string | null;
+    nomina_currency: 'USD' | 'BRL' | null;
+    nomina_manual_fields: ManualField[] | null;
+    nomina_rate: number | null;
+    payment_frequency: 'semanal' | 'acumulativo' | null;
+    payment_min_usd: number | null;
+    uses_cup_exchange: boolean | null;
+    commission_pct_default: number | null;
+    guide_steps: GuideStep[] | null;
+    guide_whatsapp: string | null;
+    uses_direct_payment_notification: boolean | null;
   }
   const [appsCatalogFull, setAppsCatalogFull] = useState<AppCatalogEntry[]>([])
   const [appsLoading, setAppsLoading] = useState(false)
   const [appsError, setAppsError] = useState<string | null>(null)
   const [editingApp, setEditingApp] = useState<AppCatalogEntry | null>(null)
   const [showAddAppForm, setShowAddAppForm] = useState(false)
-  const emptyAppForm = { name: '', display_name: '', ios_name: '', description_es: '', description_pt: '', earnings_info_es: '', earnings_info_pt: '', color_hex: '#888888', color_hex_secondary: '', icon_url: '', download_url_android: '', download_url_ios: '', telegram_channel_url: '', agency_code: '', sort_order: 0 }
+  const emptyAppForm: Partial<AppCatalogEntry> = {
+    name: '', display_name: '', ios_name: '', description_es: '', description_pt: '',
+    earnings_info_es: '', earnings_info_pt: '', color_hex: '#888888', color_hex_secondary: '',
+    icon_url: '', download_url_android: '', download_url_ios: '', telegram_channel_url: '',
+    agency_code: '', sort_order: 0, is_active: true,
+    tagline: '', badge_label: 'Retiro semanal', badge_color: 'red',
+    specs: [], requisitos: [],
+    nomina_type: 'upload',
+    nomina_col_uid: 'UID del Host', nomina_col_usd: 'USD',
+    nomina_col_apodo: 'Apodo', nomina_col_semana: 'Semana',
+    nomina_col_metric: 'Diamantes Totales', nomina_metric_label: 'Diamantes',
+    nomina_currency: 'USD', nomina_manual_fields: [], nomina_rate: null,
+    payment_frequency: 'semanal', payment_min_usd: 2.5,
+    uses_cup_exchange: true, commission_pct_default: 10,
+    guide_steps: [], guide_whatsapp: '', uses_direct_payment_notification: false,
+  }
   const [appFormData, setAppFormData] = useState<Partial<AppCatalogEntry>>(emptyAppForm)
   const [savingApp, setSavingApp] = useState(false)
   const [appSaveMsg, setAppSaveMsg] = useState<{ok: boolean; text: string} | null>(null)
@@ -3584,26 +3618,35 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
           {tab === 'apps' && (
             <div className="space-y-4 max-w-4xl">
 
-              {/* Progress steps — only in wizard mode */}
+              {/* Migration notice */}
+              <div className="bg-amber-500/8 border border-amber-500/20 rounded-xl px-4 py-3 flex items-start gap-3">
+                <span className="text-amber-400 shrink-0 mt-0.5 text-base">⚠️</span>
+                <div>
+                  <p className="text-xs font-bold text-amber-300">Migración de base de datos requerida (una sola vez)</p>
+                  <p className="text-white/40 text-xs mt-0.5">Para que todos los campos del wizard se guarden, ejecuta <span className="font-mono text-amber-300/80">MIGRATION.sql</span> en <a href="https://supabase.com/dashboard/project/eyeklnjwbyvsgirsglbx/sql" target="_blank" rel="noreferrer" className="text-amber-300 underline">Supabase Studio → SQL Editor</a>. Solo necesitas hacerlo una vez.</p>
+                </div>
+              </div>
+
+              {/* Progress bar — 10 steps */}
               {wizardMode === 'wizard' && (
                 <div className="bg-[#0d0d1e] border border-violet-500/20 rounded-2xl p-5">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <Package className="w-4 h-4 text-violet-400" />
-                      <span className="text-sm font-bold text-white">{editingApp ? `Editando: ${editingApp.display_name}` : 'Nueva App — Tutorial paso a paso'}</span>
+                      <span className="text-sm font-bold text-white">{editingApp ? `Editando: ${editingApp.display_name}` : 'Nueva App — Configuración Completa'}</span>
                     </div>
                     <button onClick={() => { setWizardMode('list'); setWizardStep(1); setEditingApp(null); setAppFormData(emptyAppForm); setAppSaveMsg(null) }}
                       className="text-xs text-white/30 hover:text-white/60 transition-colors px-2 py-1 rounded-lg hover:bg-white/5">✕ Cancelar</button>
                   </div>
-                  <div className="flex gap-1 mb-2">
-                    {['Nombre','Visual','Descripción','Ganancias','Descarga','Config'].map((s, i) => (
+                  <div className="flex gap-0.5 mb-2">
+                    {['Nombre','Visual','Desc','Ganar','Nómina','Comis','Specs','Guía','Descarga','Config'].map((_, i) => (
                       <button key={i} onClick={() => setWizardStep(i + 1)}
                         className={`flex-1 h-1.5 rounded-full transition-all ${wizardStep > i + 1 ? 'bg-violet-500' : wizardStep === i + 1 ? 'bg-violet-400' : 'bg-white/10'}`} />
                     ))}
                   </div>
-                  <div className="flex justify-between">
-                    {['1·Nombre','2·Visual','3·Descripción','4·Ganancias','5·Descarga','6·Config'].map((s, i) => (
-                      <span key={i} className={`text-xs transition-colors ${wizardStep === i + 1 ? 'text-violet-300 font-bold' : 'text-white/20'}`}>{s}</span>
+                  <div className="flex justify-between px-0.5">
+                    {['1·Nombre','2·Visual','3·Desc','4·Ganar','5·Nómina','6·Comis','7·Specs','8·Guía','9·Desc','10·Config'].map((s, i) => (
+                      <span key={i} className={`text-[10px] transition-colors ${wizardStep === i + 1 ? 'text-violet-300 font-bold' : 'text-white/15'}`}>{s}</span>
                     ))}
                   </div>
                 </div>
@@ -3645,18 +3688,14 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                             <p className="text-white font-bold">{app.display_name}</p>
                             {app.ios_name && app.ios_name !== app.display_name && <span className="text-xs text-white/35">iOS: {app.ios_name}</span>}
                             <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${app.is_active ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'}`}>{app.is_active ? 'Activa' : 'Inactiva'}</span>
+                            {app.nomina_type && <span className="text-xs px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-300 font-bold">{app.nomina_type === 'manual' ? '✏️ Manual' : '📂 Upload'}</span>}
                           </div>
-                          <p className="text-white/40 text-xs mt-0.5">clave: <span className="font-mono text-violet-300/70">{app.name}</span> · orden: {app.sort_order}</p>
-                          {app.agency_code && <p className="text-white/35 text-xs mt-0.5">🔑 Código agencia: <span className="font-mono text-amber-300/70">{app.agency_code}</span></p>}
-                          {app.description_es && <p className="text-white/30 text-xs mt-1 line-clamp-2">{app.description_es}</p>}
-                          <div className="flex gap-3 mt-2 flex-wrap">
-                            {app.download_url_android && <a href={app.download_url_android} target="_blank" rel="noreferrer" className="text-xs text-green-400/70 hover:text-green-300 underline">Android ↗</a>}
-                            {app.download_url_ios && <a href={app.download_url_ios} target="_blank" rel="noreferrer" className="text-xs text-blue-400/70 hover:text-blue-300 underline">iOS ↗</a>}
-                            {app.telegram_channel_url && <a href={app.telegram_channel_url} target="_blank" rel="noreferrer" className="text-xs text-sky-400/70 hover:text-sky-300 underline">Telegram ↗</a>}
-                          </div>
+                          <p className="text-white/40 text-xs mt-0.5">clave: <span className="font-mono text-violet-300/70">{app.name}</span> · orden: {app.sort_order}{app.tagline ? ` · ${app.tagline.slice(0, 40)}` : ''}</p>
+                          {app.agency_code && <p className="text-white/35 text-xs mt-0.5">🔑 {app.agency_code}</p>}
+                          {app.badge_label && <p className="text-white/30 text-xs mt-0.5">🏷 {app.badge_label} · {(app.specs ?? []).length} specs · {(app.guide_steps ?? []).length} pasos guía</p>}
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <button onClick={() => { setEditingApp(app); setAppFormData({ ...app }); setWizardMode('wizard'); setWizardStep(1); setAppSaveMsg(null) }}
+                          <button onClick={() => { setEditingApp(app); setAppFormData({...app, specs: app.specs ?? [], requisitos: app.requisitos ?? [], guide_steps: app.guide_steps ?? [], nomina_manual_fields: app.nomina_manual_fields ?? []}); setWizardMode('wizard'); setWizardStep(1); setAppSaveMsg(null) }}
                             className="p-2 rounded-lg bg-white/5 hover:bg-violet-500/15 text-white/40 hover:text-violet-300 transition-all" title="Editar">
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
@@ -3671,7 +3710,7 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                   ))}
                 </div>
               ) : (
-                /* ═══════════════ WIZARD VIEW ═══════════════ */
+                /* ═══════════════ WIZARD VIEW — 10 STEPS ═══════════════ */
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
 
                   {/* LEFT — Form */}
@@ -3682,75 +3721,92 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                       <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
                         <div>
                           <p className="text-white font-bold text-base mb-1">Nombre e Identidad</p>
-                          <p className="text-white/40 text-sm leading-relaxed">Define cómo se llama la app. El <strong className="text-white/60">nombre interno</strong> es una clave única sin espacios que se usará en toda la base de datos.</p>
+                          <p className="text-white/40 text-sm leading-relaxed">Define cómo se llama la app. El <strong className="text-white/60">nombre interno</strong> es una clave única sin espacios que se usa en toda la base de datos.</p>
                         </div>
                         {!editingApp && (
                           <div>
                             <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Nombre interno (clave) *</label>
-                            <input type="text" placeholder="Ej: NuevaApp" value={appFormData.name ?? ''} onChange={e => setAppFormData(p => ({ ...p, name: e.target.value.replace(/s/g, '') }))}
+                            <input type="text" placeholder="Ej: NuevaApp" value={appFormData.name ?? ''} onChange={e => setAppFormData(p => ({ ...p, name: e.target.value.replace(/\s/g, '') }))}
                               className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60 font-mono" />
-                            <p className="text-white/25 text-xs mt-1.5">Solo letras y números, sin espacios. Ej: <span className="font-mono text-violet-300/50">Waha</span> · <span className="font-mono text-violet-300/50">Layla</span> · <span className="font-mono text-violet-300/50">Howdy</span></p>
+                            <p className="text-white/25 text-xs mt-1.5">Solo letras y números, sin espacios. Ej: <span className="font-mono text-violet-300/50">Waha</span> · <span className="font-mono text-violet-300/50">Layla</span></p>
                           </div>
                         )}
                         <div>
                           <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Nombre visible para las trabajadoras *</label>
                           <input type="text" placeholder="Ej: Nueva App" value={appFormData.display_name ?? ''} onChange={e => setAppFormData(p => ({ ...p, display_name: e.target.value }))}
                             className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
-                          <p className="text-white/25 text-xs mt-1.5">Este nombre aparece en la página de Apps, Nómina, Perfil y en toda la web.</p>
+                          <p className="text-white/25 text-xs mt-1.5">Aparece en Apps, Nómina, Perfil y en toda la web.</p>
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Nombre en iOS <span className="text-white/30 font-normal normal-case">(si es diferente al de Android)</span></label>
                           <input type="text" placeholder="Ej: Liyo (Waha en iOS se llama Liyo)" value={appFormData.ios_name ?? ''} onChange={e => setAppFormData(p => ({ ...p, ios_name: e.target.value }))}
                             className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
-                          <div className="mt-2 bg-[#07070f] rounded-xl p-3 border border-white/5 space-y-1">
-                            <p className="text-white/25 text-xs font-semibold">Ejemplos de apps existentes:</p>
-                            <p className="text-white/35 text-xs">• Waha (Android) → <span className="text-white/55 font-semibold">Liyo</span> (iOS)</p>
-                            <p className="text-white/35 text-xs">• Layla (Android) → <span className="text-white/55 font-semibold">Nivi</span> (iOS)</p>
-                            <p className="text-white/35 text-xs">• Howdy → <span className="text-white/55">Solo Android</span> (dejar vacío)</p>
+                          <div className="mt-2 bg-[#07070f] rounded-xl p-3 border border-white/5">
+                            <p className="text-white/25 text-xs">Waha → <span className="text-white/50 font-semibold">Liyo</span> · Layla → <span className="text-white/50 font-semibold">Nivi</span> · Howdy → <span className="text-white/40">Solo Android (dejar vacío)</span></p>
                           </div>
                         </div>
                       </div>
                     )}
 
-                    {/* ── STEP 2: Visual ── */}
+                    {/* ── STEP 2: Visual + Tagline + Badge ── */}
                     {wizardStep === 2 && (
                       <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
                         <div>
-                          <p className="text-white font-bold text-base mb-1">Logo y Colores</p>
-                          <p className="text-white/40 text-sm leading-relaxed">El logo y los colores de la app aparecen en la tarjeta de Apps, en la Nómina y en el Ranking. Usa los colores oficiales de la app.</p>
+                          <p className="text-white font-bold text-base mb-1">Logo, Colores y Presentación</p>
+                          <p className="text-white/40 text-sm">El logo, colores, tagline y badge aparecen en la tarjeta de la app.</p>
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">URL del logo / icono</label>
                           <input type="text" placeholder="https://..." value={appFormData.icon_url ?? ''} onChange={e => setAppFormData(p => ({ ...p, icon_url: e.target.value }))}
                             className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
                           <div className="mt-2 bg-violet-500/8 border border-violet-500/15 rounded-xl p-3">
-                            <p className="text-violet-300 text-xs font-semibold mb-1">💡 Cómo subir el logo:</p>
-                            <ol className="text-white/35 text-xs space-y-0.5 list-decimal pl-3.5">
-                              <li>Ve a <span className="text-white/55">Supabase → Storage → app-icons</span></li>
-                              <li>Sube la imagen del icono (PNG o JPG, mínimo 200×200px)</li>
-                              <li>Clic derecho → "Get URL" → copia la URL pública</li>
-                              <li>Pégala aquí arriba</li>
-                            </ol>
+                            <p className="text-violet-300 text-xs font-semibold mb-1">💡 Subir logo:</p>
+                            <p className="text-white/35 text-xs">Supabase → Storage → app-icons → Sube PNG/JPG → clic derecho → "Get URL" → pegar aquí</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Color principal</label>
+                            <div className="flex gap-2">
+                              <input type="color" value={appFormData.color_hex ?? '#888888'} onChange={e => setAppFormData(p => ({ ...p, color_hex: e.target.value }))}
+                                className="w-10 h-10 rounded-xl border border-white/10 bg-[#07070f] cursor-pointer shrink-0" />
+                              <input type="text" placeholder="#888888" value={appFormData.color_hex ?? ''} onChange={e => setAppFormData(p => ({ ...p, color_hex: e.target.value }))}
+                                className="flex-1 bg-[#07070f] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/60 font-mono" />
+                            </div>
+                            <p className="text-white/20 text-xs mt-1">Waha: #ff4e6a · Layla: #a855f7 · Howdy: #f59e0b</p>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Color secundario <span className="text-white/25 font-normal">(opc.)</span></label>
+                            <div className="flex gap-2">
+                              <input type="color" value={appFormData.color_hex_secondary ?? '#888888'} onChange={e => setAppFormData(p => ({ ...p, color_hex_secondary: e.target.value }))}
+                                className="w-10 h-10 rounded-xl border border-white/10 bg-[#07070f] cursor-pointer shrink-0" />
+                              <input type="text" placeholder="#888888" value={appFormData.color_hex_secondary ?? ''} onChange={e => setAppFormData(p => ({ ...p, color_hex_secondary: e.target.value }))}
+                                className="flex-1 bg-[#07070f] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/60 font-mono" />
+                            </div>
                           </div>
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Color principal</label>
-                          <div className="flex gap-2">
-                            <input type="color" value={appFormData.color_hex ?? '#888888'} onChange={e => setAppFormData(p => ({ ...p, color_hex: e.target.value }))}
-                              className="w-12 h-10 rounded-xl border border-white/10 bg-[#07070f] cursor-pointer shrink-0" />
-                            <input type="text" placeholder="#888888" value={appFormData.color_hex ?? ''} onChange={e => setAppFormData(p => ({ ...p, color_hex: e.target.value }))}
-                              className="flex-1 bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60 font-mono" />
-                          </div>
-                          <p className="text-white/25 text-xs mt-1.5">Waha: <span className="font-mono">#ff4e6a</span> · Layla: <span className="font-mono">#a855f7</span> · Howdy: <span className="font-mono">#f59e0b</span></p>
+                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Tagline (subtítulo)</label>
+                          <input type="text" placeholder="Ej: Mensajería · Salas de Audio · Videollamadas" value={appFormData.tagline ?? ''} onChange={e => setAppFormData(p => ({ ...p, tagline: e.target.value }))}
+                            className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
+                          <p className="text-white/25 text-xs mt-1">Debajo del nombre. Usa · para separar.</p>
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Color secundario <span className="text-white/30 font-normal normal-case">(para gradientes, opcional)</span></label>
-                          <div className="flex gap-2">
-                            <input type="color" value={appFormData.color_hex_secondary ?? '#888888'} onChange={e => setAppFormData(p => ({ ...p, color_hex_secondary: e.target.value }))}
-                              className="w-12 h-10 rounded-xl border border-white/10 bg-[#07070f] cursor-pointer shrink-0" />
-                            <input type="text" placeholder="#888888 (opcional)" value={appFormData.color_hex_secondary ?? ''} onChange={e => setAppFormData(p => ({ ...p, color_hex_secondary: e.target.value }))}
-                              className="flex-1 bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60 font-mono" />
+                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Texto del badge</label>
+                          <input type="text" placeholder="Ej: Retiro semanal" value={appFormData.badge_label ?? ''} onChange={e => setAppFormData(p => ({ ...p, badge_label: e.target.value }))}
+                            className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-violet-300/80 mb-2 uppercase tracking-wide">Color del badge</label>
+                          <div className="flex flex-wrap gap-2">
+                            {Object.entries({red:'bg-red-500/15 text-red-300 border-red-500/30',purple:'bg-purple-500/15 text-purple-300 border-purple-500/30',yellow:'bg-yellow-500/15 text-yellow-300 border-yellow-500/30',green:'bg-green-500/15 text-green-300 border-green-500/30',blue:'bg-blue-500/15 text-blue-300 border-blue-500/30',orange:'bg-orange-500/15 text-orange-300 border-orange-500/30',pink:'bg-pink-500/15 text-pink-300 border-pink-500/30'}).map(([c, cls]) => (
+                              <button key={c} onClick={() => setAppFormData(p => ({...p, badge_color: c}))}
+                                className={`px-3 py-1.5 rounded-full border text-xs font-bold transition-all ${cls} ${appFormData.badge_color === c ? 'ring-2 ring-white/40' : 'opacity-40 hover:opacity-70'}`}>
+                                {c}
+                              </button>
+                            ))}
                           </div>
+                          <p className="text-white/20 text-xs mt-2">Waha → red · Layla → purple · Howdy → yellow</p>
                         </div>
                       </div>
                     )}
@@ -3760,70 +3816,353 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                       <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
                         <div>
                           <p className="text-white font-bold text-base mb-1">Descripción de la App</p>
-                          <p className="text-white/40 text-sm leading-relaxed">Explica qué tipo de app es, cómo funciona y qué tipo de contenido se hace. Aparece cuando la trabajadora expande la tarjeta en la página de Apps.</p>
+                          <p className="text-white/40 text-sm">Explica qué tipo de app es y cómo funciona. Aparece al expandir la tarjeta en Apps.</p>
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Descripción en Español</label>
-                          <textarea rows={6} placeholder={"Ej: Waha es una app de chat y videollamadas donde conectas con usuarios de todo el mundo. Puedes hacer videollamadas privadas, enviar mensajes y recibir regalos virtuales. La app está disponible en Android (como Liyo) y iOS."} value={appFormData.description_es ?? ''} onChange={e => setAppFormData(p => ({ ...p, description_es: e.target.value }))}
+                          <textarea rows={6} placeholder="Ej: App de chat y videollamadas donde conectas con usuarios de todo el mundo..." value={appFormData.description_es ?? ''} onChange={e => setAppFormData(p => ({ ...p, description_es: e.target.value }))}
                             className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60 resize-none leading-relaxed" />
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Descripción en Portugués</label>
-                          <textarea rows={6} placeholder={"Ej: Waha é um app de chat e videochamadas onde você se conecta com usuários do mundo todo..."} value={appFormData.description_pt ?? ''} onChange={e => setAppFormData(p => ({ ...p, description_pt: e.target.value }))}
+                          <textarea rows={6} placeholder="Ej: App de chat e videochamadas onde você se conecta com usuários..." value={appFormData.description_pt ?? ''} onChange={e => setAppFormData(p => ({ ...p, description_pt: e.target.value }))}
                             className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60 resize-none leading-relaxed" />
-                          <p className="text-white/25 text-xs mt-1.5">La web detecta el idioma del navegador y muestra ES o PT automáticamente.</p>
+                          <p className="text-white/25 text-xs mt-1.5">La web detecta el idioma del navegador automáticamente.</p>
                         </div>
                       </div>
                     )}
 
-                    {/* ── STEP 4: Ganancias ── */}
+                    {/* ── STEP 4: Ganancias + Payment ── */}
                     {wizardStep === 4 && (
                       <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
                         <div>
-                          <p className="text-white font-bold text-base mb-1">Información de Ganancias</p>
-                          <p className="text-white/40 text-sm leading-relaxed">Detalla cuánto gana la trabajadora por cada tipo de interacción. Esta información aparece en la tarjeta de la app y el chatbot de IA la usa para responder preguntas de las trabajadoras.</p>
+                          <p className="text-white font-bold text-base mb-1">Ganancias y Sistema de Pago</p>
+                          <p className="text-white/40 text-sm">Detalla cuánto gana la trabajadora y cómo funciona el sistema de retiro.</p>
                         </div>
-                        <div className="bg-amber-500/8 border border-amber-500/20 rounded-xl p-4">
-                          <p className="text-amber-300 text-xs font-bold mb-2">📋 Formato recomendado (basado en Waha):</p>
-                          <pre className="text-white/40 text-xs leading-relaxed whitespace-pre-wrap font-mono">{"Mensajes VIP: 70 diamantes
-Mensajes Free: 5 puntos
-Video privada/min: 700 diamantes
-Regalos: 100% del valor
-Meta mínima: 10,000 diamantes = $2.50 USD
-Pago: Martes a Viernes (por agencia)"}</pre>
+                        <div className="bg-amber-500/8 border border-amber-500/20 rounded-xl p-3">
+                          <p className="text-amber-300 text-xs font-bold mb-1.5">📋 Formato recomendado:</p>
+                          <pre className="text-white/40 text-xs leading-relaxed whitespace-pre-wrap font-mono">{"Mensajes VIP: 70 diamantes\nVideo privada/min: 700 diamantes\nMeta mínima: 10,000 diamantes = $2.50 USD\nPago: Martes a Viernes (por agencia)"}</pre>
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Ganancias en Español</label>
-                          <textarea rows={7} placeholder={"Mensajes VIP: X puntos
-Mensajes Free: X puntos
-Videollamada/min: X
-Regalos: X%
-Meta mínima: X puntos = $X USD
-Frecuencia de pago: X"} value={appFormData.earnings_info_es ?? ''} onChange={e => setAppFormData(p => ({ ...p, earnings_info_es: e.target.value }))}
+                          <textarea rows={6} placeholder={"Mensajes VIP: X puntos\nVideollamada/min: X\nMeta mínima: X = $X USD"} value={appFormData.earnings_info_es ?? ''} onChange={e => setAppFormData(p => ({ ...p, earnings_info_es: e.target.value }))}
                             className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60 resize-none font-mono text-xs" />
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Ganancias en Portugués</label>
-                          <textarea rows={7} placeholder={"Mensagens VIP: X pontos
-Videochamada/min: X
-Meta mínima: X pontos = $X USD"} value={appFormData.earnings_info_pt ?? ''} onChange={e => setAppFormData(p => ({ ...p, earnings_info_pt: e.target.value }))}
+                          <textarea rows={4} placeholder={"Mensagens VIP: X\nMeta mínima: X = $X USD"} value={appFormData.earnings_info_pt ?? ''} onChange={e => setAppFormData(p => ({ ...p, earnings_info_pt: e.target.value }))}
                             className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60 resize-none font-mono text-xs" />
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">🔑 Código de Agencia</label>
-                          <input type="text" placeholder="Ej: R3DKXB5" value={appFormData.agency_code ?? ''} onChange={e => setAppFormData(p => ({ ...p, agency_code: e.target.value.toUpperCase() }))}
+                          <input type="text" placeholder="Ej: R3DKXB5 · G-84Y3AG7HL" value={appFormData.agency_code ?? ''} onChange={e => setAppFormData(p => ({ ...p, agency_code: e.target.value.toUpperCase() }))}
                             className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60 font-mono uppercase tracking-wider" />
-                          <p className="text-red-400/60 text-xs mt-1.5 font-semibold">⚠️ Sin este código la trabajadora NO puede monetizar la app. Va en el Paso 5 de la guía de instalación.</p>
+                          <p className="text-red-400/60 text-xs mt-1.5 font-semibold">⚠️ Sin este código la trabajadora NO puede monetizar. Se muestra en la guía de instalación.</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Frecuencia de retiro</label>
+                            <select value={appFormData.payment_frequency ?? 'semanal'} onChange={e => setAppFormData(p => ({...p, payment_frequency: e.target.value as 'semanal' | 'acumulativo'}))}
+                              className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60">
+                              <option value="semanal">Semanal (no acumulable)</option>
+                              <option value="acumulativo">Acumulativo (sin fecha fija)</option>
+                            </select>
+                            <p className="text-white/20 text-xs mt-1">Waha/Howdy = semanal · Layla = acumulativo</p>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Meta mínima (USD)</label>
+                            <input type="number" min={0} step={0.5} placeholder="2.50" value={appFormData.payment_min_usd ?? ''} onChange={e => setAppFormData(p => ({...p, payment_min_usd: parseFloat(e.target.value) || null}))}
+                              className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
+                            <p className="text-white/20 text-xs mt-1">Waha: $2.50 · Layla/Howdy: $10</p>
+                          </div>
                         </div>
                       </div>
                     )}
 
-                    {/* ── STEP 5: Descarga ── */}
+                    {/* ── STEP 5: Nómina ── */}
                     {wizardStep === 5 && (
                       <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
                         <div>
-                          <p className="text-white font-bold text-base mb-1">Links de Descarga e Instalación</p>
-                          <p className="text-white/40 text-sm leading-relaxed">Estos links aparecen como botones en la tarjeta de la app. El canal de Telegram es donde publicas los pagos semanales.</p>
+                          <p className="text-white font-bold text-base mb-1">Configuración de Nómina</p>
+                          <p className="text-white/40 text-sm">¿Cómo se procesa el pago de esta app cada semana?</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          {([['upload','📂 Subida de Excel/CSV','Subes un archivo con las ganancias. Ej: Waha, Howdy'],['manual','✏️ Entrada Manual','Introduces datos una a una. Ej: Layla']] as const).map(([v, label, desc]) => (
+                            <button key={v} onClick={() => setAppFormData(p => ({...p, nomina_type: v}))}
+                              className={`p-4 rounded-xl border text-left transition-all ${appFormData.nomina_type === v ? 'border-violet-500/60 bg-violet-500/10' : 'border-white/10 bg-[#07070f] hover:border-white/20'}`}>
+                              <p className="font-bold text-sm text-white">{label}</p>
+                              <p className="text-xs text-white/35 mt-1 leading-relaxed">{desc}</p>
+                            </button>
+                          ))}
+                        </div>
+                        {appFormData.nomina_type !== 'manual' && (
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-1 h-4 bg-violet-500 rounded-full" />
+                              <p className="text-xs font-bold text-white/50 uppercase tracking-wide">Nombres exactos de columnas del Excel</p>
+                            </div>
+                            <p className="text-white/30 text-xs">Escribe los nombres tal como aparecen en el archivo Excel/CSV de la app.</p>
+                            {([
+                              {key:'nomina_col_uid',label:'Columna: ID del usuario *',placeholder:'ej: UID del Host'},
+                              {key:'nomina_col_usd',label:'Columna: Ganancias USD *',placeholder:'ej: USD'},
+                              {key:'nomina_col_apodo',label:'Columna: Nombre/Apodo',placeholder:'ej: Apodo'},
+                              {key:'nomina_col_semana',label:'Columna: Semana',placeholder:'ej: Semana'},
+                              {key:'nomina_col_metric',label:'Columna: Métrica (diamantes/puntos)',placeholder:'ej: Diamantes Totales'},
+                            ] as {key:keyof typeof appFormData;label:string;placeholder:string}[]).map(f => (
+                              <div key={f.key}>
+                                <label className="block text-xs font-bold text-violet-300/70 mb-1 uppercase tracking-wide">{f.label}</label>
+                                <input type="text" placeholder={f.placeholder} value={(appFormData[f.key] as string) ?? ''}
+                                  onChange={e => setAppFormData(p => ({...p, [f.key]: e.target.value}))}
+                                  className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
+                              </div>
+                            ))}
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-bold text-violet-300/70 mb-1 uppercase tracking-wide">Nombre de la métrica</label>
+                                <input type="text" placeholder="ej: Diamantes" value={appFormData.nomina_metric_label ?? ''} onChange={e => setAppFormData(p => ({...p, nomina_metric_label: e.target.value}))}
+                                  className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-bold text-violet-300/70 mb-1 uppercase tracking-wide">Moneda</label>
+                                <select value={appFormData.nomina_currency ?? 'USD'} onChange={e => setAppFormData(p => ({...p, nomina_currency: e.target.value as 'USD'|'BRL'}))}
+                                  className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60">
+                                  <option value="USD">USD (Dólares)</option>
+                                  <option value="BRL">BRL (Reais)</option>
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        {appFormData.nomina_type === 'manual' && (
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-1 h-4 bg-violet-500 rounded-full" />
+                              <p className="text-xs font-bold text-white/50 uppercase tracking-wide">Campos de entrada manual</p>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-violet-300/70 mb-1 uppercase tracking-wide">Tasa de conversión (unidades → $1 USD)</label>
+                              <input type="number" placeholder="ej: 15500 (15500 monedas = $1 USD)" value={appFormData.nomina_rate ?? ''}
+                                onChange={e => setAppFormData(p => ({...p, nomina_rate: parseFloat(e.target.value) || null}))}
+                                className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
+                              <p className="text-white/20 text-xs mt-1">Layla: 15500 · Si paga directo en USD: pon 1</p>
+                            </div>
+                            {(appFormData.nomina_manual_fields ?? []).length === 0 && (
+                              <div className="bg-violet-500/8 border border-violet-500/20 rounded-xl p-3 text-xs text-violet-300">
+                                💡 <strong>Ejemplo Layla:</strong> "Monedas retiradas" (÷tasa=USD ✓) · "Monedas comerciales" (base comisión ✓) · "Porcentaje" (número). Tasa: 15500.
+                              </div>
+                            )}
+                            <div className="space-y-3">
+                              {(appFormData.nomina_manual_fields ?? []).map((field, idx) => (
+                                <div key={idx} className="bg-[#07070f] border border-white/10 rounded-xl p-4 space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-violet-300/70 uppercase">Campo {idx + 1}</span>
+                                    <button onClick={() => setAppFormData(p => { const arr = [...(p.nomina_manual_fields ?? [])]; arr.splice(idx,1); return {...p, nomina_manual_fields: arr} })}
+                                      className="text-red-400/50 hover:text-red-400 text-xs transition-colors">✕ Eliminar</button>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                      <label className="block text-xs text-white/40 mb-1">Nombre del campo</label>
+                                      <input type="text" placeholder="ej: Monedas retiradas" value={field.label}
+                                        onChange={e => setAppFormData(p => { const arr=[...(p.nomina_manual_fields??[])]; arr[idx]={...arr[idx],label:e.target.value,key:e.target.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'')}; return {...p,nomina_manual_fields:arr} })}
+                                        className="w-full bg-[#0d0d1e] border border-white/8 rounded-lg px-2.5 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50" />
+                                    </div>
+                                    <div>
+                                      <label className="block text-xs text-white/40 mb-1">Tipo</label>
+                                      <select value={field.type}
+                                        onChange={e => setAppFormData(p => { const arr=[...(p.nomina_manual_fields??[])]; arr[idx]={...arr[idx],type:e.target.value as 'number'|'text'}; return {...p,nomina_manual_fields:arr} })}
+                                        className="w-full bg-[#0d0d1e] border border-white/8 rounded-lg px-2.5 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50">
+                                        <option value="number">Número</option>
+                                        <option value="text">Texto</option>
+                                      </select>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-4">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                      <input type="checkbox" checked={field.is_usd_base ?? false}
+                                        onChange={e => setAppFormData(p => { const arr=[...(p.nomina_manual_fields??[])]; arr[idx]={...arr[idx],is_usd_base:e.target.checked}; return {...p,nomina_manual_fields:arr} })}
+                                        className="w-3.5 h-3.5 accent-violet-500" />
+                                      <span className="text-xs text-white/50">Base USD <span className="text-violet-300/50">(÷ tasa)</span></span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                      <input type="checkbox" checked={field.is_commission_base ?? false}
+                                        onChange={e => setAppFormData(p => { const arr=[...(p.nomina_manual_fields??[])]; arr[idx]={...arr[idx],is_commission_base:e.target.checked}; return {...p,nomina_manual_fields:arr} })}
+                                        className="w-3.5 h-3.5 accent-amber-500" />
+                                      <span className="text-xs text-white/50">Base comisión agente</span>
+                                    </label>
+                                  </div>
+                                  {field.key && <p className="text-white/20 text-xs">Clave: <span className="font-mono text-violet-300/50">{field.key}</span></p>}
+                                </div>
+                              ))}
+                            </div>
+                            <button onClick={() => setAppFormData(p => ({...p, nomina_manual_fields: [...(p.nomina_manual_fields??[]), {key:'',label:'',type:'number',is_usd_base:(p.nomina_manual_fields??[]).length===0,is_commission_base:false}]}))}
+                              className="w-full py-2.5 rounded-xl border border-dashed border-violet-500/30 text-violet-400/60 text-sm hover:border-violet-500/60 hover:text-violet-400 transition-all">
+                              + Agregar campo
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ── STEP 6: Comisiones ── */}
+                    {wizardStep === 6 && (
+                      <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
+                        <div>
+                          <p className="text-white font-bold text-base mb-1">Configuración de Comisiones</p>
+                          <p className="text-white/40 text-sm">Define cuánto cobra el agente y opciones especiales de pago.</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Porcentaje de comisión del agente (%)</label>
+                          <input type="number" min={0} max={100} step={1} placeholder="10" value={appFormData.commission_pct_default ?? ''}
+                            onChange={e => setAppFormData(p => ({...p, commission_pct_default: parseFloat(e.target.value) || null}))}
+                            className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
+                          <p className="text-white/25 text-xs mt-1.5">Upload: ganancias × %. Manual: (campo_comision ÷ tasa) × %.</p>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-start justify-between p-4 bg-[#07070f] rounded-xl border border-white/8 gap-3">
+                            <div className="flex-1">
+                              <p className="text-sm font-semibold text-white">Aplicar cambio CUP</p>
+                              <p className="text-white/35 text-xs mt-0.5 leading-relaxed">La comisión se mostrará en CUP (pesos cubanos) usando la tasa configurada en Nómina. <span className="text-white/50">Waha/Howdy ✅ · Layla ❌</span></p>
+                            </div>
+                            <button onClick={() => setAppFormData(p => ({...p, uses_cup_exchange: !p.uses_cup_exchange}))}
+                              className={`w-12 h-6 rounded-full transition-all relative shrink-0 ${appFormData.uses_cup_exchange ? 'bg-green-500' : 'bg-white/15'}`}>
+                              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${appFormData.uses_cup_exchange ? 'left-6' : 'left-0.5'}`} />
+                            </button>
+                          </div>
+                          <div className="flex items-start justify-between p-4 bg-[#07070f] rounded-xl border border-white/8 gap-3">
+                            <div className="flex-1">
+                              <p className="text-sm font-semibold text-white">Notificación de pago directo</p>
+                              <p className="text-white/35 text-xs mt-0.5 leading-relaxed">En Perfil aparecerá un aviso: esta app paga directamente a la trabajadora sin pasar por el agente. <span className="text-white/50">Layla ✅ · Waha/Howdy ❌</span></p>
+                            </div>
+                            <button onClick={() => setAppFormData(p => ({...p, uses_direct_payment_notification: !p.uses_direct_payment_notification}))}
+                              className={`w-12 h-6 rounded-full transition-all relative shrink-0 ${appFormData.uses_direct_payment_notification ? 'bg-green-500' : 'bg-white/15'}`}>
+                              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${appFormData.uses_direct_payment_notification ? 'left-6' : 'left-0.5'}`} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── STEP 7: Specs + Requisitos ── */}
+                    {wizardStep === 7 && (
+                      <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
+                        <div>
+                          <p className="text-white font-bold text-base mb-1">Especificaciones y Requisitos</p>
+                          <p className="text-white/40 text-sm">Aparecen en la tarjeta expandida en la página de Apps.</p>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-bold text-white/50 uppercase tracking-wide">Especificaciones (tabla)</p>
+                            <button onClick={() => setAppFormData(p => ({...p, specs: [...(p.specs??[]), {label:'',value:''}]}))}
+                              className="text-xs text-violet-400/70 hover:text-violet-300 transition-colors px-2 py-1 rounded-lg hover:bg-violet-500/10">+ Agregar fila</button>
+                          </div>
+                          {(appFormData.specs ?? []).length === 0 && (
+                            <div className="bg-[#07070f] border border-white/5 rounded-xl p-3 text-xs text-white/25">
+                              Ej: "Android" → "Waha" · "Tiempo diario" → "+4 Horas" · "Meta mínima" → "$2.50 USD"
+                            </div>
+                          )}
+                          {(appFormData.specs ?? []).map((spec, idx) => (
+                            <div key={idx} className="flex gap-2 items-center">
+                              <input type="text" placeholder="Etiqueta (Android, Tiempo...)" value={spec.label}
+                                onChange={e => setAppFormData(p => { const arr=[...(p.specs??[])]; arr[idx]={...arr[idx],label:e.target.value}; return {...p,specs:arr} })}
+                                className="flex-1 bg-[#07070f] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500/60" />
+                              <input type="text" placeholder="Valor (Waha, +4 Horas...)" value={spec.value}
+                                onChange={e => setAppFormData(p => { const arr=[...(p.specs??[])]; arr[idx]={...arr[idx],value:e.target.value}; return {...p,specs:arr} })}
+                                className="flex-1 bg-[#07070f] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500/60" />
+                              <button onClick={() => setAppFormData(p => { const arr=[...(p.specs??[])]; arr.splice(idx,1); return {...p,specs:arr} })}
+                                className="p-2 text-red-400/40 hover:text-red-400 transition-colors shrink-0">✕</button>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="space-y-3 pt-2">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-bold text-white/50 uppercase tracking-wide">Requisitos esenciales</p>
+                            <button onClick={() => setAppFormData(p => ({...p, requisitos: [...(p.requisitos??[]), '']}))}
+                              className="text-xs text-violet-400/70 hover:text-violet-300 transition-colors px-2 py-1 rounded-lg hover:bg-violet-500/10">+ Agregar requisito</button>
+                          </div>
+                          {(appFormData.requisitos ?? []).length === 0 && (
+                            <div className="bg-[#07070f] border border-white/5 rounded-xl p-3 text-xs text-white/25">
+                              Ej: "Ser mayor de edad" · "WiFi / Datos estables" · "4–5 horas diarias"
+                            </div>
+                          )}
+                          {(appFormData.requisitos ?? []).map((req, idx) => (
+                            <div key={idx} className="flex gap-2 items-center">
+                              <input type="text" placeholder="Ej: Ser mayor de edad" value={req}
+                                onChange={e => setAppFormData(p => { const arr=[...(p.requisitos??[])]; arr[idx]=e.target.value; return {...p,requisitos:arr} })}
+                                className="flex-1 bg-[#07070f] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500/60" />
+                              <button onClick={() => setAppFormData(p => { const arr=[...(p.requisitos??[])]; arr.splice(idx,1); return {...p,requisitos:arr} })}
+                                className="p-2 text-red-400/40 hover:text-red-400 transition-colors shrink-0">✕</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── STEP 8: Guía de instalación ── */}
+                    {wizardStep === 8 && (
+                      <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
+                        <div>
+                          <p className="text-white font-bold text-base mb-1">Guía de Instalación</p>
+                          <p className="text-white/40 text-sm">Define los pasos que la trabajadora sigue para registrarse. Aparecen en el modal "Guía de Instalación".</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">WhatsApp para envío de capturas</label>
+                          <input type="text" placeholder="https://wa.me/NUMERO?text=..." value={appFormData.guide_whatsapp ?? ''}
+                            onChange={e => setAppFormData(p => ({...p, guide_whatsapp: e.target.value}))}
+                            className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
+                          <p className="text-white/25 text-xs mt-1">Ej: https://wa.me/5595984381686?text=Hola</p>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-bold text-white/50 uppercase tracking-wide">Pasos de instalación</p>
+                            <button onClick={() => setAppFormData(p => ({...p, guide_steps: [...(p.guide_steps??[]), {step:(p.guide_steps??[]).length+1,title:'',text:'',image_url:''}]}))}
+                              className="text-xs text-violet-400/70 hover:text-violet-300 transition-colors px-2 py-1 rounded-lg hover:bg-violet-500/10">+ Agregar paso</button>
+                          </div>
+                          {(appFormData.guide_steps ?? []).length === 0 && (
+                            <div className="bg-violet-500/8 border border-violet-500/20 rounded-xl p-3 text-xs text-violet-300">
+                              💡 Ej: Paso 1 "Descarga la App" · Paso 2 "Crea tu cuenta" · Paso 3 "Código de agencia" · Paso 4 "Envía captura por WhatsApp"
+                            </div>
+                          )}
+                          {(appFormData.guide_steps ?? []).map((step, idx) => (
+                            <div key={idx} className="bg-[#07070f] border border-white/10 rounded-xl p-4 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-violet-400">Paso {step.step}</span>
+                                <button onClick={() => setAppFormData(p => { const arr=[...(p.guide_steps??[])]; arr.splice(idx,1); return {...p,guide_steps:arr.map((s,i)=>({...s,step:i+1}))} })}
+                                  className="text-red-400/40 hover:text-red-400 text-xs transition-colors">✕ Eliminar</button>
+                              </div>
+                              <div>
+                                <label className="block text-xs text-white/40 mb-1">Título del paso</label>
+                                <input type="text" placeholder="Ej: Descarga la App" value={step.title}
+                                  onChange={e => setAppFormData(p => { const arr=[...(p.guide_steps??[])]; arr[idx]={...arr[idx],title:e.target.value}; return {...p,guide_steps:arr} })}
+                                  className="w-full bg-[#0d0d1e] border border-white/8 rounded-lg px-2.5 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50" />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-white/40 mb-1">Instrucción</label>
+                                <textarea rows={2} placeholder="Ej: Selecciona el botón de descarga según tu dispositivo." value={step.text}
+                                  onChange={e => setAppFormData(p => { const arr=[...(p.guide_steps??[])]; arr[idx]={...arr[idx],text:e.target.value}; return {...p,guide_steps:arr} })}
+                                  className="w-full bg-[#0d0d1e] border border-white/8 rounded-lg px-2.5 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50 resize-none" />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-white/40 mb-1">URL de imagen <span className="text-white/25">(opcional)</span></label>
+                                <input type="text" placeholder="https://... o /images/captura.png" value={step.image_url ?? ''}
+                                  onChange={e => setAppFormData(p => { const arr=[...(p.guide_steps??[])]; arr[idx]={...arr[idx],image_url:e.target.value}; return {...p,guide_steps:arr} })}
+                                  className="w-full bg-[#0d0d1e] border border-white/8 rounded-lg px-2.5 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50" />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="bg-[#07070f] border border-white/5 rounded-xl p-3">
+                          <p className="text-violet-300/70 text-xs font-semibold mb-1">📸 Imágenes de los pasos:</p>
+                          <p className="text-white/30 text-xs">Supabase → Storage → app-guides → sube capturas → clic derecho → "Get URL" → pegar en campo imagen del paso.</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── STEP 9: Descarga ── */}
+                    {wizardStep === 9 && (
+                      <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
+                        <div>
+                          <p className="text-white font-bold text-base mb-1">Links de Descarga</p>
+                          <p className="text-white/40 text-sm">Aparecen como botones en la tarjeta y dentro de la guía de instalación.</p>
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">🤖 Descarga Android (Play Store o APK directo)</label>
@@ -3834,67 +4173,62 @@ Meta mínima: X pontos = $X USD"} value={appFormData.earnings_info_pt ?? ''} onC
                           <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">🍎 Descarga iOS (App Store)</label>
                           <input type="url" placeholder="https://apps.apple.com/app/..." value={appFormData.download_url_ios ?? ''} onChange={e => setAppFormData(p => ({ ...p, download_url_ios: e.target.value }))}
                             className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
-                          <p className="text-white/25 text-xs mt-1.5">Si la app es solo Android (como Howdy), deja este campo vacío.</p>
+                          <p className="text-white/25 text-xs mt-1.5">Si la app es solo Android (como Howdy), deja vacío.</p>
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">📢 Canal de Telegram</label>
                           <input type="url" placeholder="https://t.me/..." value={appFormData.telegram_channel_url ?? ''} onChange={e => setAppFormData(p => ({ ...p, telegram_channel_url: e.target.value }))}
                             className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
-                          <p className="text-white/25 text-xs mt-1.5">Canal donde publicas novedades y pagos. Aparece como botón "Unirse al canal" en la tarjeta.</p>
-                        </div>
-                        <div className="bg-[#07070f] border border-violet-500/15 rounded-xl p-4">
-                          <p className="text-violet-300/70 text-xs font-semibold mb-2">📸 Sobre las fotos de guía de instalación</p>
-                          <p className="text-white/35 text-xs mb-3 leading-relaxed">Las guías paso a paso (como las de Waha, Layla y Howdy) requieren subir imágenes de captura de pantalla por cada paso de instalación.</p>
-                          <ol className="text-white/30 text-xs space-y-1 list-decimal pl-3.5">
-                            <li>Ve a <span className="text-white/50">Supabase → Storage → app-guides</span></li>
-                            <li>Sube las capturas de pantalla numeradas (paso1.jpg, paso2.jpg...)</li>
-                            <li>Pega las URLs en el campo de descripción o avisa al desarrollador</li>
-                          </ol>
+                          <p className="text-white/25 text-xs mt-1.5">Canal de novedades y pagos. Aparece como botón "Unirse al canal".</p>
                         </div>
                       </div>
                     )}
 
-                    {/* ── STEP 6: Config ── */}
-                    {wizardStep === 6 && (
+                    {/* ── STEP 10: Config Final ── */}
+                    {wizardStep === 10 && (
                       <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
                         <div>
                           <p className="text-white font-bold text-base mb-1">Configuración Final</p>
-                          <p className="text-white/40 text-sm leading-relaxed">Define el orden de aparición y si la app está visible para las trabajadoras. Revisa el resumen antes de guardar.</p>
+                          <p className="text-white/40 text-sm">Define el orden y visibilidad. Revisa el resumen completo antes de guardar.</p>
                         </div>
-                        <div>
-                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Orden de aparición</label>
-                          <input type="number" min={0} max={99} value={appFormData.sort_order ?? 0} onChange={e => setAppFormData(p => ({ ...p, sort_order: parseInt(e.target.value) || 0 }))}
-                            className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
-                          <p className="text-white/25 text-xs mt-1.5">Waha: 1 · Layla: 2 · Howdy: 3 · Número menor = aparece primero en la lista.</p>
-                        </div>
-                        <div className="flex items-center justify-between p-4 bg-[#07070f] rounded-xl border border-white/8">
+                        <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <p className="text-sm font-semibold text-white">App activa en la web</p>
-                            <p className="text-white/35 text-xs mt-0.5">Si está activa, aparece en Apps, Perfil y toda la web.</p>
+                            <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Orden de aparición</label>
+                            <input type="number" min={0} max={99} value={appFormData.sort_order ?? 0} onChange={e => setAppFormData(p => ({ ...p, sort_order: parseInt(e.target.value) || 0 }))}
+                              className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
+                            <p className="text-white/20 text-xs mt-1">1 = primera · Waha:1 · Layla:2 · Howdy:3</p>
                           </div>
-                          <button onClick={() => setAppFormData(p => ({ ...p, is_active: !p.is_active }))}
-                            className={`w-12 h-6 rounded-full transition-all relative shrink-0 ${appFormData.is_active ? 'bg-green-500' : 'bg-white/15'}`}>
-                            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${appFormData.is_active ? 'left-6' : 'left-0.5'}`} />
-                          </button>
+                          <div className="flex flex-col justify-center">
+                            <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Estado</label>
+                            <button onClick={() => setAppFormData(p => ({ ...p, is_active: !p.is_active }))}
+                              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-bold transition-all ${appFormData.is_active ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>
+                              <span className={`w-2 h-2 rounded-full ${appFormData.is_active ? 'bg-green-400' : 'bg-red-400'}`} />
+                              {appFormData.is_active ? 'Activa' : 'Inactiva'}
+                            </button>
+                          </div>
                         </div>
-                        {/* Summary checklist */}
-                        <div className="bg-[#07070f] border border-white/8 rounded-xl p-4 space-y-2.5">
-                          <p className="text-xs font-bold text-white/40 mb-3">✅ Revisión antes de guardar:</p>
-                          {[
-                            { k: 'Clave interna', v: appFormData.name, req: !editingApp },
-                            { k: 'Nombre visible', v: appFormData.display_name, req: true },
-                            { k: 'iOS name', v: appFormData.ios_name || '(igual que Android)', req: false },
-                            { k: 'Color principal', v: appFormData.color_hex, req: false },
-                            { k: 'Código agencia', v: appFormData.agency_code, req: false },
-                            { k: 'Descarga Android', v: appFormData.download_url_android ? '✅ Configurado' : '—', req: false },
-                            { k: 'Descarga iOS', v: appFormData.download_url_ios ? '✅ Configurado' : '—', req: false },
-                            { k: 'Telegram', v: appFormData.telegram_channel_url ? '✅ Configurado' : '—', req: false },
-                            { k: 'Descripción ES', v: appFormData.description_es ? `✅ ${appFormData.description_es.slice(0, 35)}...` : '—', req: false },
-                            { k: 'Ganancias ES', v: appFormData.earnings_info_es ? '✅ Configurado' : '—', req: false },
-                          ].map(({ k, v, req }) => (
+                        <div className="bg-[#07070f] border border-white/8 rounded-xl p-4 space-y-2">
+                          <p className="text-xs font-bold text-white/40 mb-3">✅ Revisión completa:</p>
+                          {([
+                            {k:'🔑 Clave', v:appFormData.name, req:!editingApp},
+                            {k:'📱 Nombre visible', v:appFormData.display_name, req:true},
+                            {k:'🍎 iOS name', v:appFormData.ios_name||'(mismo)', req:false},
+                            {k:'🏷 Badge', v:appFormData.badge_label?`${appFormData.badge_label} (${appFormData.badge_color})`:'—', req:false},
+                            {k:'💬 Tagline', v:appFormData.tagline?appFormData.tagline.slice(0,35):'—', req:false},
+                            {k:'🎨 Color', v:appFormData.color_hex, req:false},
+                            {k:'🔑 Código agencia', v:appFormData.agency_code||'—', req:false},
+                            {k:'💰 Retiro', v:appFormData.payment_frequency?`${appFormData.payment_frequency} · $${appFormData.payment_min_usd??'?'}`:'—', req:false},
+                            {k:'📊 Nómina', v:appFormData.nomina_type==='manual'?`Manual (${(appFormData.nomina_manual_fields??[]).length} campos)`:appFormData.nomina_type==='upload'?'Upload Excel':'—', req:false},
+                            {k:'% Comisión', v:appFormData.commission_pct_default?`${appFormData.commission_pct_default}% · CUP:${appFormData.uses_cup_exchange?'✅':'❌'} · Directo:${appFormData.uses_direct_payment_notification?'✅':'❌'}`:'—', req:false},
+                            {k:'📋 Specs', v:`${(appFormData.specs??[]).length} filas · ${(appFormData.requisitos??[]).length} requisitos`, req:false},
+                            {k:'📖 Guía', v:`${(appFormData.guide_steps??[]).length} pasos${appFormData.guide_whatsapp?' · WhatsApp ✅':''}`, req:false},
+                            {k:'🤖 Android', v:appFormData.download_url_android?'✅':'—', req:false},
+                            {k:'🍎 iOS link', v:appFormData.download_url_ios?'✅':'—', req:false},
+                            {k:'📢 Telegram', v:appFormData.telegram_channel_url?'✅':'—', req:false},
+                          ] as {k:string;v:string|undefined|null;req:boolean}[]).map(({k,v,req}) => (
                             <div key={k} className="flex items-center justify-between gap-2 text-xs">
-                              <span className={`${req && !v ? 'text-red-400' : 'text-white/35'}`}>{k}{req && !v ? ' *' : ''}</span>
-                              <span className={`font-mono truncate max-w-[180px] ${v ? 'text-white/60' : 'text-white/20'}`}>{v || '—'}</span>
+                              <span className={`${req&&!v?'text-red-400':'text-white/35'}`}>{k}{req&&!v?' *':''}</span>
+                              <span className={`font-mono truncate max-w-[200px] text-right ${v?'text-white/60':'text-white/20'}`}>{v||'—'}</span>
                             </div>
                           ))}
                         </div>
@@ -3915,7 +4249,7 @@ Meta mínima: X pontos = $X USD"} value={appFormData.earnings_info_pt ?? ''} onC
                           ✕ Cancelar
                         </button>
                       )}
-                      {wizardStep < 6 ? (
+                      {wizardStep < 10 ? (
                         <button onClick={() => setWizardStep(s => s + 1)}
                           disabled={wizardStep === 1 && (!appFormData.display_name || (!editingApp && !appFormData.name))}
                           className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold bg-violet-600 text-white hover:bg-violet-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
@@ -3933,10 +4267,8 @@ Meta mínima: X pontos = $X USD"} value={appFormData.earnings_info_pt ?? ''} onC
                   {/* RIGHT — Live Preview */}
                   <div className="space-y-3 lg:sticky lg:top-4">
                     <p className="text-xs font-semibold text-white/30 uppercase tracking-wider">👁 Vista previa — así quedará la app</p>
-
-                    {/* App card preview */}
                     <div className="bg-[#0d0d1e] border border-white/8 rounded-2xl p-5">
-                      <div className="flex items-start gap-3 mb-4">
+                      <div className="flex items-start gap-3 mb-3">
                         <div className="w-14 h-14 rounded-2xl shrink-0 flex items-center justify-center text-white font-black text-2xl overflow-hidden shadow-lg"
                           style={{ background: appFormData.color_hex || '#3b3b5c' }}>
                           {appFormData.icon_url
@@ -3944,63 +4276,104 @@ Meta mínima: X pontos = $X USD"} value={appFormData.earnings_info_pt ?? ''} onC
                             : <span>{appFormData.display_name?.[0] || '?'}</span>}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-white font-extrabold text-lg leading-tight">{appFormData.display_name || <span className="text-white/20">Nombre de la App</span>}</h3>
-                          {appFormData.ios_name && appFormData.ios_name !== appFormData.display_name && (
-                            <p className="text-white/30 text-xs mt-0.5">iOS: {appFormData.ios_name}</p>
-                          )}
-                          <div className="flex gap-1.5 mt-2 flex-wrap">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <h3 className="text-white font-extrabold text-lg leading-tight">{appFormData.display_name || <span className="text-white/20">Nombre de la App</span>}</h3>
+                            {appFormData.badge_label && (
+                              <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${
+                                appFormData.badge_color==='red'?'bg-red-500/15 text-red-300 border-red-500/30':
+                                appFormData.badge_color==='purple'?'bg-purple-500/15 text-purple-300 border-purple-500/30':
+                                appFormData.badge_color==='yellow'?'bg-yellow-500/15 text-yellow-300 border-yellow-500/30':
+                                appFormData.badge_color==='green'?'bg-green-500/15 text-green-300 border-green-500/30':
+                                appFormData.badge_color==='blue'?'bg-blue-500/15 text-blue-300 border-blue-500/30':
+                                appFormData.badge_color==='orange'?'bg-orange-500/15 text-orange-300 border-orange-500/30':
+                                'bg-pink-500/15 text-pink-300 border-pink-500/30'
+                              }`}>{appFormData.badge_label}</span>
+                            )}
+                          </div>
+                          {appFormData.tagline && <p className="text-white/45 text-sm">{appFormData.tagline}</p>}
+                          <div className="flex gap-1.5 mt-1.5 flex-wrap">
                             {appFormData.download_url_android && <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 font-semibold">Android</span>}
                             {appFormData.download_url_ios && <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 font-semibold">iOS</span>}
                             {appFormData.agency_code && <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 font-semibold">🔑 {appFormData.agency_code}</span>}
                           </div>
                         </div>
                       </div>
-                      {appFormData.description_es && (
-                        <p className="text-white/45 text-sm leading-relaxed mb-3 line-clamp-4">{appFormData.description_es}</p>
+                      {appFormData.description_es && <p className="text-white/45 text-sm leading-relaxed mb-3 line-clamp-3">{appFormData.description_es}</p>}
+                      {appFormData.specs && appFormData.specs.length > 0 && (
+                        <div className="grid grid-cols-2 gap-1.5 mb-3">
+                          {appFormData.specs.slice(0,4).map((s,i) => (
+                            <div key={i} className="bg-[#07070f] border border-white/5 rounded-lg px-2.5 py-2">
+                              <p className="text-white/25 text-[10px]">{s.label}</p>
+                              <p className="text-white/70 text-xs font-semibold">{s.value}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {appFormData.requisitos && appFormData.requisitos.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                          {appFormData.requisitos.slice(0,3).map((r,i) => (
+                            <span key={i} className="text-[10px] px-2 py-1 rounded-full bg-white/4 border border-white/8 text-white/50">✓ {r}</span>
+                          ))}
+                        </div>
                       )}
                       {appFormData.earnings_info_es && (
-                        <div className="bg-[#07070f] rounded-xl p-3 border border-white/5 mb-3">
-                          <p className="text-xs font-semibold text-white/35 mb-1.5">💰 Ganancias</p>
-                          <pre className="text-white/50 text-xs whitespace-pre-wrap font-mono line-clamp-5">{appFormData.earnings_info_es}</pre>
+                        <div className="bg-[#07070f] rounded-xl p-2.5 border border-white/5">
+                          <p className="text-xs font-semibold text-white/35 mb-1">💰 Ganancias</p>
+                          <pre className="text-white/50 text-xs whitespace-pre-wrap font-mono line-clamp-4">{appFormData.earnings_info_es}</pre>
                         </div>
                       )}
-                      {appFormData.telegram_channel_url && (
-                        <span className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-xl bg-sky-500/15 text-sky-400 font-semibold">📢 Unirse al canal</span>
-                      )}
                     </div>
-
-                    {/* Context note for the current step */}
+                    {/* Config summary for steps 5–8 */}
+                    {wizardStep >= 5 && wizardStep <= 8 && (
+                      <div className="bg-[#0d0d1e] border border-white/5 rounded-xl p-4 space-y-1.5">
+                        <p className="text-xs font-bold text-white/40 mb-2">
+                          {wizardStep===5&&'📊 Nómina:'}{wizardStep===6&&'💸 Comisiones:'}{wizardStep===7&&'📋 Specs / Requisitos:'}{wizardStep===8&&'📖 Guía:'}
+                        </p>
+                        {wizardStep===5 && <div className="text-xs text-white/40 space-y-1">
+                          <p>Tipo: <span className="text-white/60">{appFormData.nomina_type==='manual'?'Entrada manual':'Upload Excel'}</span></p>
+                          {appFormData.nomina_type==='manual'?<>
+                            <p>Tasa: <span className="font-mono text-violet-300/60">{appFormData.nomina_rate??'No definida'}</span></p>
+                            <p>Campos: <span className="text-white/60">{(appFormData.nomina_manual_fields??[]).length}</span></p>
+                            {(appFormData.nomina_manual_fields??[]).map(f=><p key={f.key} className="pl-2 text-white/30">• {f.label}{f.is_usd_base?' (÷tasa=USD)':''}{f.is_commission_base?' (comisión)':''}</p>)}
+                          </>:<>
+                            <p>Col. UID: <span className="font-mono text-white/60">{appFormData.nomina_col_uid}</span></p>
+                            <p>Col. USD: <span className="font-mono text-white/60">{appFormData.nomina_col_usd}</span></p>
+                          </>}
+                        </div>}
+                        {wizardStep===6 && <div className="text-xs text-white/40 space-y-1">
+                          <p>Comisión: <span className="text-white/60 font-bold">{appFormData.commission_pct_default??10}%</span></p>
+                          <p>CUP: <span className="text-white/60">{appFormData.uses_cup_exchange?'✅ Activo':'❌ No'}</span></p>
+                          <p>Pago directo: <span className="text-white/60">{appFormData.uses_direct_payment_notification?'✅ Sí':'❌ No'}</span></p>
+                        </div>}
+                        {wizardStep===7 && <div className="text-xs text-white/40 space-y-1">
+                          <p>Specs: <span className="text-white/60">{(appFormData.specs??[]).length} filas</span></p>
+                          {(appFormData.specs??[]).map((s,i)=><p key={i} className="pl-2 text-white/30">• {s.label}: {s.value}</p>)}
+                          <p className="pt-1">Requisitos: <span className="text-white/60">{(appFormData.requisitos??[]).length}</span></p>
+                          {(appFormData.requisitos??[]).map((r,i)=><p key={i} className="pl-2 text-white/30">• {r}</p>)}
+                        </div>}
+                        {wizardStep===8 && <div className="text-xs text-white/40 space-y-1">
+                          <p>Pasos: <span className="text-white/60">{(appFormData.guide_steps??[]).length}</span></p>
+                          {(appFormData.guide_steps??[]).map(s=><p key={s.step} className="pl-2 text-white/30">• Paso {s.step}: {s.title||'(sin título)'}</p>)}
+                          <p className="pt-1">WhatsApp: <span className="text-white/60">{appFormData.guide_whatsapp?'✅':'—'}</span></p>
+                        </div>}
+                      </div>
+                    )}
                     <div className="bg-[#0d0d1e] border border-white/5 rounded-xl p-4">
                       <p className="text-xs font-bold text-white/40 mb-2">
-                        {wizardStep === 1 && '📍 El nombre aparece en:'}
-                        {wizardStep === 2 && '🎨 El logo y color aparece en:'}
-                        {wizardStep === 3 && '📝 La descripción aparece en:'}
-                        {wizardStep === 4 && '💰 Las ganancias aparecen en:'}
-                        {wizardStep === 5 && '🔗 Los links aparecen en:'}
-                        {wizardStep === 6 && '⚙️ Configuración:'}
+                        {wizardStep===1&&'📍 El nombre aparece en:'}{wizardStep===2&&'🎨 Logo y colores en:'}{wizardStep===3&&'📝 Descripción en:'}{wizardStep===4&&'💰 Ganancias en:'}{wizardStep===5&&'📊 Nómina en:'}{wizardStep===6&&'💸 Comisiones en:'}{wizardStep===7&&'📋 Specs/Req en:'}{wizardStep===8&&'📖 Guía en:'}{wizardStep===9&&'🔗 Links en:'}{wizardStep===10&&'⚙️ Configuración:'}
                       </p>
                       <ul className="space-y-1 text-xs text-white/30">
-                        {wizardStep === 1 && <><li>• Página <span className="text-white/50">Apps</span> → título de la tarjeta</li><li>• Página <span className="text-white/50">Nómina</span> → encabezado de sección</li><li>• Página <span className="text-white/50">Perfil</span> → lista de registro</li><li>• En toda la web donde se mencione la app</li></>}
-                        {wizardStep === 2 && <><li>• Tarjeta de app en la página <span className="text-white/50">Apps</span></li><li>• Indicador de color en <span className="text-white/50">Nómina</span></li><li>• Icono en <span className="text-white/50">Ranking</span> y <span className="text-white/50">Canales</span></li></>}
-                        {wizardStep === 3 && <><li>• Al expandir la tarjeta en <span className="text-white/50">Apps</span></li><li>• El chatbot IA la usa para responder preguntas</li></>}
-                        {wizardStep === 4 && <><li>• Sección "Ganancias" dentro de la tarjeta</li><li>• El chatbot IA la usa para calcular pagos</li><li>• El código de agencia va en el paso 5 de instalación</li></>}
-                        {wizardStep === 5 && <><li>• Botones de descarga en la tarjeta</li><li>• El canal Telegram aparece como botón "Unirse"</li></>}
-                        {wizardStep === 6 && <><li>• Orden 1 = primera app en la lista</li><li>• Apps inactivas no son visibles para trabajadoras</li></>}
+                        {wizardStep===1&&<><li>• Tarjeta en <span className="text-white/50">Apps</span></li><li>• Encabezado en <span className="text-white/50">Nómina</span></li><li>• Lista en <span className="text-white/50">Perfil</span></li></>}
+                        {wizardStep===2&&<><li>• Tarjeta en <span className="text-white/50">Apps</span></li><li>• Color en <span className="text-white/50">Nómina</span> y <span className="text-white/50">Ranking</span></li></>}
+                        {wizardStep===3&&<><li>• Tarjeta expandida en <span className="text-white/50">Apps</span></li><li>• Chatbot IA para responder preguntas</li></>}
+                        {wizardStep===4&&<><li>• Sección Ganancias en la tarjeta</li><li>• Chatbot IA para calcular pagos</li></>}
+                        {wizardStep===5&&<><li>• Página <span className="text-white/50">Nómina</span> del admin</li><li>• Cálculo de salarios semanales</li></>}
+                        {wizardStep===6&&<><li>• Comisión del agente en <span className="text-white/50">Nómina</span></li><li>• Notificación en <span className="text-white/50">Perfil</span></li></>}
+                        {wizardStep===7&&<><li>• "Información General" en tarjeta</li><li>• "Requisitos" en tarjeta expandida</li></>}
+                        {wizardStep===8&&<><li>• Modal "Guía de Instalación" en Apps</li><li>• Botón paso a paso con imágenes</li></>}
+                        {wizardStep===9&&<><li>• Botones de descarga en tarjeta</li><li>• Paso 1 de la guía</li></>}
+                        {wizardStep===10&&<><li>• Orden 1 = primera en la lista</li><li>• Apps inactivas no son visibles</li></>}
                       </ul>
-                    </div>
-
-                    {/* Waha reference card */}
-                    <div className="bg-[#07070f] border border-white/5 rounded-xl p-3">
-                      <p className="text-xs text-white/20 mb-2 font-semibold uppercase tracking-wide">Referencia: Waha</p>
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0" style={{background:'#ff4e6a'}}>
-                          <img src="/images/waha-icon.png" alt="Waha" className="w-full h-full object-cover" onError={e => { (e.currentTarget as HTMLImageElement).style.display='none' }} />
-                        </div>
-                        <div>
-                          <p className="text-white/55 text-xs font-bold">Waha <span className="text-white/25 font-normal">· iOS: Liyo · Código: R3DKXB5</span></p>
-                          <p className="text-white/30 text-xs">Color: #ff4e6a · orden: 1 · Activa</p>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </div>
