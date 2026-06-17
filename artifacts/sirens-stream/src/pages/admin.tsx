@@ -4159,7 +4159,7 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                           <input type="number" min={0} max={100} step={1} placeholder="10" value={appFormData.commission_pct_default ?? ''}
                             onChange={e => setAppFormData(p => ({...p, commission_pct_default: parseFloat(e.target.value) || null}))}
                             className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
-                          <p className="text-white/25 text-xs mt-1.5">Upload: ganancias × %. Manual: (campo_comision ÷ tasa) × %.</p>
+                          <p className="text-white/25 text-xs mt-1.5">La comisión se calcula sobre las ganancias de la chica, pero la paga la agencia — no se descuenta del salario de la trabajadora.</p>
                         </div>
                         <div className="space-y-3">
                           <div className="flex items-start justify-between p-4 bg-[#07070f] rounded-xl border border-white/8 gap-3">
