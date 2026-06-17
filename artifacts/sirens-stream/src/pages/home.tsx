@@ -139,6 +139,28 @@ import { useLanguage } from "@/contexts/LanguageContext";
     const showAgencia = useShowAgencia();
     const { lang } = useLanguage();
     const slides = lang === 'pt' ? slides_pt : slides_es;
+      const [catalogApps, setCatalogApps] = useState<string[]>([])
+      useEffect(() => {
+        const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
+        fetch(`${apiBase}/api/apps-catalog`)
+          .then(r => r.json())
+          .then(data => { if (data.apps?.length) setCatalogApps(data.apps.map((a: { name: string }) => a.name)) })
+          .catch(() => {})
+      }, [])
+      // Override slide 3 with dynamic app names when catalog is loaded
+      const dynamicSlides = catalogApps.length > 0
+        ? dynamicSlides.map(s =>
+            s.bg === '/images/slide-bg-3.png'
+              ? {
+                  ...s,
+                  title: catalogApps.join(', '),
+                  items: lang === 'pt'
+                    ? catalogApps.map(a => `${a}: mensagens + streaming`)
+                    : catalogApps.map(a => `${a}: mensajes + streaming`),
+                }
+              : s
+          )
+        : slides;
     const benefits = lang === 'pt' ? benefits_pt : benefits_es;
     const steps = lang === 'pt' ? steps_pt : steps_es;
     const earnings = lang === 'pt' ? earnings_pt : earnings_es;
