@@ -88,6 +88,18 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
   const [catalogMsg, setCatalogMsg] = useState<{ok:boolean;text:string}|null>(null)
   const [newAppName, setNewAppName] = useState('')
   const [newAppLogo, setNewAppLogo] = useState('')
+  const [newAppColorHex, setNewAppColorHex] = useState('#8b5cf6')
+  const [newAppDescEs, setNewAppDescEs] = useState('')
+  const [newAppDescPt, setNewAppDescPt] = useState('')
+  const [newAppEarningsEs, setNewAppEarningsEs] = useState('')
+  const [newAppEarningsPt, setNewAppEarningsPt] = useState('')
+  const [newAppAndroid, setNewAppAndroid] = useState('')
+  const [newAppIos, setNewAppIos] = useState('')
+  const [newAppIosName, setNewAppIosName] = useState('')
+  const [newAppTelegram, setNewAppTelegram] = useState('')
+  const [newAppAgencyCode, setNewAppAgencyCode] = useState('')
+  const [editingApp, setEditingApp] = useState<string | null>(null)
+  const [showAdvanced, setShowAdvanced] = useState(false)
 
   const _apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
 
