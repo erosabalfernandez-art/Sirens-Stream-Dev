@@ -11,7 +11,7 @@ const STICKER_URLS = [
   'https://eyeklnjwbyvsgirsglbx.supabase.co/storage/v1/object/public/stickers/sticker_4_pink.jpg',
   'https://eyeklnjwbyvsgirsglbx.supabase.co/storage/v1/object/public/stickers/sticker_5_man.jpg',
 ]
-const APP_ICONS: Record<string, string> = {
+const DEFAULT_APP_ICONS: Record<string, string> = {
   Waha:  'https://eyeklnjwbyvsgirsglbx.supabase.co/storage/v1/object/public/app-icons/waha.jpg',
   Layla: 'https://eyeklnjwbyvsgirsglbx.supabase.co/storage/v1/object/public/app-icons/layla.jpg',
   Howdy: 'https://eyeklnjwbyvsgirsglbx.supabase.co/storage/v1/object/public/app-icons/howdy.jpg',
@@ -40,6 +40,8 @@ export default function Canales() {
   const isAdmin = !!(profile as any)?.is_admin
   const [reqs, setReqs] = useState<CReq[]>([])
   const [fetching, setFetching] = useState(true)
+  const [appIcons, setAppIcons] = useState<Record<string,string>>(DEFAULT_APP_ICONS)
+  const [allAppNames, setAllAppNames] = useState<string[]>(['Waha', 'Layla', 'Howdy'])
   const [activeCh, setActiveCh] = useState<string|null>(null)
   const [sidebar, setSidebar] = useState(true)
   const [msgs, setMsgs] = useState<Msg[]>([])
@@ -60,6 +62,17 @@ export default function Canales() {
 
   useEffect(()=>{ if(!loading&&!user) navigate('/login') },[loading,user])
   useEffect(()=>{ if(user) loadAccess() },[user])
+  useEffect(()=>{
+    const apiBase=((import.meta.env.VITE_API_URL as string|undefined)??'').replace(/\/$/,'')
+    fetch(`${apiBase}/api/apps-catalog`).then(r=>r.ok?r.json():null).then((d:any)=>{
+      if(!d?.apps) return
+      const icons:Record<string,string>={...DEFAULT_APP_ICONS}
+      const names:string[]=[]
+      for(const app of d.apps){ if(app.is_active){ if(app.icon_url) icons[app.name]=app.icon_url; names.push(app.name) } }
+      setAppIcons(icons)
+      if(names.length>0) setAllAppNames(names)
+    }).catch(()=>{})
+  },[])
 
   const approved = reqs.filter(r=>r.status==='approved').map(r=>r.app_name)
 
@@ -116,7 +129,7 @@ export default function Canales() {
     }
   async function loadStk(app:string){
     if(app==='all'){
-      const results=await Promise.all(['Waha','Layla','Howdy'].map(a=>fetch(`${API}/api/payment-stickers?app_name=${encodeURIComponent(a)}`).then(r=>r.ok?r.json():{events:[]}).catch(()=>({events:[]}))))
+      const results=await Promise.all(allAppNames.map(a=>fetch(`${API}/api/payment-stickers?app_name=${encodeURIComponent(a)}`).then(r=>r.ok?r.json():{events:[]}).catch(()=>({events:[]}))))
       setStickers(results.flatMap((d:any)=>d.events??[]))
     } else {
       const r=await fetch(`${API}/api/payment-stickers?app_name=${encodeURIComponent(app)}`)
@@ -214,7 +227,7 @@ export default function Canales() {
                 style={{width:'100%',display:'flex',alignItems:'center',gap:12,padding:'8px 14px',border:'none',cursor:'pointer',textAlign:'left',background:isActive?'rgba(44,165,224,0.13)':'transparent',transition:'background 0.15s',borderLeft:`3px solid ${isActive?'#2ca5e0':'transparent'}`}}>
                 <div style={{position:'relative',flexShrink:0}}>
                   <div style={{width:46,height:46,borderRadius:'50%',overflow:'hidden',border:`2px solid ${isActive?'#2ca5e0':'rgba(255,255,255,0.08)'}`}}>
-                    <img src={APP_ICONS[c.app]} alt={c.app} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                    <img src={appIcons[c.app]} alt={c.app} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
                   </div>
                   <div style={{position:'absolute',bottom:-1,right:-1,width:17,height:17,borderRadius:'50%',background:'#2ca5e0',border:'2px solid #17212b',display:'flex',alignItems:'center',justifyContent:'center'}}>
                     <Megaphone size={8} color="white"/>
@@ -244,7 +257,7 @@ export default function Canales() {
                   </div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{color:isActive?'#fff':'rgba(255,255,255,0.85)',fontWeight:600,fontSize:14}}>Canal de Pagos</div>
-                    <div style={{color:'rgba(255,255,255,0.3)',fontSize:12,marginTop:1}}>Waha · Layla · Howdy</div>
+                    <div style={{color:'rgba(255,255,255,0.3)',fontSize:12,marginTop:1}}>{allAppNames.join(' · ')}</div>
                   </div>
                 </button>
               )
@@ -267,7 +280,7 @@ export default function Canales() {
             <ChevronLeft size={22}/>
           </button>
           <div style={{width:38,height:38,borderRadius:'50%',overflow:'hidden',flexShrink:0}}>
-            <img src={APP_ICONS[ch.app]} alt={ch.app} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+            <img src={appIcons[ch.app]} alt={ch.app} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
           </div>
           <div style={{flex:1,minWidth:0}}>
             <div style={{display:'flex',alignItems:'center',gap:6}}>
@@ -312,7 +325,7 @@ export default function Canales() {
                       {/* Channel identity row — compact, no divider */}
                       <div style={{display:'flex',alignItems:'center',gap:7,padding:'10px 14px 5px'}}>
                         <div style={{width:22,height:22,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:'1.5px solid rgba(44,165,224,0.4)'}}>
-                          <img src={APP_ICONS[ch.app]} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                          <img src={appIcons[ch.app]} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
                         </div>
                         <span style={{color:'#2ca5e0',fontWeight:700,fontSize:13,lineHeight:1}}>Canal {ch.app}</span>
                         <span style={{color:'rgba(255,255,255,0.2)',fontSize:10,marginLeft:1}}>· Eclipse Angels</span>
