@@ -60,6 +60,25 @@ function isoWeekLabel(date = new Date()): string {
     file_name?: string
   }
 
+  interface ManualField {
+    key: string
+    label: string
+    type: 'number' | 'text'
+    is_usd_base?: boolean
+    is_commission_base?: boolean
+  }
+
+  interface CatalogAppMinimal {
+    name: string
+    nomina_type?: string | null
+    nomina_rate?: number | null
+    nomina_manual_fields?: ManualField[] | null
+    commission_pct_default?: number | null
+    nomina_metric_label?: string | null
+    color_hex?: string | null
+    [key: string]: unknown
+  }
+
   function normalizeUID(val: unknown): string {
     if (val === null || val === undefined || val === '') return ''
     const s = String(val).trim()
@@ -691,6 +710,267 @@ function getAppColor(app: string): AppColorEntry { return APP_COLORS[app] ?? DEF
   }
 
   
+
+function GenericManualSection({ appCatalog, exchangeRates = {} }: { appCatalog: CatalogAppMinimal; exchangeRates?: Record<string,number> }) {
+  const appName = appCatalog.name
+  const rate = appCatalog.nomina_rate ?? 1
+  const fields: ManualField[] = appCatalog.nomina_manual_fields ?? [
+    { key: 'usd', label: 'USD', type: 'number', is_usd_base: true }
+  ]
+  const usdField = fields.find(f => f.is_usd_base) ?? fields[0]
+  const commField = fields.find(f => f.is_commission_base)
+  const pctField = fields.find(f => !f.is_usd_base && !f.is_commission_base)
+  const commPctDefault = appCatalog.commission_pct_default ?? 10
+  const color = appCatalog.color_hex ?? '#7c3aed'
+
+  const [open, setOpen] = useState(false)
+  const [workers, setWorkers] = useState<WorkerEntry[]>([])
+  const [loadingWorkers, setLoadingWorkers] = useState(false)
+  const [semana, setSemana] = useState(() => { try { return localStorage.getItem('ea_active_semana') ?? '' } catch { return '' } })
+  const [values, setValues] = useState<Record<string, Record<string, string>>>(() => {
+    try {
+      const activeSemana = localStorage.getItem('ea_active_semana') ?? ''
+      if (!activeSemana) return {}
+      const stored = localStorage.getItem(`ea_manual_vals_${appName}_${activeSemana}`)
+      return stored ? JSON.parse(stored) : {}
+    } catch { return {} }
+  })
+  const [publishing, setPublishing] = useState(false)
+  const [publishedOk, setPublishedOk] = useState(false)
+  const [agentNameMap, setAgentNameMap] = useState<Record<string,string>>({})
+  const [agentIdMap, setAgentIdMap] = useState<Record<string,string>>({})
+
+  useEffect(() => {
+    if (!semana) return
+    try { localStorage.setItem(`ea_manual_vals_${appName}_${semana}`, JSON.stringify(values)) } catch {}
+  }, [values, semana, appName])
+
+  useEffect(() => {
+    if (!open || workers.length > 0) return
+    setLoadingWorkers(true)
+    const activeSemana = (() => { try { return localStorage.getItem('ea_active_semana') ?? '' } catch { return '' } })()
+    Promise.all([
+      supabase.from('worker_entries').select('*').eq('app_name', appName),
+      supabase.from('profiles').select('agent_name, colider_name, agent_code, id').or('is_agent.eq.true,is_colider.eq.true'),
+      activeSemana
+        ? supabase.from('published_salaries').select('user_id,diamantes,extras').eq('app_name', appName).eq('semana', activeSemana)
+        : Promise.resolve({ data: [] }),
+    ]).then(([{ data: workerData }, { data: agentData }, { data: pubData }]) => {
+      const workerList = (workerData ?? []) as WorkerEntry[]
+      setWorkers(workerList)
+      const am: Record<string,string> = {}
+      const aim: Record<string,string> = {}
+      for (const a of ((agentData ?? []) as any[])) {
+        if (a.agent_code) { am[a.agent_code] = a.agent_name ?? a.colider_name ?? a.agent_code; aim[a.agent_code] = a.id }
+      }
+      setAgentNameMap(am); setAgentIdMap(aim)
+      if (activeSemana) setSemana(activeSemana)
+      if (pubData && (pubData as any[]).length > 0) {
+        setValues(prev => {
+          const merged = { ...prev }
+          for (const w of workerList) {
+            const pub = ((pubData ?? []) as any[]).find((row: any) => row.user_id === w.user_id)
+            if (pub && !merged[w.id]) {
+              const entry: Record<string,string> = {}
+              if (usdField) entry[usdField.key] = String(pub.diamantes ?? '')
+              for (const f of fields) {
+                if (!f.is_usd_base && (pub.extras as any)?.[f.key] != null)
+                  entry[f.key] = String((pub.extras as any)[f.key])
+              }
+              merged[w.id] = entry
+            }
+          }
+          return merged
+        })
+        setPublishedOk(true)
+      }
+      setLoadingWorkers(false)
+    })
+  }, [open])
+
+  useEffect(() => {
+    function onCierre() {
+      const activeSemana = (() => { try { return localStorage.getItem('ea_active_semana') ?? '' } catch { return '' } })()
+      setValues({}); setPublishedOk(false); setSemana('')
+      if (activeSemana) try { localStorage.removeItem(`ea_manual_vals_${appName}_${activeSemana}`) } catch {}
+    }
+    window.addEventListener('ea_cierre_done', onCierre)
+    return () => window.removeEventListener('ea_cierre_done', onCierre)
+  }, [appName])
+
+  function setField(workerId: string, fieldKey: string, val: string) {
+    setValues(prev => ({ ...prev, [workerId]: { ...(prev[workerId] ?? {}), [fieldKey]: val } }))
+  }
+  function getFieldVal(workerId: string, fieldKey: string): string {
+    return values[workerId]?.[fieldKey] ?? ''
+  }
+  function calcUSD(workerId: string): number {
+    if (!usdField) return 0
+    const val = parseFloat(getFieldVal(workerId, usdField.key)) || 0
+    return rate > 1 ? val / rate : val
+  }
+  function calcCommission(workerId: string): number {
+    const commBase = commField
+      ? (parseFloat(getFieldVal(workerId, commField.key)) || 0) / (rate > 1 ? rate : 1)
+      : calcUSD(workerId)
+    const pct = pctField
+      ? parseFloat(getFieldVal(workerId, pctField.key)) || 0
+      : commPctDefault
+    return commBase * (pct / 100)
+  }
+  const totalUSD = workers.reduce((s, w) => s + calcUSD(w.id), 0)
+
+  async function publicar() {
+    setPublishing(true)
+    try {
+      const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
+      const salaryInserts = workers.map(w => {
+        const usd = calcUSD(w.id)
+        const usdBaseVal = parseFloat(getFieldVal(w.id, usdField?.key ?? '')) || 0
+        const extras: Record<string,unknown> = {}
+        for (const f of fields) { if (!f.is_usd_base) extras[f.key] = parseFloat(getFieldVal(w.id, f.key)) || 0 }
+        return { user_id: w.user_id, app_name: appName, semana, usd, diamantes: usdBaseVal, extras }
+      })
+      const cobradas = workers.filter(w => calcUSD(w.id) > 0).map(w => ({
+        worker: { ...w, profile_email: '' },
+        nomina: {
+          uid: w.id_aplicacion ?? '', apodo: w.nombre_en_app ?? w.nombre_real ?? '',
+          usd: calcUSD(w.id), diamantes: parseFloat(getFieldVal(w.id, usdField?.key ?? '')) || 0,
+          semana, comision: calcCommission(w.id), agente: w.agente ?? null,
+          extras: Object.fromEntries(fields.filter(f => !f.is_usd_base).map(f => [f.key, parseFloat(getFieldVal(w.id, f.key)) || 0])),
+        },
+      }))
+      const noCobro = workers.filter(w => !(calcUSD(w.id) > 0)).map(w => ({ worker: { ...w, profile_email: '' }, nomina: null }))
+      const r1 = await fetch(`${apiBase}/api/publish-salaries`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          inserts: salaryInserts, app_name: appName, semana, cobradas, noCobro, sinPerfil: [],
+          total_usd: salaryInserts.reduce((s, i) => s + i.usd, 0),
+          total_diamantes: salaryInserts.reduce((s, i) => s + i.diamantes, 0),
+          file_name: `${appName}-manual-${semana}`,
+        }),
+      })
+      if (!r1.ok) { const e = await r1.json() as { error?: string }; alert(`❌ Error: ${e.error ?? r1.status}`); setPublishing(false); return }
+      const agentMap: Record<string, { uid: string; nombre: string; salary_usd: number; commission_usd: number }[]> = {}
+      for (const w of workers) {
+        const agente = w.agente; if (!agente) continue
+        if (agentIdMap[agente] && w.user_id === agentIdMap[agente]) continue
+        const commission = calcCommission(w.id); if (commission <= 0) continue
+        if (!agentMap[agente]) agentMap[agente] = []
+        agentMap[agente].push({ uid: w.user_id ?? '', nombre: w.nombre_en_app ?? w.nombre_real ?? '', salary_usd: calcUSD(w.id), commission_usd: commission })
+      }
+      const agentInserts = Object.entries(agentMap).map(([name, wkrs]) => ({
+        agent_user_id: null as string | null, agent_name: name, app_name: appName, semana,
+        total_commission_usd: wkrs.reduce((s, wk) => s + wk.commission_usd, 0), workers_data: wkrs,
+      }))
+      if (agentInserts.length > 0) await fetch(`${apiBase}/api/publish-agents`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ inserts: agentInserts }) })
+      setPublishedOk(true)
+    } catch (e: unknown) { alert(`❌ Error: ${e instanceof Error ? e.message : 'Error de red'}`) }
+    setPublishing(false)
+  }
+
+  const FIELD_ICONS: Record<string,string> = { retiradas: '💎', comerciales: '🪙', porcentaje: '📊', usd: '💵', monedas: '🪙', puntos: '⭐', diamantes: '💎' }
+
+  return (
+    <div className="rounded-2xl border overflow-hidden" style={{ borderColor: color + '40' }}>
+      <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between px-5 py-4 transition-colors hover:bg-white/5">
+        <div className="flex items-center gap-3">
+          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: publishedOk ? '#4ade80' : color + '66' }} />
+          <span className="font-extrabold text-lg tracking-tight">{appName}</span>
+          <span className="text-xs px-2 py-0.5 rounded-lg font-bold" style={{ background: color + '20', color }}>Entrada manual</span>
+          {publishedOk && <span className="text-xs text-green-400 font-bold bg-green-500/10 px-2 py-0.5 rounded-lg border border-green-500/20">✓ Publicado</span>}
+        </div>
+        <div>{open ? <ChevronUp className="w-5 h-5 text-white/70" /> : <ChevronDown className="w-5 h-5 text-white/40" />}</div>
+      </button>
+      {open && (
+        <div className="border-t p-5 space-y-5" style={{ borderColor: color + '20' }}>
+          {rate > 1 && (
+            <div className="flex items-center gap-2 text-white/25 text-xs">
+              <span>📐</span>
+              <span>{rate.toLocaleString('es-ES')} {appCatalog.nomina_metric_label ?? 'unidades'} = $1.00 USD</span>
+            </div>
+          )}
+          {loadingWorkers ? (
+            <div className="flex items-center justify-center gap-3 text-white/30 py-10">
+              <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: color }} />
+              <span className="text-sm">Cargando trabajadoras...</span>
+            </div>
+          ) : workers.length === 0 ? (
+            <div className="text-white/25 text-sm text-center py-10">No hay trabajadoras registradas en {appName}.</div>
+          ) : (
+            <div className="space-y-3">
+              {workers.map(w => {
+                const usd = calcUSD(w.id)
+                const comm = calcCommission(w.id)
+                const pct = pctField ? getFieldVal(w.id, pctField.key) : String(commPctDefault)
+                const nombre = w.nombre_en_app ?? w.nombre_real ?? '—'
+                return (
+                  <div key={w.id} className="bg-[#0d0d1e] border border-white/8 rounded-2xl p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: color + '20' }}>
+                        <span className="font-extrabold text-sm" style={{ color }}>{nombre[0]?.toUpperCase()}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-bold text-sm truncate">{nombre}</p>
+                        {w.agente && <p className="text-white/30 text-xs">Agente: {agentNameMap[w.agente] ?? w.agente}</p>}
+                      </div>
+                      {usd > 0 && (
+                        <div className="text-right shrink-0">
+                          <p className="text-green-400 font-extrabold text-sm">${usd.toFixed(2)} USD</p>
+                          {comm > 0 && <p className="text-amber-400/70 text-xs">Com. agente ({pct || '0'}%): ${comm.toFixed(2)}</p>}
+                        </div>
+                      )}
+                    </div>
+                    <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(fields.length, 3)}, 1fr)` }}>
+                      {fields.map(field => (
+                        <div key={field.key}>
+                          <label className="text-white/40 text-xs font-semibold mb-1.5 block">
+                            {FIELD_ICONS[field.key.toLowerCase()] ?? '📝'} {field.label}
+                          </label>
+                          <div className="relative">
+                            <input
+                              type={field.type === 'number' ? 'number' : 'text'}
+                              min={field.type === 'number' ? '0' : undefined}
+                              step={field.key === pctField?.key ? '0.1' : '1'}
+                              placeholder="0"
+                              value={getFieldVal(w.id, field.key)}
+                              onChange={e => setField(w.id, field.key, e.target.value)}
+                              className={`w-full bg-[#13132a] border rounded-xl px-3 py-2.5 text-sm placeholder:text-white/15 focus:outline-none transition-colors ${field.key === pctField?.key ? 'text-amber-300 border-amber-500/30 focus:border-amber-500/60 pr-8' : 'text-white border-white/10 focus:border-white/20'}`}
+                            />
+                            {field.key === pctField?.key && (
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-400/60 text-xs font-bold pointer-events-none">%</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+          {workers.length > 0 && (
+            <div className="bg-[#0d0d1e] border border-white/10 rounded-2xl p-4 flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <p className="text-white/40 text-xs uppercase tracking-wider font-bold mb-0.5">Total a publicar</p>
+                <p className="text-green-400 font-extrabold text-2xl">${totalUSD.toFixed(2)} <span className="text-base font-bold">USD</span></p>
+                {rate > 1 && <p className="text-white/20 text-xs mt-0.5">{rate.toLocaleString('es-ES')} {appCatalog.nomina_metric_label ?? 'unidades'} = $1.00</p>}
+              </div>
+              <button
+                onClick={publicar} disabled={publishing}
+                className="flex items-center gap-2 text-white font-bold px-6 py-3 rounded-xl transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ background: color }}>
+                {publishing ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Publicando...</> : publishedOk ? '✓ Publicado' : '🚀 Publicar resultados'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+
 function AppNominaSection({ app, reloadKey, exchangeRates = {} }: { app: string; reloadKey: number; exchangeRates?: Record<string,number> }) {
   const color = getAppColor(app)
 
@@ -1954,6 +2234,7 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {} }: { app: string;
   const [deletingHistId, setDeletingHistId] = useState<string | null>(null)
   // Used to signal each section to reload from localStorage (e.g. after loading history)
   const [catalogApps, setCatalogApps] = useState<string[]>(['Waha', 'Layla', 'Howdy'])
+  const [catalogAppsFull, setCatalogAppsFull] = useState<CatalogAppMinimal[]>([])
   const [reloadKeys, setReloadKeys] = useState<Record<string, number>>({})
   const [nominaRates, setNominaRates] = useState<Record<string,number>>({})
   const [nominaRateInputs, setNominaRateInputs] = useState<Record<string,string>>(() => { try { const s = localStorage.getItem('ea_cambio_drafts'); return s ? JSON.parse(s) : {} } catch { return {} } })
@@ -1982,7 +2263,12 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {} }: { app: string;
     const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
     fetch(`${apiBase}/api/apps-catalog`)
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.apps) setCatalogApps(d.apps.map((a: { name: string }) => a.name)) })
+      .then(d => {
+        if (d?.apps) {
+          setCatalogApps(d.apps.map((a: { name: string }) => a.name))
+          setCatalogAppsFull(d.apps as CatalogAppMinimal[])
+        }
+      })
       .catch(() => {})
   }, [])
 
@@ -2447,10 +2733,12 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {} }: { app: string;
           />
         ) : (
           <div className="space-y-3">
-            {catalogApps.map(app =>
-              app === 'Layla'
-                ? <LaylaManualSection key="Layla" exchangeRates={nominaRates} />
-                : <AppNominaSection key={app} app={app} reloadKey={reloadKeys[app] ?? 0} exchangeRates={nominaRates} />
+            {(catalogAppsFull.length > 0 ? catalogAppsFull : catalogApps.map(n => ({ name: n, nomina_type: n === 'Layla' ? 'manual' : 'upload' } as CatalogAppMinimal))).map((appEntry) =>
+              appEntry.nomina_type === 'manual'
+                ? appEntry.name === 'Layla'
+                  ? <LaylaManualSection key="Layla" exchangeRates={nominaRates} />
+                  : <GenericManualSection key={appEntry.name} appCatalog={appEntry} exchangeRates={nominaRates} />
+                : <AppNominaSection key={appEntry.name} app={appEntry.name} reloadKey={reloadKeys[appEntry.name] ?? 0} exchangeRates={nominaRates} />
             )}
           </div>
         )}
