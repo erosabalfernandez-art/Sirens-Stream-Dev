@@ -101,6 +101,7 @@ export function AngelaChat() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [dynamicQuickReplies, setDynamicQuickReplies] = useState<string[] | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevLang = useRef(lang);
 
@@ -119,6 +120,21 @@ export function AngelaChat() {
     const hide = setTimeout(() => setShowBubble(false), 7000);
     return () => { clearTimeout(show); clearTimeout(hide); };
   }, []);
+
+  useEffect(() => {
+    const apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? "";
+    const url = apiBase ? `${apiBase}/api/apps-catalog` : "/api/apps-catalog";
+    fetch(url).then(r => r.ok ? r.json() : null).then((d: any) => {
+      if (!d?.apps) return;
+      const activeNames: string[] = (d.apps as {is_active:boolean;display_name:string}[])
+        .filter(a => a.is_active).map(a => a.display_name);
+      if (activeNames.length === 0) return;
+      const extra = lang === "pt"
+        ? ["Quanto posso ganhar?", "Como me inscrevo?", "É seguro?"]
+        : ["¿Cuánto puedo ganar?", "¿Cómo me uno?", "¿Es seguro?"];
+      setDynamicQuickReplies([...activeNames.map(n => `Info sobre ${n}`), ...extra]);
+    }).catch(() => {});
+  }, [lang]);
 
   useEffect(() => {
     if (isOpen) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -231,7 +247,7 @@ export function AngelaChat() {
             {/* Quick replies */}
             {!isTyping && messages.length <= 2 && (
               <div className="px-3 pb-2 flex flex-wrap gap-1.5 shrink-0">
-                {t.quickReplies.map(q => (
+                {(dynamicQuickReplies ?? t.quickReplies).map(q => (
                   <button key={q} onClick={() => sendMessage(q)}
                     className="text-[11px] font-medium px-3 py-1.5 rounded-full bg-blue-500/15 border border-blue-500/25 text-blue-300 hover:bg-blue-500/25 transition-colors">
                     {q}
