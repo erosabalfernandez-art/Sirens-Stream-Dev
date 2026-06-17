@@ -1,0 +1,12 @@
+{
+  "installCommand": "cd artifacts/sirens-stream && npm install --legacy-peer-deps",
+  "buildCommand": "cd artifacts/sirens-stream && BASE_PATH=/ npm run build",
+  "outputDirectory": "artifacts/sirens-stream/dist",
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
