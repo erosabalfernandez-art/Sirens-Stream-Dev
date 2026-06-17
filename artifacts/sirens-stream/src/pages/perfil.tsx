@@ -6,8 +6,6 @@ import { useState, useEffect } from 'react'
     import { Plus, Pencil, Trash2, LogOut, ChevronDown, ChevronUp, AlertTriangle, X, Check, Copy } from 'lucide-react'
 import { TelegramLinkCard } from '@/components/layout/TelegramLinkCard'
 
-    const APPS = ['Waha', 'Layla', 'Howdy']
-
     interface EntryFormData {
       app_name: string
       nombre_real: string
@@ -38,6 +36,14 @@ import { TelegramLinkCard } from '@/components/layout/TelegramLinkCard'
     export default function Perfil() {
       const { user, profile, loading, signOut } = useAuth()
         const { lang } = useLanguage()
+        const [APPS, setApps] = useState<string[]>(['Waha', 'Layla', 'Howdy'])
+        useEffect(() => {
+          const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
+          fetch(`${apiBase}/api/apps-catalog`)
+            .then(r => r.ok ? r.json() : null)
+            .then(d => { if (d?.apps) setApps(d.apps.map((a: { name: string }) => a.name)) })
+            .catch(() => {})
+        }, [])
         const T = {
           title:             lang === 'pt' ? 'Meu Perfil'                        : 'Mi Perfil',
           logout:            lang === 'pt' ? 'Sair'                              : 'Salir',

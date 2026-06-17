@@ -221,7 +221,7 @@ function isoWeekLabel(date = new Date()): string {
   // ── History Panel ───────────────────────────────────────────────────────────
   function HistoryPanel({
     history, historyLoading, historyFilterSemana, setHistoryFilterSemana,
-    historyFilterApp, setHistoryFilterApp, deletingHistId, onDelete, onLoad, fmtNum,
+    historyFilterApp, setHistoryFilterApp, deletingHistId, onDelete, onLoad, fmtNum, catalogApps,
   }: {
     history: HistoryEntry[]
     historyLoading: boolean
@@ -233,8 +233,10 @@ function isoWeekLabel(date = new Date()): string {
     onDelete: (id: string) => void
     onLoad: (entry: HistoryEntry) => void
     fmtNum: (n: number) => string
+    catalogApps?: string[]
   }) {
     const [confirmDelete, setConfirmDelete] = React.useState<string | null>(null)
+    const appList = catalogApps && catalogApps.length > 0 ? catalogApps : ['Waha', 'Layla', 'Howdy']
     const filtered = history.filter(h => {
       if (historyFilterApp && h.app_name !== historyFilterApp) return false
       if (historyFilterSemana && !h.semana.toLowerCase().includes(historyFilterSemana.toLowerCase()) && !(h.file_name ?? '').toLowerCase().includes(historyFilterSemana.toLowerCase())) return false
@@ -244,7 +246,7 @@ function isoWeekLabel(date = new Date()): string {
       <div className="space-y-4">
         <div className="flex gap-2 flex-wrap items-center">
           <span className="text-xs font-bold uppercase tracking-wider text-white/40 mr-1">App:</span>
-          {(['', 'Waha', 'Layla', 'Howdy'] as const).map(a => (
+          {(['', ...appList]).map(a => (
             <button key={a} onClick={() => setHistoryFilterApp(a)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${historyFilterApp === a ? 'bg-purple-600 text-white' : 'bg-[#0d0d1e] border border-purple-500/15 text-white/50 hover:text-white'}`}>
               {a || 'Todas'}
@@ -314,11 +316,14 @@ function SplashLoader({ msg }: { msg: string }) {
 }
 
 // ── App colors ────────────────────────────────────────────────────────────────
-const APP_COLORS = {
+type AppColorEntry = { accent: string; border: string; dot: string; tag: string }
+const APP_COLORS: Record<string, AppColorEntry> = {
   Waha:  { accent: 'bg-purple-600', border: 'border-purple-500/30', dot: 'bg-purple-400', tag: 'bg-purple-500/20 text-purple-300' },
   Layla: { accent: 'bg-pink-600',   border: 'border-pink-500/30',   dot: 'bg-pink-400',   tag: 'bg-pink-500/20 text-pink-300' },
   Howdy: { accent: 'bg-blue-600',   border: 'border-blue-500/30',   dot: 'bg-blue-400',   tag: 'bg-blue-500/20 text-blue-300' },
 }
+const DEFAULT_APP_COLOR: AppColorEntry = { accent: 'bg-violet-600', border: 'border-violet-500/30', dot: 'bg-violet-400', tag: 'bg-violet-500/20 text-violet-300' }
+function getAppColor(app: string): AppColorEntry { return APP_COLORS[app] ?? DEFAULT_APP_COLOR }
 
 // ── Per-app accordion section ─────────────────────────────────────────────────
 
@@ -686,8 +691,8 @@ const APP_COLORS = {
   }
 
   
-function AppNominaSection({ app, reloadKey, exchangeRates = {} }: { app: 'Waha' | 'Layla' | 'Howdy'; reloadKey: number; exchangeRates?: Record<string,number> }) {
-  const color = APP_COLORS[app]
+function AppNominaSection({ app, reloadKey, exchangeRates = {} }: { app: string; reloadKey: number; exchangeRates?: Record<string,number> }) {
+  const color = getAppColor(app)
 
   // Accordion open state — default closed, persists user's explicit choice
   const [sectionOpen, setSectionOpen] = useState<boolean>(() => {
@@ -1948,7 +1953,8 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {} }: { app: 'Waha' 
   const [historyFilterApp, setHistoryFilterApp] = useState('')
   const [deletingHistId, setDeletingHistId] = useState<string | null>(null)
   // Used to signal each section to reload from localStorage (e.g. after loading history)
-  const [reloadKeys, setReloadKeys] = useState<Record<string, number>>({ Waha: 0, Layla: 0, Howdy: 0 })
+  const [catalogApps, setCatalogApps] = useState<string[]>(['Waha', 'Layla', 'Howdy'])
+  const [reloadKeys, setReloadKeys] = useState<Record<string, number>>({})
   const [nominaRates, setNominaRates] = useState<Record<string,number>>({})
   const [nominaRateInputs, setNominaRateInputs] = useState<Record<string,string>>(() => { try { const s = localStorage.getItem('ea_cambio_drafts'); return s ? JSON.parse(s) : {} } catch { return {} } })
   const [nominaSavingRate, setNominaSavingRate] = useState<string|null>(null)
@@ -1971,6 +1977,14 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {} }: { app: 'Waha' 
 
   if (loading) return <SplashLoader msg="Cargando..." />
   if (!profile?.is_admin) return <SplashLoader msg="Sin acceso" />
+
+  useEffect(() => {
+    const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
+    fetch(`${apiBase}/api/apps-catalog`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.apps) setCatalogApps(d.apps.map((a: { name: string }) => a.name)) })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     supabase.from('exchange_rates').select('*').then(({ data }) => {
@@ -2429,12 +2443,15 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {} }: { app: 'Waha' 
             onDelete={deleteFromHistory}
             onLoad={loadFromHistory}
             fmtNum={fmt}
+            catalogApps={catalogApps}
           />
         ) : (
           <div className="space-y-3">
-            <AppNominaSection app="Waha"  reloadKey={reloadKeys.Waha}  exchangeRates={nominaRates} />
-            <LaylaManualSection exchangeRates={nominaRates} />
-            <AppNominaSection app="Howdy" reloadKey={reloadKeys.Howdy} exchangeRates={nominaRates} />
+            {catalogApps.map(app =>
+              app === 'Layla'
+                ? <LaylaManualSection key="Layla" exchangeRates={nominaRates} />
+                : <AppNominaSection key={app} app={app} reloadKey={reloadKeys[app] ?? 0} exchangeRates={nominaRates} />
+            )}
           </div>
         )}
 

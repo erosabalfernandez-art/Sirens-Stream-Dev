@@ -11,7 +11,14 @@ import { Router } from 'express';
     return `${process.env.SUPABASE_URL}/rest/v1/${p}`;
   }
 
-  const ALL_APPS = ['Waha', 'Layla', 'Howdy'];
+  async function getAllAppNames(): Promise<string[]> {
+    try {
+      const r = await fetch(sbUrl('apps_catalog?is_active=eq.true&select=name&order=sort_order.asc'), { headers: sbH() });
+      if (!r.ok) return ['Waha', 'Layla', 'Howdy'];
+      const rows: { name: string }[] = await r.json();
+      return rows.map(r => r.name);
+    } catch { return ['Waha', 'Layla', 'Howdy']; }
+  }
 
   // GET /api/channel-access?user_id=X
   router.get('/channel-access', async (req, res) => {
@@ -25,8 +32,9 @@ import { Router } from 'express';
 
       // Only admins get auto-access to all channels
       if (p?.is_admin) {
+        const apps = await getAllAppNames();
         return res.json({
-          requests: ALL_APPS.map(app => ({ app_name: app, status: 'approved' })),
+          requests: apps.map(app => ({ app_name: app, status: 'approved' })),
         });
       }
 
@@ -173,8 +181,8 @@ import { Router } from 'express';
       const { user_id } = req.body as { user_id?: string };
       if (!user_id) return res.status(400).json({ error: 'user_id requerido' });
       try {
-        // Always grant all 3 app channels — admin assigns directly, no need for messages to exist yet
-        const appNames = ['Waha', 'Layla', 'Howdy'];
+        // Grant all active app channels — admin assigns directly, no need for messages to exist yet
+        const appNames = await getAllAppNames();
 
         // Get existing channel_requests for this user
         const existingRes = await fetch(

@@ -21,14 +21,8 @@ import { PushNotificationCard } from '@/components/layout/PushNotificationCard'
       error?: string
     }
 
-    const APPS = ['', 'Waha', 'Layla', 'Howdy']
     const PAYMENT_METHODS = ['', 'Binance', 'Pix', 'Efectivo (Cuba)', 'Transferencia Bancaria (Cuba)']
-    const COUNTRIES = [
-      '','Argentina','Bolivia','Brasil','Chile','Colombia','Costa Rica','Cuba',
-      'Ecuador','El Salvador','España','Estados Unidos','Guatemala','Honduras',
-      'México','Nicaragua','Panamá','Paraguay','Perú','Puerto Rico',
-      'República Dominicana','Uruguay','Venezuela','Otro',
-    ]
+    const COUNTRIES_FILTER = ['', ...COUNTRIES]
 
 function cleanNum(s: string | null | undefined): string { return (s ?? '').replace(/[^0-9]/g, '') }
 function cleanFullPhone(code: string | null | undefined, tel: string | null | undefined): string { return (`${code ?? ''}${tel ?? ''}`).replace(/[\s\-\+\(\)]/g, '') }
@@ -77,6 +71,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
       const [, navigate] = useLocation()
       const [workers, setWorkers] = useState<WorkerRow[]>([])
       const [loadingData, setLoadingData] = useState(true)
+      const [catalogApps, setCatalogApps] = useState<string[]>(['Waha', 'Layla', 'Howdy'])
       const emailMapRef = useRef<Record<string, string>>({})
       const [filterApp, setFilterApp] = useState(() => { try { return localStorage.getItem('ea_af_app') ?? '' } catch { return '' } })
       const [filterPais, setFilterPais] = useState(() => { try { return localStorage.getItem('ea_af_pais') ?? '' } catch { return '' } })
@@ -94,6 +89,14 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
       .then(d => { if (d && d.value !== null) setShowAgencia(d.value !== 'false'); })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
+    fetch(`${apiBase}/api/apps-catalog`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.apps) setCatalogApps(d.apps.map((a: { name: string }) => a.name)) })
+      .catch(() => {})
+  }, [])
 
   async function toggleAgencia() {
     setLoadingAgencia(true);
@@ -1380,14 +1383,14 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                       <label className="block text-xs text-white/40 mb-1">App</label>
                       <select value={filterApp} onChange={e => setFilterApp(e.target.value)}
                         className="w-full bg-[#07070f] border border-purple-500/20 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500/50">
-                        {APPS.map(a => <option key={a} value={a}>{a || 'Todas'}</option>)}
+                        {['', ...catalogApps].map(a => <option key={a} value={a}>{a || 'Todas'}</option>)}
                       </select>
                     </div>
                     <div>
                       <label className="block text-xs text-white/40 mb-1">País</label>
                       <select value={filterPais} onChange={e => setFilterPais(e.target.value)}
                         className="w-full bg-[#07070f] border border-purple-500/20 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500/50">
-                        {COUNTRIES.map(c => <option key={c} value={c}>{c || 'Todos'}</option>)}
+                        {COUNTRIES_FILTER.map(c => <option key={c} value={c}>{c || 'Todos'}</option>)}
                       </select>
                     </div>
                     <div>
@@ -1926,7 +1929,6 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                       const totalDone = coliderDone + agenciaDone
                       const totalTotal = coliderTotal + agenciaTotal
                       const totalPct = totalTotal > 0 ? Math.round(totalDone / totalTotal * 100) : 0
-                      const APPS = ['Waha', 'Layla', 'Howdy'] as const
                       return (
                         <div className="space-y-4">
                           {/* ── BARRA EFECTIVO ─────────────────────────────── */}
@@ -1953,7 +1955,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                                   <>
                                     <p className="text-[10px] font-bold uppercase tracking-widest text-teal-400/60 mb-2 px-1">👩‍💻 Trabajadora</p>
                                     {/* Workers per app */}
-                                    {APPS.map(app => {
+                                    {catalogApps.map(app => {
                                       const appRows = efectivoRows.filter((r: any) => r.app_name === app)
                                       if (!appRows.length) return null
                                       return (
@@ -2210,7 +2212,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                                 ) : (
                                   <>
                                     <p className="text-[10px] font-bold uppercase tracking-widest text-purple-400/60 mb-2 px-1">👩‍💻 Trabajadora</p>
-                                    {APPS.map(app => {
+                                    {catalogApps.map(app => {
                                       const appRows = agenciaRows.filter((r: any) => r.app_name === app)
                                       if (!appRows.length) return null
                                       return (
@@ -3006,7 +3008,7 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                     if (b === '(Sin agente)') return -1
                     return resolveAgentName(a).localeCompare(resolveAgentName(b))
                   })
-                  const APPS_ORDER = ['Waha', 'Layla', 'Howdy']
+                  const APPS_ORDER = catalogApps
 
                   // Group girl entries by real name key
                   function groupGirls(rows: WorkerRow[]) {

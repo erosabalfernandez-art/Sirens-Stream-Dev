@@ -14,10 +14,20 @@ import { Router } from 'express';
     return `${process.env.SUPABASE_URL}/rest/v1/${path}`;
   }
 
+  async function getAllAppNames(): Promise<string[]> {
+    try {
+      const r = await fetch(sbUrl('apps_catalog?is_active=eq.true&select=name'), { headers: sbHeaders() as Record<string, string> });
+      if (!r.ok) return ['Waha', 'Layla', 'Howdy'];
+      const rows: { name: string }[] = await r.json();
+      return rows.map(r => r.name);
+    } catch { return ['Waha', 'Layla', 'Howdy']; }
+  }
+
   // GET /api/nomina-state?app=Waha
   router.get('/nomina-state', async (req, res) => {
     const app = req.query.app as string;
-    if (!app || !['Waha', 'Layla', 'Howdy'].includes(app)) {
+    const validApps = await getAllAppNames();
+    if (!app || !validApps.includes(app)) {
       return res.status(400).json({ error: 'Invalid app' });
     }
     try {
@@ -53,7 +63,8 @@ import { Router } from 'express';
   // POST /api/nomina-state
   router.post('/nomina-state', async (req, res) => {
     const { app_name, semana, cobradas, noCobro, sinPerfil, total_usd, total_diamantes, file_name } = req.body as Record<string,unknown>;
-    if (!app_name || !['Waha', 'Layla', 'Howdy'].includes(app_name as string)) {
+    const validApps2 = await getAllAppNames();
+    if (!app_name || !validApps2.includes(app_name as string)) {
       return res.status(400).json({ error: 'Invalid app_name' });
     }
     try {

@@ -138,7 +138,26 @@ import { useLanguage } from "@/contexts/LanguageContext";
   export default function Home() {
     const showAgencia = useShowAgencia();
     const { lang } = useLanguage();
-    const slides = lang === 'pt' ? slides_pt : slides_es;
+    const [catalogApps, setCatalogApps] = useState<string[]>(['Waha', 'Layla', 'Howdy'])
+    useEffect(() => {
+      const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
+      fetch(`${apiBase}/api/apps-catalog`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d?.apps) setCatalogApps(d.apps.map((a: { name: string }) => a.name)) })
+        .catch(() => {})
+    }, [])
+    const appTitle = catalogApps.join(', ').replace(/, ([^,]+)$/, ' & $1')
+    const rawSlides = lang === 'pt' ? slides_pt : slides_es;
+    const slides = rawSlides.map((s, i) => i !== 2 ? s : {
+      ...s,
+      title: appTitle,
+      items: catalogApps.map(a => {
+        if (a === 'Waha') return lang === 'pt' ? 'Waha: mensagens + videochamadas' : 'Waha: mensajes + videollamadas'
+        if (a === 'Layla') return lang === 'pt' ? 'Layla: mensagens + salas de áudio' : 'Layla: mensajes + salas de audio'
+        if (a === 'Howdy') return lang === 'pt' ? 'Howdy: videochamadas + live + match' : 'Howdy: videollamadas + live + match'
+        return a
+      }),
+    });
     const benefits = lang === 'pt' ? benefits_pt : benefits_es;
     const steps = lang === 'pt' ? steps_pt : steps_es;
     const earnings = lang === 'pt' ? earnings_pt : earnings_es;
