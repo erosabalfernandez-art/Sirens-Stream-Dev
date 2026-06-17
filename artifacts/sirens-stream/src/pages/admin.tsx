@@ -3491,8 +3491,8 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                   {catalogFull.map(app => (
                     <div key={app.id} className="flex items-center justify-between p-3 bg-[#07070f] rounded-xl border border-white/8 gap-3">
                       <div className="flex items-center gap-3 min-w-0">
-                        {app.logo_url ? (
-                          <img src={app.logo_url} alt={app.name} className="w-9 h-9 rounded-xl object-cover shrink-0 ring-1 ring-white/10" />
+                        {app.icon_url ? (
+                          <img src={app.icon_url} alt={app.name} className="w-9 h-9 rounded-xl object-cover shrink-0 ring-1 ring-white/10" />
                         ) : (
                           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-600 to-purple-600 flex items-center justify-center shrink-0">
                             <span className="text-base">📱</span>
@@ -3500,7 +3500,7 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                         )}
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-white truncate">{app.name}</p>
-                          <p className="text-xs text-white/40">#{app.order_index}</p>
+                          <p className="text-xs text-white/40">#{app.sort_order}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
@@ -3508,10 +3508,10 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                           onClick={async () => {
                             setCatalogSaving(true); setCatalogMsg(null)
                             try {
-                              const r = await fetch(_apiBase + `/api/apps-catalog/${app.id}`, {
+                              const r = await fetch(_apiBase + `/api/apps-catalog/${app.name}`, {
                                 method: 'PATCH',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ active: !app.active }),
+                                body: JSON.stringify({ is_active: !app.is_active }),
                               })
                               if (r.ok) { setCatalogMsg({ ok: true, text: `${app.name} ${!app.active ? 'activada' : 'desactivada'} ✓` }); await fetchCatalog() }
                               else { const d = await r.json() as {error?:string}; setCatalogMsg({ ok: false, text: d.error ?? 'Error' }) }
@@ -3520,14 +3520,14 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                           }}
                           disabled={catalogSaving}
                           className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${app.active ? 'bg-green-500/15 border border-green-500/25 text-green-300 hover:bg-green-500/25' : 'bg-red-500/15 border border-red-500/25 text-red-300 hover:bg-red-500/25'} disabled:opacity-50`}>
-                          {app.active ? '✓ Activa' : '✗ Inactiva'}
+                          {app.is_active ? '✓ Activa' : '✗ Inactiva'}
                         </button>
                         <button
                           onClick={async () => {
                             if (!confirm(`¿Eliminar "${app.name}"? Esta acción no se puede deshacer.`)) return
                             setCatalogSaving(true); setCatalogMsg(null)
                             try {
-                              const r = await fetch(_apiBase + `/api/apps-catalog/${app.id}`, { method: 'DELETE' })
+                              const r = await fetch(_apiBase + `/api/apps-catalog/${app.name}`, { method: 'DELETE' })
                               if (r.ok) { setCatalogMsg({ ok: true, text: `${app.name} eliminada ✓` }); await fetchCatalog() }
                               else { const d = await r.json() as {error?:string}; setCatalogMsg({ ok: false, text: d.error ?? 'Error' }) }
                             } catch { setCatalogMsg({ ok: false, text: 'Error de red' }) }
@@ -3570,8 +3570,9 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                               name: newAppName.trim(),
-                              logo_url: newAppLogo.trim() || null,
-                              order_index: catalogFull.length,
+                              display_name: newAppName.trim(),
+                              icon_url: newAppLogo.trim() || null,
+                              sort_order: catalogFull.length,
                             }),
                           })
                           if (r.ok) {
