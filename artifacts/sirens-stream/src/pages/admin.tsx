@@ -126,6 +126,8 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
     guide_steps: GuideStep[] | null;
     guide_whatsapp: string | null;
     uses_direct_payment_notification: boolean | null;
+    ai_knowledge_es: string | null;
+    ai_knowledge_pt: string | null;
   }
   const [appsCatalogFull, setAppsCatalogFull] = useState<AppCatalogEntry[]>([])
   const [appsLoading, setAppsLoading] = useState(false)
@@ -147,12 +149,43 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
     payment_frequency: 'semanal', payment_min_usd: 2.5,
     uses_cup_exchange: true, commission_pct_default: 10,
     guide_steps: [], guide_whatsapp: '', uses_direct_payment_notification: false,
+    ai_knowledge_es: '', ai_knowledge_pt: '',
   }
   const [appFormData, setAppFormData] = useState<Partial<AppCatalogEntry>>(emptyAppForm)
   const [savingApp, setSavingApp] = useState(false)
   const [appSaveMsg, setAppSaveMsg] = useState<{ok: boolean; text: string} | null>(null)
   const [wizardStep, setWizardStep] = useState(1)
   const [wizardMode, setWizardMode] = useState<'list' | 'wizard'>('list')
+  const [uploadingIcon, setUploadingIcon] = useState(false)
+  const [uploadingGuideImgs, setUploadingGuideImgs] = useState<Record<number, boolean>>({})
+  const iconFileRef = useRef<HTMLInputElement>(null)
+
+  async function uploadAppImage(file: File, type: 'icon' | 'guide', guideIdx?: number) {
+    const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
+    if (type === 'icon') setUploadingIcon(true)
+    else if (guideIdx !== undefined) setUploadingGuideImgs(p => ({...p, [guideIdx]: true}))
+    const reader = new FileReader()
+    reader.onload = async (e) => {
+      const b64 = (e.target?.result as string)?.split(',')[1]
+      if (!b64) { setUploadingIcon(false); setUploadingGuideImgs(p => ({...p, [guideIdx??0]: false})); return }
+      try {
+        const res = await fetch(`${apiBase}/api/apps-catalog/upload-image`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base64: b64, mime: file.type, filename: file.name, type }),
+        })
+        if (res.ok) {
+          const { url } = await res.json()
+          if (type === 'icon') setAppFormData(p => ({...p, icon_url: url}))
+          else if (guideIdx !== undefined) setAppFormData(p => { const arr=[...(p.guide_steps??[])]; arr[guideIdx]={...arr[guideIdx],image_url:url}; return {...p,guide_steps:arr} })
+        }
+      } catch (_) {}
+      finally {
+        if (type === 'icon') setUploadingIcon(false)
+        else if (guideIdx !== undefined) setUploadingGuideImgs(p => ({...p, [guideIdx]: false}))
+      }
+    }
+    reader.readAsDataURL(file)
+  }
 
   async function fetchAppsCatalog() {
     setAppsLoading(true); setAppsError(null)
@@ -3639,13 +3672,13 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                       className="text-xs text-white/30 hover:text-white/60 transition-colors px-2 py-1 rounded-lg hover:bg-white/5">✕ Cancelar</button>
                   </div>
                   <div className="flex gap-0.5 mb-2">
-                    {['Nombre','Visual','Desc','Ganar','Nómina','Comis','Specs','Guía','Descarga','Config'].map((_, i) => (
+                    {['Nombre','Visual','Desc','Ganar','Nómina','Comis','Specs','Guía','Descarga','Config','IA'].map((_, i) => (
                       <button key={i} onClick={() => setWizardStep(i + 1)}
                         className={`flex-1 h-1.5 rounded-full transition-all ${wizardStep > i + 1 ? 'bg-violet-500' : wizardStep === i + 1 ? 'bg-violet-400' : 'bg-white/10'}`} />
                     ))}
                   </div>
                   <div className="flex justify-between px-0.5">
-                    {['1·Nombre','2·Visual','3·Desc','4·Ganar','5·Nómina','6·Comis','7·Specs','8·Guía','9·Desc','10·Config'].map((s, i) => (
+                    {['1·Nombre','2·Visual','3·Desc','4·Ganar','5·Nómina','6·Comis','7·Specs','8·Guía','9·Desc','10·Config','11·IA'].map((s, i) => (
                       <span key={i} className={`text-[10px] transition-colors ${wizardStep === i + 1 ? 'text-violet-300 font-bold' : 'text-white/15'}`}>{s}</span>
                     ))}
                   </div>
@@ -3757,8 +3790,15 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">URL del logo / icono</label>
-                          <input type="text" placeholder="https://..." value={appFormData.icon_url ?? ''} onChange={e => setAppFormData(p => ({ ...p, icon_url: e.target.value }))}
-                            className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
+                          <div className="flex gap-2">
+                          <input type="text" placeholder="https://... o sube una imagen →" value={appFormData.icon_url ?? ''} onChange={e => setAppFormData(p => ({ ...p, icon_url: e.target.value }))}
+                            className="flex-1 bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
+                          <input ref={iconFileRef} type="file" accept="image/*" className="hidden" onChange={e => { if(e.target.files?.[0]) uploadAppImage(e.target.files[0], 'icon'); e.target.value='' }} />
+                          <button type="button" onClick={() => iconFileRef.current?.click()} disabled={uploadingIcon}
+                            className="shrink-0 px-3 py-2.5 rounded-xl border border-violet-500/30 bg-violet-500/10 text-violet-300 text-xs font-bold hover:bg-violet-500/20 transition-all disabled:opacity-40 whitespace-nowrap">
+                            {uploadingIcon ? '⏳' : '📤 Subir'}
+                          </button>
+                          </div>
                           <div className="mt-2 bg-violet-500/8 border border-violet-500/15 rounded-xl p-3">
                             <p className="text-violet-300 text-xs font-semibold mb-1">💡 Subir logo:</p>
                             <p className="text-white/35 text-xs">Supabase → Storage → app-icons → Sube PNG/JPG → clic derecho → "Get URL" → pegar aquí</p>
@@ -4142,17 +4182,53 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                                   className="w-full bg-[#0d0d1e] border border-white/8 rounded-lg px-2.5 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50 resize-none" />
                               </div>
                               <div>
-                                <label className="block text-xs text-white/40 mb-1">URL de imagen <span className="text-white/25">(opcional)</span></label>
-                                <input type="text" placeholder="https://... o /images/captura.png" value={step.image_url ?? ''}
+                                <label className="block text-xs text-white/40 mb-1">Imagen del paso <span className="text-white/25">(opcional)</span></label>
+                                <div className="flex gap-2">
+                                <input type="text" placeholder="https://... o sube →" value={step.image_url ?? ''}
                                   onChange={e => setAppFormData(p => { const arr=[...(p.guide_steps??[])]; arr[idx]={...arr[idx],image_url:e.target.value}; return {...p,guide_steps:arr} })}
-                                  className="w-full bg-[#0d0d1e] border border-white/8 rounded-lg px-2.5 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50" />
+                                  className="flex-1 bg-[#0d0d1e] border border-white/8 rounded-lg px-2.5 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50" />
+                                <input type="file" accept="image/*" className="hidden" id={`guide-img-${idx}`} onChange={e => { if(e.target.files?.[0]) uploadAppImage(e.target.files[0], 'guide', idx); e.target.value='' }} />
+                                <button type="button" onClick={() => { const el=document.getElementById(`guide-img-${idx}`) as HTMLInputElement|null; el?.click() }} disabled={uploadingGuideImgs[idx]}
+                                  className="shrink-0 px-2.5 py-2 rounded-lg border border-violet-500/30 bg-violet-500/10 text-violet-300 text-xs font-bold hover:bg-violet-500/20 transition-all disabled:opacity-40">
+                                  {uploadingGuideImgs[idx] ? '⏳' : '📤'}
+                                </button>
+                                </div>
                               </div>
                             </div>
                           ))}
                         </div>
                         <div className="bg-[#07070f] border border-white/5 rounded-xl p-3">
                           <p className="text-violet-300/70 text-xs font-semibold mb-1">📸 Imágenes de los pasos:</p>
-                          <p className="text-white/30 text-xs">Supabase → Storage → app-guides → sube capturas → clic derecho → "Get URL" → pegar en campo imagen del paso.</p>
+                          <p className="text-white/30 text-xs">Usa el botón 📤 en cada paso para subir capturas directamente. Se guardan en Supabase Storage y el URL se completa automáticamente.</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── STEP 11: IA Ángela ── */}
+                    {wizardStep === 11 && (
+                      <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
+                        <div>
+                          <p className="text-white font-bold text-base mb-1">🤖 Conocimiento para Ángela (IA)</p>
+                          <p className="text-white/40 text-sm">¿Qué debe saber Ángela sobre esta app? Esto se inyecta automáticamente en su sistema de respuestas cuando alguien pregunta por la app.</p>
+                        </div>
+                        <div className="bg-blue-500/8 border border-blue-500/20 rounded-xl p-3 text-xs text-blue-300 leading-relaxed">
+                          💡 <strong>Incluye:</strong> nombre, tipo de actividad, ganancias (tarifas, metas), código de agencia, formas de retiro, requisitos, y cualquier dato que las usuarias suelen preguntar. Si lo dejas vacío, Ángela solo sabrá el nombre de la app.
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Conocimiento en Español</label>
+                          <textarea rows={10} placeholder={"APP — NombreApp:\nDescripción breve de la plataforma.\nGANANCIAS: X unidades/min | Meta mínima: X = $X USD\nCÓDIGO AGENCIA: XXXXXX\nRETIRO: semanal / acumulativo\nDESCARGA Android: https://...\nDESCARGA iOS: https://..."}
+                            value={appFormData.ai_knowledge_es ?? ''}
+                            onChange={e => setAppFormData(p => ({ ...p, ai_knowledge_es: e.target.value }))}
+                            className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60 resize-none font-mono text-xs" />
+                          <p className="text-white/20 text-xs mt-1">Este texto se añade al prompt de Ángela en español. Copia el estilo de Waha/Layla/Howdy.</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Conocimiento en Portugués</label>
+                          <textarea rows={8} placeholder={"APP — NombreApp:\nDescrição breve da plataforma.\nGANHOS: X unidades/min | Meta mínima: X = $X USD\nCÓDIGO DE AGÊNCIA: XXXXXX"}
+                            value={appFormData.ai_knowledge_pt ?? ''}
+                            onChange={e => setAppFormData(p => ({ ...p, ai_knowledge_pt: e.target.value }))}
+                            className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60 resize-none font-mono text-xs" />
+                          <p className="text-white/20 text-xs mt-1">Versión en portugués para usuarias de Brasil. Si lo dejas vacío, Ángela usará el bloque en español.</p>
                         </div>
                       </div>
                     )}
@@ -4249,7 +4325,7 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                           ✕ Cancelar
                         </button>
                       )}
-                      {wizardStep < 10 ? (
+                      {wizardStep < 11 ? (
                         <button onClick={() => setWizardStep(s => s + 1)}
                           disabled={wizardStep === 1 && (!appFormData.display_name || (!editingApp && !appFormData.name))}
                           className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold bg-violet-600 text-white hover:bg-violet-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
@@ -4360,7 +4436,7 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                     )}
                     <div className="bg-[#0d0d1e] border border-white/5 rounded-xl p-4">
                       <p className="text-xs font-bold text-white/40 mb-2">
-                        {wizardStep===1&&'📍 El nombre aparece en:'}{wizardStep===2&&'🎨 Logo y colores en:'}{wizardStep===3&&'📝 Descripción en:'}{wizardStep===4&&'💰 Ganancias en:'}{wizardStep===5&&'📊 Nómina en:'}{wizardStep===6&&'💸 Comisiones en:'}{wizardStep===7&&'📋 Specs/Req en:'}{wizardStep===8&&'📖 Guía en:'}{wizardStep===9&&'🔗 Links en:'}{wizardStep===10&&'⚙️ Configuración:'}
+                        {wizardStep===1&&'📍 El nombre aparece en:'}{wizardStep===2&&'🎨 Logo y colores en:'}{wizardStep===3&&'📝 Descripción en:'}{wizardStep===4&&'💰 Ganancias en:'}{wizardStep===5&&'📊 Nómina en:'}{wizardStep===6&&'💸 Comisiones en:'}{wizardStep===7&&'📋 Specs/Req en:'}{wizardStep===8&&'📖 Guía en:'}{wizardStep===9&&'🔗 Links en:'}{wizardStep===10&&'⚙️ Configuración:'}{wizardStep===11&&'🤖 IA Ángela:'}
                       </p>
                       <ul className="space-y-1 text-xs text-white/30">
                         {wizardStep===1&&<><li>• Tarjeta en <span className="text-white/50">Apps</span></li><li>• Encabezado en <span className="text-white/50">Nómina</span></li><li>• Lista en <span className="text-white/50">Perfil</span></li></>}
@@ -4373,6 +4449,7 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                         {wizardStep===8&&<><li>• Modal "Guía de Instalación" en Apps</li><li>• Botón paso a paso con imágenes</li></>}
                         {wizardStep===9&&<><li>• Botones de descarga en tarjeta</li><li>• Paso 1 de la guía</li></>}
                         {wizardStep===10&&<><li>• Orden 1 = primera en la lista</li><li>• Apps inactivas no son visibles</li></>}
+                        {wizardStep===11&&<><li>• Chat IA Ángela en la web pública</li><li>• Quick replies del chat (Info sobre...)</li><li>• Actualización automática al guardar</li></>}
                       </ul>
                     </div>
                   </div>
