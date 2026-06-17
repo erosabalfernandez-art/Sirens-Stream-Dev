@@ -244,7 +244,7 @@ function isoWeekLabel(date = new Date()): string {
       <div className="space-y-4">
         <div className="flex gap-2 flex-wrap items-center">
           <span className="text-xs font-bold uppercase tracking-wider text-white/40 mr-1">App:</span>
-          {(['', 'Waha', 'Layla', 'Howdy'] as const).map(a => (
+          {(['', ...(typeof catalogApps !== 'undefined' ? catalogApps : ['Waha','Layla','Howdy'])]).map(a => (
             <button key={a} onClick={() => setHistoryFilterApp(a)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${historyFilterApp === a ? 'bg-purple-600 text-white' : 'bg-[#0d0d1e] border border-purple-500/15 text-white/50 hover:text-white'}`}>
               {a || 'Todas'}
@@ -686,7 +686,7 @@ const APP_COLORS = {
   }
 
   
-function AppNominaSection({ app, reloadKey, exchangeRates = {} }: { app: 'Waha' | 'Layla' | 'Howdy'; reloadKey: number; exchangeRates?: Record<string,number> }) {
+function AppNominaSection({ app, reloadKey, exchangeRates = {} }: { app: string; reloadKey: number; exchangeRates?: Record<string,number> }) {
   const color = APP_COLORS[app]
 
   // Accordion open state — default closed, persists user's explicit choice
