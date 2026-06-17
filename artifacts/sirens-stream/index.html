@@ -49,6 +49,7 @@
             border-radius: 50%;
             animation: rl_spin 0.8s linear infinite;
           }
+          #root-loader-spinner.stopped { animation: none; border-top-color: #ef4444; border-color: rgba(239,68,68,0.3); }
           #root-loader-logo {
             width: 64px;
             height: 64px;
@@ -63,6 +64,9 @@
             font-family: Inter, sans-serif;
             margin: 0;
             letter-spacing: 0.02em;
+            text-align: center;
+            max-width: 320px;
+            padding: 0 1rem;
           }
           #root-loader-brand {
             color: rgba(255,255,255,0.35);
@@ -71,6 +75,31 @@
             margin: 0;
             letter-spacing: 0.1em;
             text-transform: uppercase;
+          }
+          #root-loader-error {
+            display: none;
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            color: #fca5a5;
+            font-size: 12px;
+            font-family: monospace;
+            max-width: 340px;
+            word-break: break-all;
+            text-align: left;
+            margin: 0 1rem;
+          }
+          #root-loader-reload {
+            display: none;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.6rem 1.5rem;
+            font-size: 14px;
+            font-family: Inter, sans-serif;
+            cursor: pointer;
           }
           @keyframes rl_spin { to { transform: rotate(360deg); } }
         </style>
@@ -82,15 +111,48 @@
           <div id="root-loader-spinner"></div>
           <p id="root-loader-text">Cargando...</p>
           <p id="root-loader-brand">Eclipse Angels Agency</p>
+          <pre id="root-loader-error"></pre>
+          <button id="root-loader-reload" onclick="window.location.reload()">Recargar</button>
         </div>
         <div id="root"></div>
         <script>
+          function showLoaderError(msg) {
+            var spinner = document.getElementById('root-loader-spinner');
+            var text = document.getElementById('root-loader-text');
+            var errorEl = document.getElementById('root-loader-error');
+            var reloadBtn = document.getElementById('root-loader-reload');
+            if (spinner) spinner.classList.add('stopped');
+            if (text) text.textContent = 'Error al cargar la app';
+            if (errorEl) { errorEl.style.display = 'block'; errorEl.textContent = msg; }
+            if (reloadBtn) reloadBtn.style.display = 'block';
+          }
+
+          // Catch any unhandled JS error
+          window.onerror = function(msg, src, line, col, err) {
+            showLoaderError((err ? err.toString() : msg) + '\n' + src + ':' + line);
+            return false;
+          };
+
+          // Catch unhandled promise rejections
+          window.addEventListener('unhandledrejection', function(e) {
+            showLoaderError(e.reason ? (e.reason.stack || e.reason.toString()) : 'Unhandled promise rejection');
+          });
+
+          // Timeout: if React doesn't mount in 15s, show error
+          var mountTimeout = setTimeout(function() {
+            var root = document.getElementById('root');
+            if (!root || root.children.length === 0) {
+              showLoaderError('El bundle de JavaScript cargo pero React no inicio. Revisa la consola del navegador (F12) para ver el error exacto.');
+            }
+          }, 15000);
+
           // Hide the static loader once React has mounted
           document.addEventListener('DOMContentLoaded', function() {
             var el = document.getElementById('root-loader');
             var observer = new MutationObserver(function() {
               var root = document.getElementById('root');
               if (root && root.children.length > 0) {
+                clearTimeout(mountTimeout);
                 if (el) el.classList.add('hidden');
                 setTimeout(function() { if (el && el.parentNode) el.parentNode.removeChild(el); }, 350);
                 observer.disconnect();
