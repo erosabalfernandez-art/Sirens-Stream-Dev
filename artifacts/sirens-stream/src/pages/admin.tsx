@@ -4020,7 +4020,7 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                                   <div className="flex gap-4">
                                     <label className="flex items-center gap-2 cursor-pointer">
                                       <input type="checkbox" checked={field.is_usd_base ?? false}
-                                        onChange={e => setAppFormData(p => { const arr=[...(p.nomina_manual_fields??[])]; arr[idx]={...arr[idx],is_usd_base:e.target.checked}; return {...p,nomina_manual_fields:arr} })}
+                                        onChange={e => setAppFormData(p => { const arr=[...(p.nomina_manual_fields??[])].map((f,i) => i===idx ? {...f,is_usd_base:e.target.checked} : e.target.checked ? {...f,is_usd_base:false} : f); return {...p,nomina_manual_fields:arr} })}
                                         className="w-3.5 h-3.5 accent-violet-500" />
                                       <span className="text-xs text-white/50">Base USD <span className="text-violet-300/50">(÷ tasa)</span></span>
                                     </label>
@@ -4041,6 +4041,109 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                             </button>
                           </div>
                         )}
+
+                        {/* ── Fórmula de cálculo en vivo ── */}
+                        {appFormData.nomina_type && (() => {
+                          const usdBase = appFormData.nomina_manual_fields?.find(f => f.is_usd_base);
+                          const commBase = appFormData.nomina_manual_fields?.find(f => f.is_commission_base);
+                          const rate = appFormData.nomina_rate ?? 15500;
+                          const pct = appFormData.commission_pct_default ?? 10;
+                          const usdCol = appFormData.nomina_col_usd || '[columna USD]';
+                          const usdLabel = usdBase?.label || '[campo sin marcar]';
+                          const commLabel = commBase?.label || usdBase?.label || '[campo sin marcar]';
+                          const ex = 50; const exUnits = rate * 30;
+                          return (
+                            <div className="bg-[#07070f] border border-emerald-500/20 rounded-2xl p-5 space-y-4">
+                              <div className="flex items-center gap-2">
+                                <span className="text-emerald-400">⚡</span>
+                                <p className="text-sm font-bold text-white">Vista previa del cálculo</p>
+                                <span className="text-[10px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 px-2 py-0.5 rounded-full font-bold ml-1">AUTOMÁTICO</span>
+                              </div>
+
+                              {appFormData.nomina_type === 'upload' && (
+                                <div className="space-y-3">
+                                  <div className="bg-[#0d0d1e] border border-white/5 rounded-xl p-3.5 space-y-2.5">
+                                    <p className="text-[10px] font-bold text-violet-300/60 uppercase tracking-wider">Fórmula — Subida Excel/CSV</p>
+                                    <div className="space-y-1.5 text-xs font-mono">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="text-white/40">Salario chica =</span>
+                                        <span className="bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 px-2 py-0.5 rounded">{usdCol}</span>
+                                        <span className="text-white/30">× (1 − {pct}%)</span>
+                                      </div>
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="text-white/40">Comisión agente =</span>
+                                        <span className="bg-amber-500/15 text-amber-300 border border-amber-500/25 px-2 py-0.5 rounded">{usdCol}</span>
+                                        <span className="text-white/30">× {pct}%</span>
+                                      </div>
+                                    </div>
+                                    {appFormData.nomina_currency === 'BRL' && (
+                                      <div className="bg-amber-500/8 border border-amber-500/20 rounded-lg p-2.5 mt-1">
+                                        <p className="text-amber-300 text-xs font-bold">💱 Moneda: BRL (Reais)</p>
+                                        <p className="text-amber-200/50 text-xs mt-0.5 leading-relaxed">La columna <span className="font-mono text-amber-300/70">{usdCol}</span> se lee como Reais. La conversión BRL→USD usa la <strong className="text-amber-300/60">tasa global</strong> configurada en Admin → Nómina → Tipo de Cambio.</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="bg-[#0d0d1e] border border-white/5 rounded-xl p-3.5">
+                                    <p className="text-[10px] font-bold text-white/25 mb-2">EJEMPLO — chica con ${ex}.00 USD en la app:</p>
+                                    <div className="space-y-1 text-xs">
+                                      <div className="flex justify-between"><span className="text-white/35">Ganancias brutas</span><span className="text-white/60 font-mono">${ex}.00 USD</span></div>
+                                      <div className="flex justify-between"><span className="text-white/35">Comisión agente ({pct}%)</span><span className="text-amber-400/80 font-mono">− ${(ex * pct / 100).toFixed(2)} USD</span></div>
+                                      <div className="border-t border-white/5 pt-1.5 flex justify-between font-bold"><span className="text-white/50">Salario chica</span><span className="text-green-400 font-mono">${(ex * (1 - pct / 100)).toFixed(2)} USD</span></div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {appFormData.nomina_type === 'manual' && (
+                                <div className="space-y-3">
+                                  {(appFormData.nomina_manual_fields ?? []).length === 0 ? (
+                                    <p className="text-white/25 text-xs">← Agrega campos arriba para ver la fórmula.</p>
+                                  ) : (
+                                    <>
+                                      <div className="bg-[#0d0d1e] border border-white/5 rounded-xl p-3.5 space-y-2.5">
+                                        <p className="text-[10px] font-bold text-violet-300/60 uppercase tracking-wider">Fórmula — Entrada Manual</p>
+                                        <div className="space-y-1.5 text-xs font-mono">
+                                          <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span className="text-white/40">USD bruto =</span>
+                                            <span className={`px-2 py-0.5 rounded border ${usdBase ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25' : 'bg-red-500/10 text-red-400 border-red-500/25'}`}>{usdLabel}</span>
+                                            <span className="text-white/30">÷ {rate.toLocaleString()}</span>
+                                          </div>
+                                          <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span className="text-white/40">Salario chica =</span>
+                                            <span className="text-emerald-400/70">USD bruto</span>
+                                            <span className="text-white/30">× (1 − {pct}%)</span>
+                                          </div>
+                                          <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span className="text-white/40">Comisión =</span>
+                                            <span className={`px-2 py-0.5 rounded border ${commBase ? 'bg-amber-500/15 text-amber-300 border-amber-500/25' : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25'}`}>{commLabel}</span>
+                                            <span className="text-white/30">÷ {rate.toLocaleString()} × {pct}%</span>
+                                          </div>
+                                        </div>
+                                        {!usdBase && (
+                                          <div className="bg-red-500/8 border border-red-500/20 rounded-lg p-2.5 mt-1">
+                                            <p className="text-red-400 text-xs">⚠ Ningún campo tiene <strong>"Base USD"</strong> marcado — sin esto no se calcula el salario.</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                      {usdBase && (
+                                        <div className="bg-[#0d0d1e] border border-white/5 rounded-xl p-3.5">
+                                          <p className="text-[10px] font-bold text-white/25 mb-2">EJEMPLO — chica con {exUnits.toLocaleString()} unidades en "{usdBase.label}":</p>
+                                          <div className="space-y-1 text-xs">
+                                            <div className="flex justify-between"><span className="text-white/35">{usdBase.label}</span><span className="text-white/60 font-mono">{exUnits.toLocaleString()} unid.</span></div>
+                                            <div className="flex justify-between"><span className="text-white/35">USD bruto (÷ {rate.toLocaleString()})</span><span className="text-white/60 font-mono">$30.00 USD</span></div>
+                                            <div className="flex justify-between"><span className="text-white/35">Comisión agente ({pct}%)</span><span className="text-amber-400/80 font-mono">− ${(30 * pct / 100).toFixed(2)} USD</span></div>
+                                            <div className="border-t border-white/5 pt-1.5 flex justify-between font-bold"><span className="text-white/50">Salario chica</span><span className="text-green-400 font-mono">${(30 * (1 - pct / 100)).toFixed(2)} USD</span></div>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                              <p className="text-white/15 text-[10px]">* El % de comisión exacto se define en el paso siguiente. Los valores del ejemplo son ilustrativos.</p>
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
 
