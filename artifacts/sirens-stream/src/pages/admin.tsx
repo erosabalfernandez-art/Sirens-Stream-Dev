@@ -3513,7 +3513,7 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ is_active: !app.is_active }),
                               })
-                              if (r.ok) { setCatalogMsg({ ok: true, text: `${app.name} ${!app.active ? 'activada' : 'desactivada'} ✓` }); await fetchCatalog() }
+                              if (r.ok) { setCatalogMsg({ ok: true, text: `${app.name} ${!app.is_active ? 'activada' : 'desactivada'} ✓` }); await fetchCatalog() }
                               else { const d = await r.json() as {error?:string}; setCatalogMsg({ ok: false, text: d.error ?? 'Error' }) }
                             } catch { setCatalogMsg({ ok: false, text: 'Error de red' }) }
                             finally { setCatalogSaving(false) }
