@@ -1023,6 +1023,7 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
     const [pendingFileName, setPendingFileName] = useState('')
     const [wizardCfg, setWizardCfg] = useState<ColConfig>({ uid: -1, usd: -1, apodo: -1, semana: -1, metric: -1, metricLabel: 'Diamantes', currency: 'USD' })
     const [wizardLoading, setWizardLoading] = useState(false)
+    const [stepBeforeConfig, setStepBeforeConfig] = useState<'upload' | 'results'>('upload')
   const fileRef = useRef<HTMLInputElement>(null)
   const [paidMarks, setPaidMarks] = useState<Set<string>>(new Set())
   const [togglingPaid, setTogglingPaid] = useState<string | null>(null)
@@ -1761,13 +1762,22 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
                           onClick={async () => {
                             if (wizardCfg.uid < 0 || wizardCfg.usd < 0) { setParseError('Selecciona al menos la columna de ID y la de salario.'); return }
                             setParseError(null)
+                            if (pendingRaw.length === 0) {
+                              // No raw file in memory (nomina restored from cache) — just save config, keep nomina intact
+                              try { localStorage.setItem(`ea_col_cfg_${app}`, JSON.stringify(wizardCfg)) } catch {}
+                              setSavedColConfig(wizardCfg)
+                              setStep(stepBeforeConfig)
+                              setStepBeforeConfig('upload')
+                              return
+                            }
                             await applyColConfig(pendingHeaders, pendingRaw, wizardCfg, pendingFileName)
+                            setStepBeforeConfig('upload')
                           }}
                           disabled={wizardCfg.uid < 0 || wizardCfg.usd < 0}
                           className="flex-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm px-4 py-2.5 rounded-xl transition-all">
                           ✓ Confirmar y procesar nómina
                         </button>
-                        <button onClick={() => { setStep('upload'); setParseError(null) }}
+                        <button onClick={() => { setStep(stepBeforeConfig); setStepBeforeConfig('upload'); setParseError(null) }}
                           className="text-white/40 hover:text-white/70 text-sm px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all">
                           Cancelar
                         </button>
@@ -1811,21 +1821,24 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
                     onClick={async () => {
                       try { localStorage.removeItem(`ea_col_cfg_${app}`) } catch {}
                       setSavedColConfig(null)
-                      if (pendingHeaders.length > 0) {
-                        setStep('configuring')
-                        setWizardLoading(true)
-                        const sugg = await getAIColumnSuggestions(pendingHeaders, app)
-                        setWizardCfg({
-                          uid: typeof sugg.uid === 'number' ? sugg.uid : -1,
-                          usd: typeof sugg.usd === 'number' ? sugg.usd : -1,
-                          apodo: typeof sugg.apodo === 'number' ? sugg.apodo : -1,
-                          semana: typeof sugg.semana === 'number' ? sugg.semana : -1,
-                          metric: typeof sugg.metric === 'number' ? sugg.metric : -1,
-                          metricLabel: typeof sugg.metricLabel === 'string' && sugg.metricLabel ? sugg.metricLabel : (appCatalogEntry?.nomina_metric_label ?? 'Diamantes'),
-                          currency: sugg.currency === 'BRL' ? 'BRL' : (appCatalogEntry?.nomina_currency ?? 'USD'),
-                        })
-                        setWizardLoading(false)
+                      if (pendingHeaders.length === 0) {
+                        setParseError('Configuración reseteada. Sube un nuevo archivo para reconfigurar columnas.')
+                        return
                       }
+                      setStepBeforeConfig('results')
+                      setStep('configuring')
+                      setWizardLoading(true)
+                      const sugg = await getAIColumnSuggestions(pendingHeaders, app)
+                      setWizardCfg({
+                        uid: typeof sugg.uid === 'number' ? sugg.uid : -1,
+                        usd: typeof sugg.usd === 'number' ? sugg.usd : -1,
+                        apodo: typeof sugg.apodo === 'number' ? sugg.apodo : -1,
+                        semana: typeof sugg.semana === 'number' ? sugg.semana : -1,
+                        metric: typeof sugg.metric === 'number' ? sugg.metric : -1,
+                        metricLabel: typeof sugg.metricLabel === 'string' && sugg.metricLabel ? sugg.metricLabel : (appCatalogEntry?.nomina_metric_label ?? 'Diamantes'),
+                        currency: sugg.currency === 'BRL' ? 'BRL' : (appCatalogEntry?.nomina_currency ?? 'USD'),
+                      })
+                      setWizardLoading(false)
                     }}
                     title="Reconfigurar columnas de la nómina"
                     className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white/40 hover:text-white/70 text-xs font-semibold px-3 py-2 rounded-xl transition-all">
