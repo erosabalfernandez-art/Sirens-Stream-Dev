@@ -1332,7 +1332,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
             </div>
 
             {/* Tabs */}
-            <div className="overflow-x-auto scrollbar-none mb-6 -mx-1 px-1"><div className="flex rounded-xl bg-[#0d0d1e] border border-purple-500/10 p-1 gap-1 w-max">
+            <div className="flex rounded-xl bg-[#0d0d1e] border border-purple-500/10 p-1 mb-6 gap-1 flex-wrap">
               <button onClick={() => setTab('list')}
                 className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'list' ? 'bg-purple-600 text-white' : 'text-white/40 hover:text-white'}`}>
                 Trabajadoras ({filtered.length})
@@ -1386,7 +1386,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                 <Package className="w-3.5 h-3.5" />
                 Apps
               </button>
-            </div></div>
+            </div>
 
             {tab === 'config' && (<>
 
