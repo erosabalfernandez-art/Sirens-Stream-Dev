@@ -3,9 +3,10 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
-const isProduction = process.env.NODE_ENV === "production";
+// Use REPL_ID as the signal that we're running inside Replit
+// On Render (production build) and CI, REPL_ID is not set → skip Replit-only plugins
+const isReplit = process.env.REPL_ID !== undefined;
 
-// PORT and BASE_PATH are required in dev but optional in production builds
 const rawPort = process.env.PORT;
 const port = rawPort ? Number(rawPort) : 5173;
 const basePath = process.env.BASE_PATH ?? "/";
@@ -15,21 +16,17 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    ...(!isProduction
+    ...(isReplit
       ? [
           (await import("@replit/vite-plugin-runtime-error-modal")).default(),
-          ...(process.env.REPL_ID !== undefined
-            ? [
-                await import("@replit/vite-plugin-cartographer").then((m) =>
-                  m.cartographer({
-                    root: path.resolve(import.meta.dirname, ".."),
-                  }),
-                ),
-                await import("@replit/vite-plugin-dev-banner").then((m) =>
-                  m.devBanner(),
-                ),
-              ]
-            : []),
+          await import("@replit/vite-plugin-cartographer").then((m) =>
+            m.cartographer({
+              root: path.resolve(import.meta.dirname, ".."),
+            }),
+          ),
+          await import("@replit/vite-plugin-dev-banner").then((m) =>
+            m.devBanner(),
+          ),
         ]
       : []),
   ],
