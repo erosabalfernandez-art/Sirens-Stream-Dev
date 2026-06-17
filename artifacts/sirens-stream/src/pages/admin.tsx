@@ -3517,6 +3517,22 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <button
+                            onClick={() => {
+                              setEditingApp(app.name); setShowAdvanced(true);
+                              setNewAppName(app.name); setNewAppLogo((app as any).icon_url ?? '');
+                              setNewAppColorHex((app as any).color_hex ?? '#8b5cf6');
+                              setNewAppDescEs((app as any).description_es ?? ''); setNewAppDescPt((app as any).description_pt ?? '');
+                              setNewAppEarningsEs((app as any).earnings_info_es ?? ''); setNewAppEarningsPt((app as any).earnings_info_pt ?? '');
+                              setNewAppAndroid((app as any).download_url_android ?? ''); setNewAppIos((app as any).download_url_ios ?? '');
+                              setNewAppIosName((app as any).ios_name ?? ''); setNewAppTelegram((app as any).telegram_channel_url ?? '');
+                              setNewAppAgencyCode((app as any).agency_code ?? '');
+                              setTimeout(() => document.querySelector('#apps-form')?.scrollIntoView({ behavior: 'smooth' }), 100);
+                            }}
+                            className="px-3 py-1 rounded-lg text-xs font-semibold bg-blue-500/10 border border-blue-500/30 text-blue-300 hover:bg-blue-500/20 transition-all"
+                          >
+                            ✏️ Editar
+                          </button>
+                          <button
                           onClick={async () => {
                             setCatalogSaving(true); setCatalogMsg(null)
                             try {
@@ -3554,61 +3570,112 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                   ))}
                 </div>
 
-                {/* Add new app form */}
-                <div className="border-t border-white/8 pt-5">
-                  <p className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-3">Agregar nueva app</p>
-                  <div className="flex flex-col gap-2">
-                    <input
-                      type="text"
-                      placeholder="Nombre de la app (ej: MiApp)"
-                      value={newAppName}
-                      onChange={e => setNewAppName(e.target.value)}
-                      className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50 transition-colors"
-                    />
-                    <input
-                      type="text"
-                      placeholder="URL del logo (opcional)"
-                      value={newAppLogo}
-                      onChange={e => setNewAppLogo(e.target.value)}
-                      className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50 transition-colors"
-                    />
-                    <button
-                      onClick={async () => {
-                        if (!newAppName.trim()) return
-                        setCatalogSaving(true); setCatalogMsg(null)
-                        try {
-                          const r = await fetch(_apiBase + '/api/apps-catalog', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                              name: newAppName.trim(),
-                              display_name: newAppName.trim(),
-                              icon_url: newAppLogo.trim() || null,
-                              sort_order: catalogFull.length,
-                            }),
-                          })
-                          if (r.ok) {
-                            setCatalogMsg({ ok: true, text: `App "${newAppName.trim()}" creada ✓` })
-                            setNewAppName(''); setNewAppLogo('')
-                            await fetchCatalog()
-                          } else {
-                            const d = await r.json() as {error?:string}
-                            setCatalogMsg({ ok: false, text: d.error ?? 'Error al crear' })
+                {/* Add / Edit app form */}
+                  <div className="border-t border-white/8 pt-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">
+                        {editingApp ? `✏️ Editando: ${editingApp}` : '➕ Agregar nueva app'}
+                      </p>
+                      {editingApp && (
+                        <button onClick={() => {
+                          setEditingApp(null); setNewAppName(''); setNewAppLogo(''); setNewAppColorHex('#8b5cf6');
+                          setNewAppDescEs(''); setNewAppDescPt(''); setNewAppEarningsEs(''); setNewAppEarningsPt('');
+                          setNewAppAndroid(''); setNewAppIos(''); setNewAppIosName(''); setNewAppTelegram(''); setNewAppAgencyCode('');
+                          setShowAdvanced(false);
+                        }} className="text-xs text-white/40 hover:text-white/70 px-2 py-1 rounded-lg bg-white/5 border border-white/10">
+                          ✕ Cancelar
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <input type="text" placeholder="Nombre de la app (ej: MiApp)" value={newAppName}
+                        onChange={e => setNewAppName(e.target.value)}
+                        className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50" />
+                      <input type="text" placeholder="URL del logo/ícono (opcional)" value={newAppLogo}
+                        onChange={e => setNewAppLogo(e.target.value)}
+                        className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50" />
+                      <div className="flex gap-2 items-center">
+                        <label className="text-xs text-white/40 shrink-0">Color:</label>
+                        <input type="color" value={newAppColorHex} onChange={e => setNewAppColorHex(e.target.value)}
+                          className="w-10 h-10 rounded-lg border border-white/10 bg-transparent cursor-pointer shrink-0" />
+                        <input type="text" value={newAppColorHex} onChange={e => setNewAppColorHex(e.target.value)}
+                          placeholder="#8b5cf6" className="flex-1 bg-[#07070f] border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50" />
+                      </div>
+                      <button onClick={() => setShowAdvanced(v => !v)}
+                        className="text-xs text-teal-400/70 hover:text-teal-400 text-left py-0.5 flex items-center gap-1">
+                        {showAdvanced ? '▲ Ocultar campos avanzados' : '▼ Mostrar: descripción, ganancias, links de descarga...'}
+                      </button>
+                      {showAdvanced && (<>
+                        <p className="text-[10px] text-white/30 font-bold uppercase tracking-wider mt-1">Descripción</p>
+                        <textarea placeholder="Descripción en español" value={newAppDescEs}
+                          onChange={e => setNewAppDescEs(e.target.value)} className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50 resize-none h-20" />
+                        <textarea placeholder="Descrição em português" value={newAppDescPt}
+                          onChange={e => setNewAppDescPt(e.target.value)} className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50 resize-none h-20" />
+                        <p className="text-[10px] text-white/30 font-bold uppercase tracking-wider mt-1">Ganancias (separa items con |)</p>
+                        <textarea placeholder="Ej: Mensajes VIP: 70 diamantes | Meta mínima: $2.50 USD | Pago: semanal" value={newAppEarningsEs}
+                          onChange={e => setNewAppEarningsEs(e.target.value)} className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50 resize-none h-20" />
+                        <textarea placeholder="Ex: Mensagens VIP: 70 diamantes | Meta mínima: $2,50 | Pagamento: semanal" value={newAppEarningsPt}
+                          onChange={e => setNewAppEarningsPt(e.target.value)} className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50 resize-none h-20" />
+                        <p className="text-[10px] text-white/30 font-bold uppercase tracking-wider mt-1">Links de descarga</p>
+                        <input type="text" placeholder="URL Android (Play Store)" value={newAppAndroid}
+                          onChange={e => setNewAppAndroid(e.target.value)} className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50" />
+                        <input type="text" placeholder="URL iOS (App Store)" value={newAppIos}
+                          onChange={e => setNewAppIos(e.target.value)} className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50" />
+                        <input type="text" placeholder="Nombre en iOS (ej: Liyo)" value={newAppIosName}
+                          onChange={e => setNewAppIosName(e.target.value)} className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50" />
+                        <p className="text-[10px] text-white/30 font-bold uppercase tracking-wider mt-1">Otros datos</p>
+                        <input type="text" placeholder="URL canal Telegram (https://t.me/...)" value={newAppTelegram}
+                          onChange={e => setNewAppTelegram(e.target.value)} className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50" />
+                        <input type="text" placeholder="Código de agencia (ej: G-84Y3AG7HL)" value={newAppAgencyCode}
+                          onChange={e => setNewAppAgencyCode(e.target.value)} className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-teal-500/50" />
+                      </>)}
+                      <button
+                        onClick={async () => {
+                          if (!newAppName.trim()) return
+                          setCatalogSaving(true); setCatalogMsg(null)
+                          const payload: Record<string, unknown> = {
+                            name: newAppName.trim(), display_name: newAppName.trim(),
+                            icon_url: newAppLogo.trim() || null,
+                            color_hex: newAppColorHex || '#8b5cf6',
+                            description_es: newAppDescEs.trim() || null,
+                            description_pt: newAppDescPt.trim() || null,
+                            earnings_info_es: newAppEarningsEs.trim() || null,
+                            earnings_info_pt: newAppEarningsPt.trim() || null,
+                            download_url_android: newAppAndroid.trim() || null,
+                            download_url_ios: newAppIos.trim() || null,
+                            ios_name: newAppIosName.trim() || null,
+                            telegram_channel_url: newAppTelegram.trim() || null,
+                            agency_code: newAppAgencyCode.trim() || null,
                           }
-                        } catch { setCatalogMsg({ ok: false, text: 'Error de red' }) }
-                        finally { setCatalogSaving(false) }
-                      }}
-                      disabled={catalogSaving || !newAppName.trim()}
-                      className="w-full px-4 py-2.5 rounded-xl text-sm font-bold bg-teal-600/20 border border-teal-500/30 text-teal-300 hover:bg-teal-600/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                      {catalogSaving ? 'Guardando...' : '+ Agregar App'}
-                    </button>
+                          if (!editingApp) payload.sort_order = catalogFull.length
+                          try {
+                            const url = editingApp ? _apiBase + `/api/apps-catalog/${editingApp}` : _apiBase + '/api/apps-catalog'
+                            const r = await fetch(url, {
+                              method: editingApp ? 'PATCH' : 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify(payload),
+                            })
+                            if (r.ok) {
+                              setCatalogMsg({ ok: true, text: editingApp ? `"${editingApp}" actualizada ✓` : `"${newAppName.trim()}" creada ✓` })
+                              setNewAppName(''); setNewAppLogo(''); setNewAppColorHex('#8b5cf6');
+                              setNewAppDescEs(''); setNewAppDescPt(''); setNewAppEarningsEs(''); setNewAppEarningsPt('');
+                              setNewAppAndroid(''); setNewAppIos(''); setNewAppIosName(''); setNewAppTelegram(''); setNewAppAgencyCode('');
+                              setEditingApp(null); setShowAdvanced(false);
+                              await fetchCatalog()
+                            } else {
+                              const d = await r.json() as {error?:string}
+                              setCatalogMsg({ ok: false, text: d.error ?? 'Error al guardar' })
+                            }
+                          } catch { setCatalogMsg({ ok: false, text: 'Error de red' }) }
+                          finally { setCatalogSaving(false) }
+                        }}
+                        disabled={catalogSaving || !newAppName.trim()}
+                        className="w-full px-4 py-2.5 rounded-xl text-sm font-bold bg-teal-600/20 border border-teal-500/30 text-teal-300 hover:bg-teal-600/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed mt-1"
+                      >
+                        {catalogSaving ? 'Guardando...' : editingApp ? '💾 Guardar cambios' : '+ Agregar App'}
+                      </button>
+                    </div>
                   </div>
-                </div>
-
-                <div className="mt-4 p-3 bg-amber-500/8 border border-amber-500/20 rounded-xl">
-                  <p className="text-xs text-amber-300/80 font-semibold mb-1">⚠️ Tabla pendiente de crear en Supabase</p>
-                  <p className="text-xs text-white/40">Si no ves apps, ejecuta el SQL de <code>apps_catalog</code> en tu Supabase SQL Editor (ver replit.md).</p>
-                </div>
               </div>
             </div>
           )}
