@@ -2,7 +2,7 @@ services:
     - type: web
       name: eclipse-angels-dev-web
       runtime: static
-      buildCommand: npx --yes pnpm@9 install && BASE_PATH=/ npx --yes pnpm@9 --filter @workspace/sirens-stream run build
+      buildCommand: npx --yes pnpm@9 install && NODE_ENV=production BASE_PATH=/ npx --yes pnpm@9 --filter @workspace/sirens-stream run build
       staticPublishPath: artifacts/sirens-stream/dist
       pullRequestPreviewsEnabled: false
       envVars:
