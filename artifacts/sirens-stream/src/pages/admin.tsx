@@ -117,6 +117,8 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
   const [appFormData, setAppFormData] = useState<Partial<AppCatalogEntry>>(emptyAppForm)
   const [savingApp, setSavingApp] = useState(false)
   const [appSaveMsg, setAppSaveMsg] = useState<{ok: boolean; text: string} | null>(null)
+  const [wizardStep, setWizardStep] = useState(1)
+  const [wizardMode, setWizardMode] = useState<'list' | 'wizard'>('list')
 
   async function fetchAppsCatalog() {
     setAppsLoading(true); setAppsError(null)
@@ -3580,195 +3582,427 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
 
 
           {tab === 'apps' && (
-            <div className="space-y-6 max-w-4xl">
-              {/* Header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Package className="w-5 h-5 text-violet-400" />
-                  <h2 className="text-lg font-bold text-white">Gestión de Apps</h2>
-                  <span className="text-xs text-white/30 font-medium">{appsCatalogFull.length} en el catálogo</span>
-                </div>
-                <button
-                  onClick={() => { setShowAddAppForm(true); setEditingApp(null); setAppFormData(emptyAppForm); setAppSaveMsg(null) }}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold transition-all">
-                  <Plus className="w-4 h-4" /> Nueva App
-                </button>
-              </div>
+            <div className="space-y-4 max-w-4xl">
 
-              {/* SQL reminder */}
-              <div className="bg-blue-500/8 border border-blue-500/20 rounded-xl p-4">
-                <p className="text-blue-300 text-xs font-bold mb-1">⚠️ Requisito: tabla apps_catalog en Supabase</p>
-                <p className="text-white/40 text-xs">Si aún no has creado la tabla, ejecuta el SQL de la Biblia (sección 4.1) en el Editor SQL de Supabase antes de usar esta sección.</p>
-              </div>
-
-              {/* Error */}
-              {appsError && (
-                <div className="bg-red-500/10 border border-red-500/25 rounded-xl p-4 text-red-300 text-sm font-semibold">{appsError}</div>
-              )}
-
-              {/* Save result */}
-              {appSaveMsg && (
-                <div className={`p-3 rounded-xl text-sm font-semibold ${appSaveMsg.ok ? 'bg-green-500/10 border border-green-500/25 text-green-300' : 'bg-red-500/10 border border-red-500/25 text-red-300'}`}>
-                  {appSaveMsg.text}
-                </div>
-              )}
-
-              {/* Add / Edit Form */}
-              {(showAddAppForm || editingApp) && (
-                <div className="bg-[#0d0d1e] border border-violet-500/20 rounded-2xl p-6">
-                  <h3 className="text-sm font-bold text-white/70 mb-4">{editingApp ? `Editando: ${editingApp.name}` : 'Agregar nueva app'}</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {!editingApp && (
-                      <div>
-                        <label className="block text-xs text-white/40 mb-1">Nombre interno (clave, sin espacios) *</label>
-                        <input type="text" placeholder="Ej: NewApp" value={appFormData.name ?? ''} onChange={e => setAppFormData(p => ({ ...p, name: e.target.value }))}
-                          className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/60" />
-                      </div>
-                    )}
-                    <div>
-                      <label className="block text-xs text-white/40 mb-1">Nombre para mostrar *</label>
-                      <input type="text" placeholder="Ej: New App" value={appFormData.display_name ?? ''} onChange={e => setAppFormData(p => ({ ...p, display_name: e.target.value }))}
-                        className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/60" />
+              {/* Progress steps — only in wizard mode */}
+              {wizardMode === 'wizard' && (
+                <div className="bg-[#0d0d1e] border border-violet-500/20 rounded-2xl p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Package className="w-4 h-4 text-violet-400" />
+                      <span className="text-sm font-bold text-white">{editingApp ? `Editando: ${editingApp.display_name}` : 'Nueva App — Tutorial paso a paso'}</span>
                     </div>
-                    <div>
-                      <label className="block text-xs text-white/40 mb-1">Nombre en iOS (si es diferente)</label>
-                      <input type="text" placeholder="Ej: Liyo" value={appFormData.ios_name ?? ''} onChange={e => setAppFormData(p => ({ ...p, ios_name: e.target.value }))}
-                        className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/60" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-white/40 mb-1">Color principal (hex)</label>
-                      <div className="flex gap-2">
-                        <input type="color" value={appFormData.color_hex ?? '#888888'} onChange={e => setAppFormData(p => ({ ...p, color_hex: e.target.value }))}
-                          className="w-10 h-9 rounded-lg border border-white/10 bg-[#07070f] cursor-pointer" />
-                        <input type="text" placeholder="#888888" value={appFormData.color_hex ?? ''} onChange={e => setAppFormData(p => ({ ...p, color_hex: e.target.value }))}
-                          className="flex-1 bg-[#07070f] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/60" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs text-white/40 mb-1">Código de agencia</label>
-                      <input type="text" placeholder="Ej: R3DKXB5" value={appFormData.agency_code ?? ''} onChange={e => setAppFormData(p => ({ ...p, agency_code: e.target.value }))}
-                        className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/60" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-white/40 mb-1">Orden de aparición</label>
-                      <input type="number" min={0} value={appFormData.sort_order ?? 0} onChange={e => setAppFormData(p => ({ ...p, sort_order: Number(e.target.value) }))}
-                        className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/60" />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="block text-xs text-white/40 mb-1">Descripción en español</label>
-                      <textarea rows={2} placeholder="Descripción de la app en español..." value={appFormData.description_es ?? ''} onChange={e => setAppFormData(p => ({ ...p, description_es: e.target.value }))}
-                        className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/60 resize-none" />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="block text-xs text-white/40 mb-1">Descripción en portugués</label>
-                      <textarea rows={2} placeholder="Descrição do app em português..." value={appFormData.description_pt ?? ''} onChange={e => setAppFormData(p => ({ ...p, description_pt: e.target.value }))}
-                        className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/60 resize-none" />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="block text-xs text-white/40 mb-1">Info de ganancias (español)</label>
-                      <textarea rows={2} placeholder="Ej: 100 puntos = $1 USD | Retiro mínimo: $10..." value={appFormData.earnings_info_es ?? ''} onChange={e => setAppFormData(p => ({ ...p, earnings_info_es: e.target.value }))}
-                        className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/60 resize-none" />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="block text-xs text-white/40 mb-1">Info de ganancias (portugués)</label>
-                      <textarea rows={2} placeholder="Ej: 100 pontos = $1 USD | Retirada mínima: $10..." value={appFormData.earnings_info_pt ?? ''} onChange={e => setAppFormData(p => ({ ...p, earnings_info_pt: e.target.value }))}
-                        className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/60 resize-none" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-white/40 mb-1">Descarga Android (URL)</label>
-                      <input type="text" placeholder="https://play.google.com/..." value={appFormData.download_url_android ?? ''} onChange={e => setAppFormData(p => ({ ...p, download_url_android: e.target.value }))}
-                        className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/60" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-white/40 mb-1">Descarga iOS (URL)</label>
-                      <input type="text" placeholder="https://apps.apple.com/..." value={appFormData.download_url_ios ?? ''} onChange={e => setAppFormData(p => ({ ...p, download_url_ios: e.target.value }))}
-                        className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/60" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-white/40 mb-1">Canal de Telegram (URL)</label>
-                      <input type="text" placeholder="https://t.me/..." value={appFormData.telegram_channel_url ?? ''} onChange={e => setAppFormData(p => ({ ...p, telegram_channel_url: e.target.value }))}
-                        className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/60" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-white/40 mb-1">URL del icono</label>
-                      <input type="text" placeholder="https://..." value={appFormData.icon_url ?? ''} onChange={e => setAppFormData(p => ({ ...p, icon_url: e.target.value }))}
-                        className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/60" />
-                    </div>
+                    <button onClick={() => { setWizardMode('list'); setWizardStep(1); setEditingApp(null); setAppFormData(emptyAppForm); setAppSaveMsg(null) }}
+                      className="text-xs text-white/30 hover:text-white/60 transition-colors px-2 py-1 rounded-lg hover:bg-white/5">✕ Cancelar</button>
                   </div>
-                  <div className="flex gap-3 mt-5">
-                    <button onClick={() => { setShowAddAppForm(false); setEditingApp(null); setAppFormData(emptyAppForm); setAppSaveMsg(null) }}
-                      className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold bg-white/5 border border-white/10 text-white/50 hover:text-white hover:bg-white/10 transition-all">
-                      Cancelar
-                    </button>
-                    <button onClick={() => saveApp(!!editingApp)} disabled={savingApp || (!editingApp && !appFormData.name) || !appFormData.display_name}
-                      className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold bg-violet-600 text-white hover:bg-violet-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                      {savingApp ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Guardando...</> : editingApp ? 'Guardar cambios' : 'Crear app'}
-                    </button>
+                  <div className="flex gap-1 mb-2">
+                    {['Nombre','Visual','Descripción','Ganancias','Descarga','Config'].map((s, i) => (
+                      <button key={i} onClick={() => setWizardStep(i + 1)}
+                        className={`flex-1 h-1.5 rounded-full transition-all ${wizardStep > i + 1 ? 'bg-violet-500' : wizardStep === i + 1 ? 'bg-violet-400' : 'bg-white/10'}`} />
+                    ))}
+                  </div>
+                  <div className="flex justify-between">
+                    {['1·Nombre','2·Visual','3·Descripción','4·Ganancias','5·Descarga','6·Config'].map((s, i) => (
+                      <span key={i} className={`text-xs transition-colors ${wizardStep === i + 1 ? 'text-violet-300 font-bold' : 'text-white/20'}`}>{s}</span>
+                    ))}
                   </div>
                 </div>
               )}
 
-              {/* Apps List */}
-              {appsLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {appsCatalogFull.length === 0 ? (
+              {wizardMode === 'list' ? (
+                /* ═══════════════ LIST VIEW ═══════════════ */
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Package className="w-5 h-5 text-violet-400" />
+                      <h2 className="text-lg font-bold text-white">Gestión de Apps</h2>
+                      <span className="text-xs text-white/30 font-medium">{appsCatalogFull.length} en el catálogo</span>
+                    </div>
+                    <button onClick={() => { setWizardMode('wizard'); setWizardStep(1); setEditingApp(null); setAppFormData(emptyAppForm); setAppSaveMsg(null) }}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold transition-all">
+                      <Plus className="w-4 h-4" /> Nueva App
+                    </button>
+                  </div>
+                  {appsError && <div className="bg-red-500/10 border border-red-500/25 rounded-xl p-4 text-red-300 text-sm font-semibold">{appsError}</div>}
+                  {appSaveMsg && <div className={`p-3 rounded-xl text-sm font-semibold ${appSaveMsg.ok ? 'bg-green-500/10 border border-green-500/25 text-green-300' : 'bg-red-500/10 border border-red-500/25 text-red-300'}`}>{appSaveMsg.text}</div>}
+                  {appsLoading ? (
+                    <div className="flex items-center justify-center py-12"><div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" /></div>
+                  ) : appsCatalogFull.length === 0 ? (
                     <div className="bg-[#0d0d1e] border border-white/5 rounded-2xl p-8 text-center">
                       <Package className="w-10 h-10 text-white/15 mx-auto mb-3" />
                       <p className="text-white/40 text-sm">No hay apps en el catálogo.</p>
-                      <p className="text-white/25 text-xs mt-1">Asegúrate de haber creado la tabla apps_catalog en Supabase.</p>
+                      <p className="text-white/25 text-xs mt-1">Crea la primera con el botón "Nueva App".</p>
                     </div>
                   ) : appsCatalogFull.map(app => (
-                    <div key={app.name} className={`bg-[#0d0d1e] border rounded-2xl p-5 transition-all ${app.is_active ? 'border-white/8' : 'border-white/4 opacity-60'}`}>
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-3 min-w-0">
-                          <div className="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center text-white font-black text-lg"
-                            style={{ background: app.color_hex || '#888888' }}>
-                            {app.icon_url
-                              ? <img src={app.icon_url} alt={app.name} className="w-full h-full object-cover rounded-xl" />
-                              : app.name[0]}
+                    <div key={app.name} className={`bg-[#0d0d1e] border rounded-2xl p-5 transition-all ${app.is_active ? 'border-white/8 hover:border-violet-500/25' : 'border-white/4 opacity-60'}`}>
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-xl shrink-0 flex items-center justify-center text-white font-black text-xl overflow-hidden"
+                          style={{ background: app.color_hex || '#888888' }}>
+                          {app.icon_url ? <img src={app.icon_url} alt={app.name} className="w-full h-full object-cover" /> : app.display_name[0]}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-white font-bold">{app.display_name}</p>
+                            {app.ios_name && app.ios_name !== app.display_name && <span className="text-xs text-white/35">iOS: {app.ios_name}</span>}
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${app.is_active ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'}`}>{app.is_active ? 'Activa' : 'Inactiva'}</span>
                           </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <p className="text-white font-bold text-base">{app.display_name}</p>
-                              {app.ios_name && app.ios_name !== app.display_name && (
-                                <span className="text-xs text-white/35">iOS: {app.ios_name}</span>
-                              )}
-                              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${app.is_active ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'}`}>
-                                {app.is_active ? 'Activa' : 'Inactiva'}
-                              </span>
-                            </div>
-                            <p className="text-white/40 text-xs mt-0.5">clave: <span className="font-mono text-violet-300/70">{app.name}</span> · orden: {app.sort_order}</p>
-                            {app.agency_code && (
-                              <p className="text-white/35 text-xs mt-0.5">Código agencia: <span className="font-mono text-amber-300/70">{app.agency_code}</span></p>
-                            )}
-                            {app.description_es && (
-                              <p className="text-white/30 text-xs mt-1 line-clamp-2">{app.description_es}</p>
-                            )}
-                            <div className="flex gap-3 mt-2 flex-wrap">
-                              {app.download_url_android && <a href={app.download_url_android} target="_blank" rel="noreferrer" className="text-xs text-green-400/70 hover:text-green-300 underline">Android ↗</a>}
-                              {app.download_url_ios && <a href={app.download_url_ios} target="_blank" rel="noreferrer" className="text-xs text-blue-400/70 hover:text-blue-300 underline">iOS ↗</a>}
-                              {app.telegram_channel_url && <a href={app.telegram_channel_url} target="_blank" rel="noreferrer" className="text-xs text-sky-400/70 hover:text-sky-300 underline">Telegram ↗</a>}
-                            </div>
+                          <p className="text-white/40 text-xs mt-0.5">clave: <span className="font-mono text-violet-300/70">{app.name}</span> · orden: {app.sort_order}</p>
+                          {app.agency_code && <p className="text-white/35 text-xs mt-0.5">🔑 Código agencia: <span className="font-mono text-amber-300/70">{app.agency_code}</span></p>}
+                          {app.description_es && <p className="text-white/30 text-xs mt-1 line-clamp-2">{app.description_es}</p>}
+                          <div className="flex gap-3 mt-2 flex-wrap">
+                            {app.download_url_android && <a href={app.download_url_android} target="_blank" rel="noreferrer" className="text-xs text-green-400/70 hover:text-green-300 underline">Android ↗</a>}
+                            {app.download_url_ios && <a href={app.download_url_ios} target="_blank" rel="noreferrer" className="text-xs text-blue-400/70 hover:text-blue-300 underline">iOS ↗</a>}
+                            {app.telegram_channel_url && <a href={app.telegram_channel_url} target="_blank" rel="noreferrer" className="text-xs text-sky-400/70 hover:text-sky-300 underline">Telegram ↗</a>}
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <button onClick={() => { setEditingApp(app); setShowAddAppForm(false); setAppFormData({ ...app }); setAppSaveMsg(null) }}
+                          <button onClick={() => { setEditingApp(app); setAppFormData({ ...app }); setWizardMode('wizard'); setWizardStep(1); setAppSaveMsg(null) }}
                             className="p-2 rounded-lg bg-white/5 hover:bg-violet-500/15 text-white/40 hover:text-violet-300 transition-all" title="Editar">
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button onClick={() => toggleAppActive(app)}
                             className={`p-2 rounded-lg transition-all ${app.is_active ? 'bg-green-500/10 hover:bg-red-500/15 text-green-400 hover:text-red-400' : 'bg-red-500/10 hover:bg-green-500/15 text-red-400 hover:text-green-400'}`}
-                            title={app.is_active ? 'Desactivar app' : 'Activar app'}>
+                            title={app.is_active ? 'Desactivar' : 'Activar'}>
                             <Power className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
                     </div>
                   ))}
+                </div>
+              ) : (
+                /* ═══════════════ WIZARD VIEW ═══════════════ */
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+
+                  {/* LEFT — Form */}
+                  <div className="space-y-4">
+
+                    {/* ── STEP 1: Identidad ── */}
+                    {wizardStep === 1 && (
+                      <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
+                        <div>
+                          <p className="text-white font-bold text-base mb-1">Nombre e Identidad</p>
+                          <p className="text-white/40 text-sm leading-relaxed">Define cómo se llama la app. El <strong className="text-white/60">nombre interno</strong> es una clave única sin espacios que se usará en toda la base de datos.</p>
+                        </div>
+                        {!editingApp && (
+                          <div>
+                            <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Nombre interno (clave) *</label>
+                            <input type="text" placeholder="Ej: NuevaApp" value={appFormData.name ?? ''} onChange={e => setAppFormData(p => ({ ...p, name: e.target.value.replace(/s/g, '') }))}
+                              className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60 font-mono" />
+                            <p className="text-white/25 text-xs mt-1.5">Solo letras y números, sin espacios. Ej: <span className="font-mono text-violet-300/50">Waha</span> · <span className="font-mono text-violet-300/50">Layla</span> · <span className="font-mono text-violet-300/50">Howdy</span></p>
+                          </div>
+                        )}
+                        <div>
+                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Nombre visible para las trabajadoras *</label>
+                          <input type="text" placeholder="Ej: Nueva App" value={appFormData.display_name ?? ''} onChange={e => setAppFormData(p => ({ ...p, display_name: e.target.value }))}
+                            className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
+                          <p className="text-white/25 text-xs mt-1.5">Este nombre aparece en la página de Apps, Nómina, Perfil y en toda la web.</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Nombre en iOS <span className="text-white/30 font-normal normal-case">(si es diferente al de Android)</span></label>
+                          <input type="text" placeholder="Ej: Liyo (Waha en iOS se llama Liyo)" value={appFormData.ios_name ?? ''} onChange={e => setAppFormData(p => ({ ...p, ios_name: e.target.value }))}
+                            className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
+                          <div className="mt-2 bg-[#07070f] rounded-xl p-3 border border-white/5 space-y-1">
+                            <p className="text-white/25 text-xs font-semibold">Ejemplos de apps existentes:</p>
+                            <p className="text-white/35 text-xs">• Waha (Android) → <span className="text-white/55 font-semibold">Liyo</span> (iOS)</p>
+                            <p className="text-white/35 text-xs">• Layla (Android) → <span className="text-white/55 font-semibold">Nivi</span> (iOS)</p>
+                            <p className="text-white/35 text-xs">• Howdy → <span className="text-white/55">Solo Android</span> (dejar vacío)</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── STEP 2: Visual ── */}
+                    {wizardStep === 2 && (
+                      <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
+                        <div>
+                          <p className="text-white font-bold text-base mb-1">Logo y Colores</p>
+                          <p className="text-white/40 text-sm leading-relaxed">El logo y los colores de la app aparecen en la tarjeta de Apps, en la Nómina y en el Ranking. Usa los colores oficiales de la app.</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">URL del logo / icono</label>
+                          <input type="text" placeholder="https://..." value={appFormData.icon_url ?? ''} onChange={e => setAppFormData(p => ({ ...p, icon_url: e.target.value }))}
+                            className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
+                          <div className="mt-2 bg-violet-500/8 border border-violet-500/15 rounded-xl p-3">
+                            <p className="text-violet-300 text-xs font-semibold mb-1">💡 Cómo subir el logo:</p>
+                            <ol className="text-white/35 text-xs space-y-0.5 list-decimal pl-3.5">
+                              <li>Ve a <span className="text-white/55">Supabase → Storage → app-icons</span></li>
+                              <li>Sube la imagen del icono (PNG o JPG, mínimo 200×200px)</li>
+                              <li>Clic derecho → "Get URL" → copia la URL pública</li>
+                              <li>Pégala aquí arriba</li>
+                            </ol>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Color principal</label>
+                          <div className="flex gap-2">
+                            <input type="color" value={appFormData.color_hex ?? '#888888'} onChange={e => setAppFormData(p => ({ ...p, color_hex: e.target.value }))}
+                              className="w-12 h-10 rounded-xl border border-white/10 bg-[#07070f] cursor-pointer shrink-0" />
+                            <input type="text" placeholder="#888888" value={appFormData.color_hex ?? ''} onChange={e => setAppFormData(p => ({ ...p, color_hex: e.target.value }))}
+                              className="flex-1 bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60 font-mono" />
+                          </div>
+                          <p className="text-white/25 text-xs mt-1.5">Waha: <span className="font-mono">#ff4e6a</span> · Layla: <span className="font-mono">#a855f7</span> · Howdy: <span className="font-mono">#f59e0b</span></p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Color secundario <span className="text-white/30 font-normal normal-case">(para gradientes, opcional)</span></label>
+                          <div className="flex gap-2">
+                            <input type="color" value={appFormData.color_hex_secondary ?? '#888888'} onChange={e => setAppFormData(p => ({ ...p, color_hex_secondary: e.target.value }))}
+                              className="w-12 h-10 rounded-xl border border-white/10 bg-[#07070f] cursor-pointer shrink-0" />
+                            <input type="text" placeholder="#888888 (opcional)" value={appFormData.color_hex_secondary ?? ''} onChange={e => setAppFormData(p => ({ ...p, color_hex_secondary: e.target.value }))}
+                              className="flex-1 bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60 font-mono" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── STEP 3: Descripción ── */}
+                    {wizardStep === 3 && (
+                      <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
+                        <div>
+                          <p className="text-white font-bold text-base mb-1">Descripción de la App</p>
+                          <p className="text-white/40 text-sm leading-relaxed">Explica qué tipo de app es, cómo funciona y qué tipo de contenido se hace. Aparece cuando la trabajadora expande la tarjeta en la página de Apps.</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Descripción en Español</label>
+                          <textarea rows={6} placeholder={"Ej: Waha es una app de chat y videollamadas donde conectas con usuarios de todo el mundo. Puedes hacer videollamadas privadas, enviar mensajes y recibir regalos virtuales. La app está disponible en Android (como Liyo) y iOS."} value={appFormData.description_es ?? ''} onChange={e => setAppFormData(p => ({ ...p, description_es: e.target.value }))}
+                            className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60 resize-none leading-relaxed" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Descripción en Portugués</label>
+                          <textarea rows={6} placeholder={"Ej: Waha é um app de chat e videochamadas onde você se conecta com usuários do mundo todo..."} value={appFormData.description_pt ?? ''} onChange={e => setAppFormData(p => ({ ...p, description_pt: e.target.value }))}
+                            className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60 resize-none leading-relaxed" />
+                          <p className="text-white/25 text-xs mt-1.5">La web detecta el idioma del navegador y muestra ES o PT automáticamente.</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── STEP 4: Ganancias ── */}
+                    {wizardStep === 4 && (
+                      <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
+                        <div>
+                          <p className="text-white font-bold text-base mb-1">Información de Ganancias</p>
+                          <p className="text-white/40 text-sm leading-relaxed">Detalla cuánto gana la trabajadora por cada tipo de interacción. Esta información aparece en la tarjeta de la app y el chatbot de IA la usa para responder preguntas de las trabajadoras.</p>
+                        </div>
+                        <div className="bg-amber-500/8 border border-amber-500/20 rounded-xl p-4">
+                          <p className="text-amber-300 text-xs font-bold mb-2">📋 Formato recomendado (basado en Waha):</p>
+                          <pre className="text-white/40 text-xs leading-relaxed whitespace-pre-wrap font-mono">{"Mensajes VIP: 70 diamantes
+Mensajes Free: 5 puntos
+Video privada/min: 700 diamantes
+Regalos: 100% del valor
+Meta mínima: 10,000 diamantes = $2.50 USD
+Pago: Martes a Viernes (por agencia)"}</pre>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Ganancias en Español</label>
+                          <textarea rows={7} placeholder={"Mensajes VIP: X puntos
+Mensajes Free: X puntos
+Videollamada/min: X
+Regalos: X%
+Meta mínima: X puntos = $X USD
+Frecuencia de pago: X"} value={appFormData.earnings_info_es ?? ''} onChange={e => setAppFormData(p => ({ ...p, earnings_info_es: e.target.value }))}
+                            className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60 resize-none font-mono text-xs" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Ganancias en Portugués</label>
+                          <textarea rows={7} placeholder={"Mensagens VIP: X pontos
+Videochamada/min: X
+Meta mínima: X pontos = $X USD"} value={appFormData.earnings_info_pt ?? ''} onChange={e => setAppFormData(p => ({ ...p, earnings_info_pt: e.target.value }))}
+                            className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60 resize-none font-mono text-xs" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">🔑 Código de Agencia</label>
+                          <input type="text" placeholder="Ej: R3DKXB5" value={appFormData.agency_code ?? ''} onChange={e => setAppFormData(p => ({ ...p, agency_code: e.target.value.toUpperCase() }))}
+                            className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60 font-mono uppercase tracking-wider" />
+                          <p className="text-red-400/60 text-xs mt-1.5 font-semibold">⚠️ Sin este código la trabajadora NO puede monetizar la app. Va en el Paso 5 de la guía de instalación.</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── STEP 5: Descarga ── */}
+                    {wizardStep === 5 && (
+                      <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
+                        <div>
+                          <p className="text-white font-bold text-base mb-1">Links de Descarga e Instalación</p>
+                          <p className="text-white/40 text-sm leading-relaxed">Estos links aparecen como botones en la tarjeta de la app. El canal de Telegram es donde publicas los pagos semanales.</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">🤖 Descarga Android (Play Store o APK directo)</label>
+                          <input type="url" placeholder="https://play.google.com/store/apps/details?id=..." value={appFormData.download_url_android ?? ''} onChange={e => setAppFormData(p => ({ ...p, download_url_android: e.target.value }))}
+                            className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">🍎 Descarga iOS (App Store)</label>
+                          <input type="url" placeholder="https://apps.apple.com/app/..." value={appFormData.download_url_ios ?? ''} onChange={e => setAppFormData(p => ({ ...p, download_url_ios: e.target.value }))}
+                            className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
+                          <p className="text-white/25 text-xs mt-1.5">Si la app es solo Android (como Howdy), deja este campo vacío.</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">📢 Canal de Telegram</label>
+                          <input type="url" placeholder="https://t.me/..." value={appFormData.telegram_channel_url ?? ''} onChange={e => setAppFormData(p => ({ ...p, telegram_channel_url: e.target.value }))}
+                            className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
+                          <p className="text-white/25 text-xs mt-1.5">Canal donde publicas novedades y pagos. Aparece como botón "Unirse al canal" en la tarjeta.</p>
+                        </div>
+                        <div className="bg-[#07070f] border border-violet-500/15 rounded-xl p-4">
+                          <p className="text-violet-300/70 text-xs font-semibold mb-2">📸 Sobre las fotos de guía de instalación</p>
+                          <p className="text-white/35 text-xs mb-3 leading-relaxed">Las guías paso a paso (como las de Waha, Layla y Howdy) requieren subir imágenes de captura de pantalla por cada paso de instalación.</p>
+                          <ol className="text-white/30 text-xs space-y-1 list-decimal pl-3.5">
+                            <li>Ve a <span className="text-white/50">Supabase → Storage → app-guides</span></li>
+                            <li>Sube las capturas de pantalla numeradas (paso1.jpg, paso2.jpg...)</li>
+                            <li>Pega las URLs en el campo de descripción o avisa al desarrollador</li>
+                          </ol>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── STEP 6: Config ── */}
+                    {wizardStep === 6 && (
+                      <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
+                        <div>
+                          <p className="text-white font-bold text-base mb-1">Configuración Final</p>
+                          <p className="text-white/40 text-sm leading-relaxed">Define el orden de aparición y si la app está visible para las trabajadoras. Revisa el resumen antes de guardar.</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Orden de aparición</label>
+                          <input type="number" min={0} max={99} value={appFormData.sort_order ?? 0} onChange={e => setAppFormData(p => ({ ...p, sort_order: parseInt(e.target.value) || 0 }))}
+                            className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
+                          <p className="text-white/25 text-xs mt-1.5">Waha: 1 · Layla: 2 · Howdy: 3 · Número menor = aparece primero en la lista.</p>
+                        </div>
+                        <div className="flex items-center justify-between p-4 bg-[#07070f] rounded-xl border border-white/8">
+                          <div>
+                            <p className="text-sm font-semibold text-white">App activa en la web</p>
+                            <p className="text-white/35 text-xs mt-0.5">Si está activa, aparece en Apps, Perfil y toda la web.</p>
+                          </div>
+                          <button onClick={() => setAppFormData(p => ({ ...p, is_active: !p.is_active }))}
+                            className={`w-12 h-6 rounded-full transition-all relative shrink-0 ${appFormData.is_active ? 'bg-green-500' : 'bg-white/15'}`}>
+                            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${appFormData.is_active ? 'left-6' : 'left-0.5'}`} />
+                          </button>
+                        </div>
+                        {/* Summary checklist */}
+                        <div className="bg-[#07070f] border border-white/8 rounded-xl p-4 space-y-2.5">
+                          <p className="text-xs font-bold text-white/40 mb-3">✅ Revisión antes de guardar:</p>
+                          {[
+                            { k: 'Clave interna', v: appFormData.name, req: !editingApp },
+                            { k: 'Nombre visible', v: appFormData.display_name, req: true },
+                            { k: 'iOS name', v: appFormData.ios_name || '(igual que Android)', req: false },
+                            { k: 'Color principal', v: appFormData.color_hex, req: false },
+                            { k: 'Código agencia', v: appFormData.agency_code, req: false },
+                            { k: 'Descarga Android', v: appFormData.download_url_android ? '✅ Configurado' : '—', req: false },
+                            { k: 'Descarga iOS', v: appFormData.download_url_ios ? '✅ Configurado' : '—', req: false },
+                            { k: 'Telegram', v: appFormData.telegram_channel_url ? '✅ Configurado' : '—', req: false },
+                            { k: 'Descripción ES', v: appFormData.description_es ? `✅ ${appFormData.description_es.slice(0, 35)}...` : '—', req: false },
+                            { k: 'Ganancias ES', v: appFormData.earnings_info_es ? '✅ Configurado' : '—', req: false },
+                          ].map(({ k, v, req }) => (
+                            <div key={k} className="flex items-center justify-between gap-2 text-xs">
+                              <span className={`${req && !v ? 'text-red-400' : 'text-white/35'}`}>{k}{req && !v ? ' *' : ''}</span>
+                              <span className={`font-mono truncate max-w-[180px] ${v ? 'text-white/60' : 'text-white/20'}`}>{v || '—'}</span>
+                            </div>
+                          ))}
+                        </div>
+                        {appSaveMsg && <div className={`p-3 rounded-xl text-sm font-semibold ${appSaveMsg.ok ? 'bg-green-500/10 border border-green-500/25 text-green-300' : 'bg-red-500/10 border border-red-500/25 text-red-300'}`}>{appSaveMsg.text}</div>}
+                      </div>
+                    )}
+
+                    {/* Navigation */}
+                    <div className="flex gap-3">
+                      {wizardStep > 1 ? (
+                        <button onClick={() => setWizardStep(s => s - 1)}
+                          className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold bg-white/5 border border-white/10 text-white/50 hover:text-white hover:bg-white/10 transition-all">
+                          ← Atrás
+                        </button>
+                      ) : (
+                        <button onClick={() => { setWizardMode('list'); setWizardStep(1); setEditingApp(null); setAppFormData(emptyAppForm) }}
+                          className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold bg-white/5 border border-white/10 text-white/50 hover:text-white hover:bg-white/10 transition-all">
+                          ✕ Cancelar
+                        </button>
+                      )}
+                      {wizardStep < 6 ? (
+                        <button onClick={() => setWizardStep(s => s + 1)}
+                          disabled={wizardStep === 1 && (!appFormData.display_name || (!editingApp && !appFormData.name))}
+                          className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold bg-violet-600 text-white hover:bg-violet-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+                          Siguiente →
+                        </button>
+                      ) : (
+                        <button onClick={() => saveApp(!!editingApp)} disabled={savingApp || !appFormData.display_name}
+                          className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold bg-violet-600 text-white hover:bg-violet-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                          {savingApp ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Guardando...</> : editingApp ? '💾 Guardar cambios' : '🚀 Crear app'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* RIGHT — Live Preview */}
+                  <div className="space-y-3 lg:sticky lg:top-4">
+                    <p className="text-xs font-semibold text-white/30 uppercase tracking-wider">👁 Vista previa — así quedará la app</p>
+
+                    {/* App card preview */}
+                    <div className="bg-[#0d0d1e] border border-white/8 rounded-2xl p-5">
+                      <div className="flex items-start gap-3 mb-4">
+                        <div className="w-14 h-14 rounded-2xl shrink-0 flex items-center justify-center text-white font-black text-2xl overflow-hidden shadow-lg"
+                          style={{ background: appFormData.color_hex || '#3b3b5c' }}>
+                          {appFormData.icon_url
+                            ? <img src={appFormData.icon_url} alt="" className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
+                            : <span>{appFormData.display_name?.[0] || '?'}</span>}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-white font-extrabold text-lg leading-tight">{appFormData.display_name || <span className="text-white/20">Nombre de la App</span>}</h3>
+                          {appFormData.ios_name && appFormData.ios_name !== appFormData.display_name && (
+                            <p className="text-white/30 text-xs mt-0.5">iOS: {appFormData.ios_name}</p>
+                          )}
+                          <div className="flex gap-1.5 mt-2 flex-wrap">
+                            {appFormData.download_url_android && <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 font-semibold">Android</span>}
+                            {appFormData.download_url_ios && <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 font-semibold">iOS</span>}
+                            {appFormData.agency_code && <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 font-semibold">🔑 {appFormData.agency_code}</span>}
+                          </div>
+                        </div>
+                      </div>
+                      {appFormData.description_es && (
+                        <p className="text-white/45 text-sm leading-relaxed mb-3 line-clamp-4">{appFormData.description_es}</p>
+                      )}
+                      {appFormData.earnings_info_es && (
+                        <div className="bg-[#07070f] rounded-xl p-3 border border-white/5 mb-3">
+                          <p className="text-xs font-semibold text-white/35 mb-1.5">💰 Ganancias</p>
+                          <pre className="text-white/50 text-xs whitespace-pre-wrap font-mono line-clamp-5">{appFormData.earnings_info_es}</pre>
+                        </div>
+                      )}
+                      {appFormData.telegram_channel_url && (
+                        <span className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-xl bg-sky-500/15 text-sky-400 font-semibold">📢 Unirse al canal</span>
+                      )}
+                    </div>
+
+                    {/* Context note for the current step */}
+                    <div className="bg-[#0d0d1e] border border-white/5 rounded-xl p-4">
+                      <p className="text-xs font-bold text-white/40 mb-2">
+                        {wizardStep === 1 && '📍 El nombre aparece en:'}
+                        {wizardStep === 2 && '🎨 El logo y color aparece en:'}
+                        {wizardStep === 3 && '📝 La descripción aparece en:'}
+                        {wizardStep === 4 && '💰 Las ganancias aparecen en:'}
+                        {wizardStep === 5 && '🔗 Los links aparecen en:'}
+                        {wizardStep === 6 && '⚙️ Configuración:'}
+                      </p>
+                      <ul className="space-y-1 text-xs text-white/30">
+                        {wizardStep === 1 && <><li>• Página <span className="text-white/50">Apps</span> → título de la tarjeta</li><li>• Página <span className="text-white/50">Nómina</span> → encabezado de sección</li><li>• Página <span className="text-white/50">Perfil</span> → lista de registro</li><li>• En toda la web donde se mencione la app</li></>}
+                        {wizardStep === 2 && <><li>• Tarjeta de app en la página <span className="text-white/50">Apps</span></li><li>• Indicador de color en <span className="text-white/50">Nómina</span></li><li>• Icono en <span className="text-white/50">Ranking</span> y <span className="text-white/50">Canales</span></li></>}
+                        {wizardStep === 3 && <><li>• Al expandir la tarjeta en <span className="text-white/50">Apps</span></li><li>• El chatbot IA la usa para responder preguntas</li></>}
+                        {wizardStep === 4 && <><li>• Sección "Ganancias" dentro de la tarjeta</li><li>• El chatbot IA la usa para calcular pagos</li><li>• El código de agencia va en el paso 5 de instalación</li></>}
+                        {wizardStep === 5 && <><li>• Botones de descarga en la tarjeta</li><li>• El canal Telegram aparece como botón "Unirse"</li></>}
+                        {wizardStep === 6 && <><li>• Orden 1 = primera app en la lista</li><li>• Apps inactivas no son visibles para trabajadoras</li></>}
+                      </ul>
+                    </div>
+
+                    {/* Waha reference card */}
+                    <div className="bg-[#07070f] border border-white/5 rounded-xl p-3">
+                      <p className="text-xs text-white/20 mb-2 font-semibold uppercase tracking-wide">Referencia: Waha</p>
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0" style={{background:'#ff4e6a'}}>
+                          <img src="/images/waha-icon.png" alt="Waha" className="w-full h-full object-cover" onError={e => { (e.currentTarget as HTMLImageElement).style.display='none' }} />
+                        </div>
+                        <div>
+                          <p className="text-white/55 text-xs font-bold">Waha <span className="text-white/25 font-normal">· iOS: Liyo · Código: R3DKXB5</span></p>
+                          <p className="text-white/30 text-xs">Color: #ff4e6a · orden: 1 · Activa</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
