@@ -384,6 +384,9 @@ import { Link, useLocation } from "wouter";
                         <Link href="/nomina" className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${location === "/nomina" ? "text-green-200 bg-green-500/20 border border-green-500/30" : "text-green-400 hover:bg-green-500/10"}`}>
                           <FileSpreadsheet className="w-3 h-3" /> {T.nomina}
                         </Link>
+                        <Link href="/comisiones-agente" className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${location === "/comisiones-agente" ? "text-amber-200 bg-amber-500/20 border border-amber-500/30" : "text-amber-400 hover:bg-amber-500/10"}`}>
+                          <DollarSign className="w-3 h-3" /> Comisiones
+                        </Link>
                         <button onClick={() => setCierreOpen(true)} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap text-teal-400 hover:bg-teal-500/10 transition-all">
                           <CheckCircle className="w-3 h-3" /> Cierre
                         </button>
