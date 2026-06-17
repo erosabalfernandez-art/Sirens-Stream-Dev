@@ -76,6 +76,13 @@ function isoWeekLabel(date = new Date()): string {
     commission_pct_default?: number | null
     nomina_metric_label?: string | null
     color_hex?: string | null
+    nomina_col_uid?: string | null
+    nomina_col_usd?: string | null
+    nomina_col_apodo?: string | null
+    nomina_col_semana?: string | null
+    nomina_col_metric?: string | null
+    nomina_metric_label?: string | null
+    nomina_currency?: string | null
     [key: string]: unknown
   }
 
@@ -971,7 +978,7 @@ function GenericManualSection({ appCatalog, exchangeRates = {} }: { appCatalog: 
 }
 
 
-function AppNominaSection({ app, reloadKey, exchangeRates = {} }: { app: string; reloadKey: number; exchangeRates?: Record<string,number> }) {
+function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry }: { app: string; reloadKey: number; exchangeRates?: Record<string,number>; appCatalogEntry?: CatalogAppMinimal }) {
   const color = getAppColor(app)
 
   // Accordion open state — default closed, persists user's explicit choice
@@ -1439,6 +1446,8 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {} }: { app: string;
           const raw = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1 }) as unknown[][]
           const rawHeaders = (raw[0] as unknown[]) ?? []
           const headers = rawHeaders.map(h => String(h ?? '').trim())
+          // Always store pending data so wizard can be re-opened later
+          setPendingHeaders(headers); setPendingRaw(raw); setPendingFileName(file.name)
 
           // ── Step 1: saved config valid for this file → use it directly ──
           const saved = savedColConfig
@@ -1450,12 +1459,17 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {} }: { app: string;
           }
 
           // ── Step 2: try smartCOL alias detection — Waha always passes here ──
+          const catUid = appCatalogEntry?.nomina_col_uid?.trim().toLowerCase() ?? null
+          const catUsd = appCatalogEntry?.nomina_col_usd?.trim().toLowerCase() ?? null
+          const catApodo = appCatalogEntry?.nomina_col_apodo?.trim().toLowerCase() ?? null
+          const catSemana = appCatalogEntry?.nomina_col_semana?.trim().toLowerCase() ?? null
+          const catMetric = appCatalogEntry?.nomina_col_metric?.trim().toLowerCase() ?? null
           const COLUMN_ALIASES: [string, string[]][] = [
-            ['UID del Host',      ['uid', 'host id', 'id del host', 'id host', 'host_id', 'userid', 'user id']],
-            ['USD',               ['usd', 'host salary', 'salario en usd', 'dólar', 'dollar', 'monto', 'pago usd', 'ganancia', 'ingreso', 'earning']],
-            ['Apodo',             ['name', 'nombre', 'apodo', 'nick', 'nickname', 'nombre en app', 'nombre_app', 'username']],
-            ['Semana',            ['week', 'semana', 'periodo', 'período', 'date', 'fecha']],
-            ['Diamantes Totales', ['total monedas', 'total diamante', 'diamante', 'diamond', 'gem', 'piedra', 'coins', 'moneda', 'total dia']],
+            ['UID del Host',      [...(catUid ? [catUid] : []), 'uid', 'host id', 'id del host', 'id host', 'host_id', 'userid', 'user id']],
+            ['USD',               [...(catUsd ? [catUsd] : []), 'usd', 'host salary', 'salario en usd', 'dólar', 'dollar', 'monto', 'pago usd', 'ganancia', 'ingreso', 'earning']],
+            ['Apodo',             [...(catApodo ? [catApodo] : []), 'name', 'nombre', 'apodo', 'nick', 'nickname', 'nombre en app', 'nombre_app', 'username']],
+            ['Semana',            [...(catSemana ? [catSemana] : []), 'week', 'semana', 'periodo', 'período', 'date', 'fecha']],
+            ['Diamantes Totales', [...(catMetric ? [catMetric] : []), 'total monedas', 'total diamante', 'diamante', 'diamond', 'gem', 'piedra', 'coins', 'moneda', 'total dia']],
           ]
           function smartCOL(canonical: string): number {
             const exact = headers.indexOf(canonical)
@@ -1794,7 +1808,25 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {} }: { app: string;
                   <Upload className="w-4 h-4" /> {publishedOk ? '➕ Agregar otro lote' : 'Nueva nómina'}
                 </button>
                 <button
-                    onClick={() => { try { localStorage.removeItem(`ea_col_cfg_${app}`) } catch {} setSavedColConfig(null) }}
+                    onClick={async () => {
+                      try { localStorage.removeItem(`ea_col_cfg_${app}`) } catch {}
+                      setSavedColConfig(null)
+                      if (pendingHeaders.length > 0) {
+                        setStep('configuring')
+                        setWizardLoading(true)
+                        const sugg = await getAIColumnSuggestions(pendingHeaders, app)
+                        setWizardCfg({
+                          uid: typeof sugg.uid === 'number' ? sugg.uid : -1,
+                          usd: typeof sugg.usd === 'number' ? sugg.usd : -1,
+                          apodo: typeof sugg.apodo === 'number' ? sugg.apodo : -1,
+                          semana: typeof sugg.semana === 'number' ? sugg.semana : -1,
+                          metric: typeof sugg.metric === 'number' ? sugg.metric : -1,
+                          metricLabel: typeof sugg.metricLabel === 'string' && sugg.metricLabel ? sugg.metricLabel : (appCatalogEntry?.nomina_metric_label ?? 'Diamantes'),
+                          currency: sugg.currency === 'BRL' ? 'BRL' : (appCatalogEntry?.nomina_currency ?? 'USD'),
+                        })
+                        setWizardLoading(false)
+                      }
+                    }}
                     title="Reconfigurar columnas de la nómina"
                     className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white/40 hover:text-white/70 text-xs font-semibold px-3 py-2 rounded-xl transition-all">
                     ⚙ Columnas
@@ -2738,7 +2770,7 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {} }: { app: string;
                 ? appEntry.name === 'Layla'
                   ? <LaylaManualSection key="Layla" exchangeRates={nominaRates} />
                   : <GenericManualSection key={appEntry.name} appCatalog={appEntry} exchangeRates={nominaRates} />
-                : <AppNominaSection key={appEntry.name} app={appEntry.name} reloadKey={reloadKeys[appEntry.name] ?? 0} exchangeRates={nominaRates} />
+                : <AppNominaSection key={appEntry.name} app={appEntry.name} reloadKey={reloadKeys[appEntry.name] ?? 0} exchangeRates={nominaRates} appCatalogEntry={appEntry} />
             )}
           </div>
         )}
