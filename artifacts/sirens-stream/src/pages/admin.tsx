@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import WizardVisualGuide from './WizardVisualGuide'
     import { useLocation } from 'wouter'
     import { useAuth } from '@/contexts/AuthContext'
     import { supabase, type WorkerEntry, COUNTRIES, getPaymentMethods, getWalletLabel } from '@/lib/supabase'
@@ -4340,118 +4341,9 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                     </div>
                   </div>
 
-                  {/* RIGHT — Live Preview */}
+                  {/* RIGHT — Visual Guide */}
                   <div className="space-y-3 lg:sticky lg:top-4">
-                    <p className="text-xs font-semibold text-white/30 uppercase tracking-wider">👁 Vista previa — así quedará la app</p>
-                    <div className="bg-[#0d0d1e] border border-white/8 rounded-2xl p-5">
-                      <div className="flex items-start gap-3 mb-3">
-                        <div className="w-14 h-14 rounded-2xl shrink-0 flex items-center justify-center text-white font-black text-2xl overflow-hidden shadow-lg"
-                          style={{ background: appFormData.color_hex || '#3b3b5c' }}>
-                          {appFormData.icon_url
-                            ? <img src={appFormData.icon_url} alt="" className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
-                            : <span>{appFormData.display_name?.[0] || '?'}</span>}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <h3 className="text-white font-extrabold text-lg leading-tight">{appFormData.display_name || <span className="text-white/20">Nombre de la App</span>}</h3>
-                            {appFormData.badge_label && (
-                              <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${
-                                appFormData.badge_color==='red'?'bg-red-500/15 text-red-300 border-red-500/30':
-                                appFormData.badge_color==='purple'?'bg-purple-500/15 text-purple-300 border-purple-500/30':
-                                appFormData.badge_color==='yellow'?'bg-yellow-500/15 text-yellow-300 border-yellow-500/30':
-                                appFormData.badge_color==='green'?'bg-green-500/15 text-green-300 border-green-500/30':
-                                appFormData.badge_color==='blue'?'bg-blue-500/15 text-blue-300 border-blue-500/30':
-                                appFormData.badge_color==='orange'?'bg-orange-500/15 text-orange-300 border-orange-500/30':
-                                'bg-pink-500/15 text-pink-300 border-pink-500/30'
-                              }`}>{appFormData.badge_label}</span>
-                            )}
-                          </div>
-                          {appFormData.tagline && <p className="text-white/45 text-sm">{appFormData.tagline}</p>}
-                          <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                            {appFormData.download_url_android && <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 font-semibold">Android</span>}
-                            {appFormData.download_url_ios && <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 font-semibold">iOS</span>}
-                            {appFormData.agency_code && <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 font-semibold">🔑 {appFormData.agency_code}</span>}
-                          </div>
-                        </div>
-                      </div>
-                      {appFormData.description_es && <p className="text-white/45 text-sm leading-relaxed mb-3 line-clamp-3">{appFormData.description_es}</p>}
-                      {appFormData.specs && appFormData.specs.length > 0 && (
-                        <div className="grid grid-cols-2 gap-1.5 mb-3">
-                          {appFormData.specs.slice(0,4).map((s,i) => (
-                            <div key={i} className="bg-[#07070f] border border-white/5 rounded-lg px-2.5 py-2">
-                              <p className="text-white/25 text-[10px]">{s.label}</p>
-                              <p className="text-white/70 text-xs font-semibold">{s.value}</p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {appFormData.requisitos && appFormData.requisitos.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mb-3">
-                          {appFormData.requisitos.slice(0,3).map((r,i) => (
-                            <span key={i} className="text-[10px] px-2 py-1 rounded-full bg-white/4 border border-white/8 text-white/50">✓ {r}</span>
-                          ))}
-                        </div>
-                      )}
-                      {appFormData.earnings_info_es && (
-                        <div className="bg-[#07070f] rounded-xl p-2.5 border border-white/5">
-                          <p className="text-xs font-semibold text-white/35 mb-1">💰 Ganancias</p>
-                          <pre className="text-white/50 text-xs whitespace-pre-wrap font-mono line-clamp-4">{appFormData.earnings_info_es}</pre>
-                        </div>
-                      )}
-                    </div>
-                    {/* Config summary for steps 5–8 */}
-                    {wizardStep >= 5 && wizardStep <= 8 && (
-                      <div className="bg-[#0d0d1e] border border-white/5 rounded-xl p-4 space-y-1.5">
-                        <p className="text-xs font-bold text-white/40 mb-2">
-                          {wizardStep===5&&'📊 Nómina:'}{wizardStep===6&&'💸 Comisiones:'}{wizardStep===7&&'📋 Specs / Requisitos:'}{wizardStep===8&&'📖 Guía:'}
-                        </p>
-                        {wizardStep===5 && <div className="text-xs text-white/40 space-y-1">
-                          <p>Tipo: <span className="text-white/60">{appFormData.nomina_type==='manual'?'Entrada manual':'Upload Excel'}</span></p>
-                          {appFormData.nomina_type==='manual'?<>
-                            <p>Tasa: <span className="font-mono text-violet-300/60">{appFormData.nomina_rate??'No definida'}</span></p>
-                            <p>Campos: <span className="text-white/60">{(appFormData.nomina_manual_fields??[]).length}</span></p>
-                            {(appFormData.nomina_manual_fields??[]).map(f=><p key={f.key} className="pl-2 text-white/30">• {f.label}{f.is_usd_base?' (÷tasa=USD)':''}{f.is_commission_base?' (comisión)':''}</p>)}
-                          </>:<>
-                            <p>Col. UID: <span className="font-mono text-white/60">{appFormData.nomina_col_uid}</span></p>
-                            <p>Col. USD: <span className="font-mono text-white/60">{appFormData.nomina_col_usd}</span></p>
-                          </>}
-                        </div>}
-                        {wizardStep===6 && <div className="text-xs text-white/40 space-y-1">
-                          <p>Comisión: <span className="text-white/60 font-bold">{appFormData.commission_pct_default??10}%</span></p>
-                          <p>CUP: <span className="text-white/60">{appFormData.uses_cup_exchange?'✅ Activo':'❌ No'}</span></p>
-                          <p>Pago directo: <span className="text-white/60">{appFormData.uses_direct_payment_notification?'✅ Sí':'❌ No'}</span></p>
-                        </div>}
-                        {wizardStep===7 && <div className="text-xs text-white/40 space-y-1">
-                          <p>Specs: <span className="text-white/60">{(appFormData.specs??[]).length} filas</span></p>
-                          {(appFormData.specs??[]).map((s,i)=><p key={i} className="pl-2 text-white/30">• {s.label}: {s.value}</p>)}
-                          <p className="pt-1">Requisitos: <span className="text-white/60">{(appFormData.requisitos??[]).length}</span></p>
-                          {(appFormData.requisitos??[]).map((r,i)=><p key={i} className="pl-2 text-white/30">• {r}</p>)}
-                        </div>}
-                        {wizardStep===8 && <div className="text-xs text-white/40 space-y-1">
-                          <p>Pasos: <span className="text-white/60">{(appFormData.guide_steps??[]).length}</span></p>
-                          {(appFormData.guide_steps??[]).map(s=><p key={s.step} className="pl-2 text-white/30">• Paso {s.step}: {s.title||'(sin título)'}</p>)}
-                          <p className="pt-1">WhatsApp: <span className="text-white/60">{appFormData.guide_whatsapp?'✅':'—'}</span></p>
-                        </div>}
-                      </div>
-                    )}
-                    <div className="bg-[#0d0d1e] border border-white/5 rounded-xl p-4">
-                      <p className="text-xs font-bold text-white/40 mb-2">
-                        {wizardStep===1&&'📍 El nombre aparece en:'}{wizardStep===2&&'🎨 Logo y colores en:'}{wizardStep===3&&'📝 Descripción en:'}{wizardStep===4&&'💰 Ganancias en:'}{wizardStep===5&&'📊 Nómina en:'}{wizardStep===6&&'💸 Comisiones en:'}{wizardStep===7&&'📋 Specs/Req en:'}{wizardStep===8&&'📖 Guía en:'}{wizardStep===9&&'🔗 Links en:'}{wizardStep===10&&'⚙️ Configuración:'}{wizardStep===11&&'🤖 IA Ángela:'}
-                      </p>
-                      <ul className="space-y-1 text-xs text-white/30">
-                        {wizardStep===1&&<><li>• Tarjeta en <span className="text-white/50">Apps</span></li><li>• Encabezado en <span className="text-white/50">Nómina</span></li><li>• Lista en <span className="text-white/50">Perfil</span></li></>}
-                        {wizardStep===2&&<><li>• Tarjeta en <span className="text-white/50">Apps</span></li><li>• Color en <span className="text-white/50">Nómina</span> y <span className="text-white/50">Ranking</span></li></>}
-                        {wizardStep===3&&<><li>• Tarjeta expandida en <span className="text-white/50">Apps</span></li><li>• Chatbot IA para responder preguntas</li></>}
-                        {wizardStep===4&&<><li>• Sección Ganancias en la tarjeta</li><li>• Chatbot IA para calcular pagos</li></>}
-                        {wizardStep===5&&<><li>• Página <span className="text-white/50">Nómina</span> del admin</li><li>• Cálculo de salarios semanales</li></>}
-                        {wizardStep===6&&<><li>• Comisión del agente en <span className="text-white/50">Nómina</span></li><li>• Notificación en <span className="text-white/50">Perfil</span></li></>}
-                        {wizardStep===7&&<><li>• "Información General" en tarjeta</li><li>• "Requisitos" en tarjeta expandida</li></>}
-                        {wizardStep===8&&<><li>• Modal "Guía de Instalación" en Apps</li><li>• Botón paso a paso con imágenes</li></>}
-                        {wizardStep===9&&<><li>• Botones de descarga en tarjeta</li><li>• Paso 1 de la guía</li></>}
-                        {wizardStep===10&&<><li>• Orden 1 = primera en la lista</li><li>• Apps inactivas no son visibles</li></>}
-                        {wizardStep===11&&<><li>• Chat IA Ángela en la web pública</li><li>• Quick replies del chat (Info sobre...)</li><li>• Actualización automática al guardar</li></>}
-                      </ul>
-                    </div>
+                    <WizardVisualGuide step={wizardStep} form={appFormData} />
                   </div>
                 </div>
               )}
