@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
     import { Plus, Pencil, Trash2, LogOut, ChevronDown, ChevronUp, AlertTriangle, X, Check, Copy } from 'lucide-react'
 import { TelegramLinkCard } from '@/components/layout/TelegramLinkCard'
 
-    const APPS = ['Waha', 'Layla', 'Howdy']
+    const [APPS, setAPPS] = useState(['Waha', 'Layla', 'Howdy'])
 
     interface EntryFormData {
       app_name: string
@@ -20,6 +20,15 @@ import { TelegramLinkCard } from '@/components/layout/TelegramLinkCard'
       billetera: string
       agente: string
     }
+
+    // Load apps dynamically from catalog
+    useEffect(() => {
+      const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
+      fetch(`${apiBase}/api/apps-catalog`)
+        .then(r => r.json())
+        .then(data => { if (data.apps?.length) setAPPS(data.apps.map((a: { name: string }) => a.name)) })
+        .catch(() => {})
+    }, [])
 
     const EMPTY_FORM: EntryFormData = {
       app_name: '', nombre_real: '', nombre_en_app: '',
