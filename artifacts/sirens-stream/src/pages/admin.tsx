@@ -1782,7 +1782,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                           boxShadow: channelApp === app ? '0 4px 14px rgba(44,165,224,0.4)' : 'none',
                           transform: channelApp === app ? 'translateY(-1px)' : 'none'}}>
                         <span style={{width:24,height:24,borderRadius:'50%',overflow:'hidden',display:'inline-flex',flexShrink:0,boxShadow:'0 2px 6px rgba(0,0,0,0.3)'}}>
-                          <img src={{getAppIconUrl(app)}} alt={app} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                          <img src={getAppIconUrl(app)} alt={app} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
                         </span>
                         {app}
                       </button>
@@ -1815,7 +1815,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                         {/* Channel header bar */}
                         <div style={{background:'#242f3d',padding:'12px 16px',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
                           <div style={{width:42,height:42,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:'2px solid #2ca5e0',boxShadow:'0 2px 8px rgba(44,165,224,0.3)'}}>
-                            <img src={{getAppIconUrl(channelApp)}} alt={channelApp} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                            <img src={getAppIconUrl(channelApp)} alt={channelApp} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
                           </div>
                           <div style={{flex:1}}>
                             <div style={{display:'flex',alignItems:'center',gap:7}}>
@@ -1845,7 +1845,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                                 <div key={msg.id} style={{background:'#1a2838',borderRadius:14,overflow:'hidden',border:'1px solid rgba(44,165,224,0.08)'}}>
                                   <div style={{display:'flex',alignItems:'center',gap:8,padding:'9px 13px 7px',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
                                     <div style={{width:27,height:27,borderRadius:'50%',overflow:'hidden',flexShrink:0}}>
-                                      <img src={{getAppIconUrl(channelApp)}} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                                      <img src={getAppIconUrl(channelApp)} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
                                     </div>
                                     <span style={{color:'#2ca5e0',fontWeight:700,fontSize:13,flex:1}}>Canal {channelApp}</span>
                                     <span style={{color:'rgba(255,255,255,0.22)',fontSize:11}}>{new Date(msg.created_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}</span>
@@ -1913,7 +1913,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                       onMouseEnter={e=>(e.currentTarget.style.background='rgba(37,211,102,0.14)')}
                       onMouseLeave={e=>(e.currentTarget.style.background='rgba(37,211,102,0.08)')}>
                       <div style={{width:36,height:36,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:'2px solid rgba(37,211,102,0.5)',boxShadow:'0 2px 8px rgba(37,211,102,0.4)'}}>
-                          <img src={{getAppIconUrl(adminPayApp)}} alt={adminPayApp} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                          <img src={getAppIconUrl(adminPayApp)} alt={adminPayApp} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
                         </div>
                       <div style={{flex:1}}>
                         <div style={{color:'white',fontWeight:700,fontSize:15}}>Pagos WhatsApp — {adminPayApp}</div>
@@ -1931,7 +1931,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                         {/* Channel header bar */}
                         <div style={{background:'#1f2c34',padding:'12px 16px',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid rgba(0,0,0,0.3)'}}>
                           <div style={{width:42,height:42,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:'2px solid #25d366',boxShadow:'0 2px 8px rgba(37,211,102,0.3)'}}>
-                            <img src={{getAppIconUrl(adminPayApp)}} alt={adminPayApp} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                            <img src={getAppIconUrl(adminPayApp)} alt={adminPayApp} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
                           </div>
                           <div style={{flex:1}}>
                             <div style={{display:'flex',alignItems:'center',gap:7}}>
@@ -1950,7 +1950,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                                 color:adminPayApp===app?'white':'rgba(255,255,255,0.4)',
                                 boxShadow:adminPayApp===app?'0 2px 8px rgba(37,211,102,0.35)':'none'}}>
                               <span style={{width:20,height:20,borderRadius:'50%',overflow:'hidden',display:'inline-flex',flexShrink:0}}>
-                                <img src={{getAppIconUrl(app)}} alt={app} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                                <img src={getAppIconUrl(app)} alt={app} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
                               </span>
                               {app}
                             </button>
