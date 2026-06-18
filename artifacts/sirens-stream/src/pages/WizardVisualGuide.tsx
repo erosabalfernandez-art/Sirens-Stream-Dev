@@ -597,10 +597,10 @@ export default function WizardVisualGuide({ step, form }: Props) {
                 <div key={i} className="bg-[#07070f] border border-white/5 rounded-lg p-2 space-y-1">
                   <p className="text-[9px] text-white/60 font-bold">{f.label}</p>
                   <div className="flex gap-2 flex-wrap">
-                    <span className=`text-[8px] px-1.5 py-0.5 rounded border ${f.salary ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-white/5 text-white/20 border-white/8'}`}>
+                    <span className={`text-[8px] px-1.5 py-0.5 rounded border ${f.salary ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-white/5 text-white/20 border-white/8'}`}>
                       💚 Base Salario
                     </span>
-                    <span className=`text-[8px] px-1.5 py-0.5 rounded border ${f.comm ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-white/5 text-white/20 border-white/8'}`}>
+                    <span className={`text-[8px] px-1.5 py-0.5 rounded border ${f.comm ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-white/5 text-white/20 border-white/8'}`}>
                       🟡 Base Comisión
                     </span>
                   </div>
