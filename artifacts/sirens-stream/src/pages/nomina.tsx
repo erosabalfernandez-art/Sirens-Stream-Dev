@@ -66,6 +66,7 @@ function isoWeekLabel(date = new Date()): string {
     type: 'number' | 'text'
     is_usd_base?: boolean
     is_commission_base?: boolean
+    combine_op?: '+' | '-' | '×'
   }
 
   interface CatalogAppMinimal {
@@ -815,13 +816,31 @@ function GenericManualSection({ appCatalog, exchangeRates = {} }: { appCatalog: 
   }
   function calcUSD(workerId: string): number {
     if (usdFields.length === 0) return 0
-    const total = usdFields.reduce((s, f) => s + (parseFloat(getFieldVal(workerId, f.key)) || 0), 0)
+    let total = parseFloat(getFieldVal(workerId, usdFields[0].key)) || 0
+    for (let i = 1; i < usdFields.length; i++) {
+      const val = parseFloat(getFieldVal(workerId, usdFields[i].key)) || 0
+      const op = usdFields[i].combine_op ?? '+'
+      if (op === '-') total -= val
+      else if (op === '×') total *= val
+      else total += val
+    }
     return rate > 1 ? total / rate : total
   }
   function calcCommission(workerId: string): number {
-    const commBase = commFields.length > 0
-      ? commFields.reduce((s, f) => s + (parseFloat(getFieldVal(workerId, f.key)) || 0), 0) / (rate > 1 ? rate : 1)
-      : calcUSD(workerId)
+    let commBase: number
+    if (commFields.length > 0) {
+      let base = parseFloat(getFieldVal(workerId, commFields[0].key)) || 0
+      for (let i = 1; i < commFields.length; i++) {
+        const val = parseFloat(getFieldVal(workerId, commFields[i].key)) || 0
+        const op = commFields[i].combine_op ?? '+'
+        if (op === '-') base -= val
+        else if (op === '×') base *= val
+        else base += val
+      }
+      commBase = base / (rate > 1 ? rate : 1)
+    } else {
+      commBase = calcUSD(workerId)
+    }
     const pct = pctField
       ? parseFloat(getFieldVal(workerId, pctField.key)) || 0
       : commPctDefault
