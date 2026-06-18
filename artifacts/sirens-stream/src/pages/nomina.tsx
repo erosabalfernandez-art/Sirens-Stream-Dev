@@ -1509,6 +1509,8 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
           setPendingRaw(raw)
           setPendingFileName(file.name)
           setParsing(false)
+          // If there is already a loaded nomina, preserve it when the user cancels
+          if (cobradas.length > 0) setStepBeforeConfig('results')
           setStep('configuring')
           setWizardLoading(true)
           const sugg = await getAIColumnSuggestions(headers, app)
@@ -1777,7 +1779,7 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
                           className="flex-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm px-4 py-2.5 rounded-xl transition-all">
                           ✓ Confirmar y procesar nómina
                         </button>
-                        <button onClick={() => { setStep(stepBeforeConfig); setStepBeforeConfig('upload'); setParseError(null) }}
+                        <button onClick={() => { setStep(cobradas.length > 0 ? 'results' : stepBeforeConfig); setStepBeforeConfig('upload'); setParseError(null) }}
                           className="text-white/40 hover:text-white/70 text-sm px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all">
                           Cancelar
                         </button>
