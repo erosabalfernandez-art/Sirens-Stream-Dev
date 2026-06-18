@@ -93,11 +93,17 @@ import { Router } from 'express';
       router.post('/grant-agent-channels', async (req, res) => {
         const { user_id } = req.body as { user_id: string };
         if (!user_id) return res.status(400).json({ error: 'user_id requerido' });
-        const APPS = ['Layla', 'Waha', 'Howdy'];
-        const rows = APPS.map(app => ({
-          user_id, app_name: app, status: 'approved',
-        }));
         try {
+          // Fetch active apps from catalog (dynamic — includes new apps like Nova)
+          const catalogRes = await fetch(sbUrl('apps_catalog?is_active=eq.true&select=name&order=sort_order.asc'), {
+            headers: sbHeaders('') as Record<string, string>,
+          });
+          const catalogRows: { name: string }[] = catalogRes.ok ? await catalogRes.json() : [];
+          const APPS = catalogRows.map((row: { name: string }) => row.name).filter(Boolean);
+          if (APPS.length === 0) return res.status(500).json({ error: 'No se encontraron apps activas' });
+          const rows = APPS.map(app => ({
+            user_id, app_name: app, status: 'approved',
+          }));
           const r = await fetch(sbUrl('channel_requests?on_conflict=user_id,app_name'), {
             method: 'POST',
             headers: sbHeaders('resolution=merge-duplicates,return=minimal') as Record<string, string>,
