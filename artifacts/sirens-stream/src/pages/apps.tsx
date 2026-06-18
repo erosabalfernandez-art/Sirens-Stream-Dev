@@ -844,7 +844,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
     const [dynGuide, setDynGuide] = useState<any | null>(null);
 
     useEffect(() => {
-      const apiBase = ((window as any).__EA_API_BASE__ || '').replace(/\/$/, '');
+      const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '');
       fetch(`${apiBase}/api/apps-catalog`)
         .then(r => r.ok ? r.json() : null)
         .then((d: any) => {
