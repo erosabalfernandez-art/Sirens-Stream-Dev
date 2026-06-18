@@ -1220,14 +1220,44 @@ import { useLanguage } from "@/contexts/LanguageContext";
                           </div>
                         </div>
                       )}
-                      {(lang==='pt' ? app.earnings_info_pt : app.earnings_info_es) && (
-                        <div>
-                          <SectionTitle>{lang==='pt'?'Ganhos':'Ganancias'}</SectionTitle>
-                          <div className="bg-[#0a0a14] border border-white/5 rounded-xl px-4 py-4">
-                            <pre className="text-white/60 text-sm whitespace-pre-wrap leading-relaxed font-mono">{lang==='pt' ? app.earnings_info_pt : app.earnings_info_es}</pre>
+                      {(lang==='pt' ? app.earnings_info_pt : app.earnings_info_es) && (() => {
+                        const raw = (lang==='pt' ? app.earnings_info_pt : app.earnings_info_es) as string;
+                        let parsed: {sections:{title:string;subtitle?:string;headers?:string[];rows:string[][]}[]} | null = null;
+                        try { const p = JSON.parse(raw); if (p?.sections) parsed = p; } catch {}
+                        return (
+                          <div>
+                            <SectionTitle>{lang==='pt'?'Ganhos':'Ganancias'}</SectionTitle>
+                            {parsed ? (
+                              <div className="space-y-4">
+                                {parsed.sections.map((sec, si) => (
+                                  <div key={si} className="bg-[#0a0a14] border border-white/5 rounded-xl overflow-hidden">
+                                    <div className="px-4 py-2.5 bg-white/[0.03] border-b border-white/5">
+                                      <p className="text-white/50 text-[11px] font-bold uppercase tracking-wider">{sec.title}</p>
+                                      {sec.subtitle && <p className="text-white/25 text-xs mt-0.5">{sec.subtitle}</p>}
+                                    </div>
+                                    {sec.headers && (
+                                      <div className="grid px-4 py-2 border-b border-white/5" style={{gridTemplateColumns:'repeat('+sec.headers.length+',1fr)'}}>
+                                        {sec.headers.map((h,hi) => <span key={hi} className={'text-[10px] font-bold text-white/25 uppercase tracking-wider'+(hi>0?' text-right':'')}>{h}</span>)}
+                                      </div>
+                                    )}
+                                    {sec.rows.map((row, ri) => (
+                                      <div key={ri} className={'grid px-4 py-2.5 text-sm '+(ri%2!==0?'bg-white/[0.015]':'')} style={{gridTemplateColumns:'repeat('+row.length+',1fr)'}}>
+                                        <span className="text-white/55">{row[0]}</span>
+                                        {row.length===3 && <span className="text-right font-bold text-yellow-300">{row[1]}</span>}
+                                        <span className={'text-right font-bold '+(row[row.length-1].startsWith('$')?'text-green-400':'text-yellow-300')}>{row[row.length-1]}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="bg-[#0a0a14] border border-white/5 rounded-xl px-4 py-4">
+                                <pre className="text-white/60 text-sm whitespace-pre-wrap leading-relaxed font-mono">{raw}</pre>
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      )}
+                        );
+                      })()}
                       {app.agency_code && (
                         <div>
                           <SectionTitle>🔑 {lang==='pt'?'Código da Agência':'Código de Agencia'}</SectionTitle>
