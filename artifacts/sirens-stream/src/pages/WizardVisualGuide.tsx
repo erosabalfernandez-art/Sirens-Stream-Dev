@@ -531,25 +531,142 @@ export default function WizardVisualGuide({ step, form }: Props) {
       <div className="space-y-3">
         <StepGuideHeader
           emoji="📊"
-          explain="La nómina es cómo el Admin sabe cuánto ganó cada trabajadora esta semana. Hay dos métodos: subir un archivo Excel (que la propia app genera) o ingresar los datos a mano. SOLO el Admin lo ve — las trabajadoras NO ven esto."
+          explain="Aquí configuras cómo el sistema sabrá cuánto ganó cada trabajadora. Hay dos métodos: Excel (la app lo genera y lo subes) o Manual (tú escribes los números a mano). SOLO tú (Admin) ves esta sección."
           who={['admin']}
-          where="En Admin → pestaña Nómina. Las trabajadoras y agentes NUNCA ven esta sección."
+          where="En Admin → pestaña Nómina. Las trabajadoras y agentes NUNCA ven esto."
         />
+
+        {/* Upload vs Manual selector mockup */}
         <div className="space-y-1.5">
-          <p className="text-[10px] font-bold text-white/30 uppercase tracking-wider">Lista de apps en la Nómina (Admin):</p>
-          <NominaList hlRow />
-          <p className="text-[9px] text-white/30 px-1">↑ Tu app aparecerá en esta lista con el método elegido</p>
+          <p className="text-[10px] font-bold text-white/30 uppercase tracking-wider">Elige el método de nómina:</p>
+          <div className="bg-[#0d0d1e] border border-white/8 rounded-xl p-2.5 flex gap-2">
+            <div className={`flex-1 rounded-lg p-2 border text-center ${form.nomina_type !== 'manual' ? 'border-violet-500/50 bg-violet-500/10' : 'border-white/8 bg-[#07070f]'}`}>
+              <p className="text-xs font-bold text-white/70">📂 Upload</p>
+              <p className="text-[9px] text-white/30 mt-0.5">Excel generado por la app</p>
+            </div>
+            <div className={`flex-1 rounded-lg p-2 border text-center ${form.nomina_type === 'manual' ? 'border-violet-500/50 bg-violet-500/10' : 'border-white/8 bg-[#07070f]'}`}>
+              <p className="text-xs font-bold text-white/70">✏️ Manual</p>
+              <p className="text-[9px] text-white/30 mt-0.5">Tú escribes los valores</p>
+            </div>
+          </div>
+          <p className="text-[9px] text-white/25 px-1">↑ Selecciona el que aplica a esta app. Puedes cambiarlo después.</p>
         </div>
-        <div className="space-y-1.5">
-          <p className="text-[10px] font-bold text-white/30 uppercase tracking-wider">Panel expandido de la app en Nómina:</p>
-          <NominaExpanded hlPart={form.nomina_type === 'manual' ? 'manual' : 'cols'} />
+
+        {/* Upload: columnas del Excel */}
+        {form.nomina_type !== 'manual' && (
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-bold text-white/30 uppercase tracking-wider">Upload — columnas del Excel:</p>
+            <div className="bg-[#0d0d1e] border border-white/8 rounded-xl p-2.5 space-y-2">
+              {[
+                { label: '🔑 ID trabajadora', val: 'UID del Host', color: 'text-white/50' },
+                { label: '💚 Salario (USD)', val: 'USD', color: 'text-emerald-300' },
+                { label: '🟡 Base Comisión Admin', val: 'Monedas Comerciales (opcional)', color: 'text-amber-300' },
+                { label: '👤 Nombre / Apodo', val: 'Apodo', color: 'text-white/40' },
+              ].map((row, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-[9px] text-white/35 w-28 shrink-0">{row.label}</span>
+                  <div className="flex-1 bg-[#07070f] border border-white/8 rounded px-2 py-1">
+                    <span className={`text-[9px] font-mono ${row.color}`}>{row.val}</span>
+                  </div>
+                </div>
+              ))}
+              <div className="mt-1 bg-amber-500/8 border border-amber-500/15 rounded-lg p-2">
+                <p className="text-[9px] text-amber-300 leading-relaxed">🟡 <strong>Base Comisión Admin</strong>: si la comisión NO se calcula sobre el salario sino sobre otro número (ej: Monedas Comerciales), escribe aquí el nombre de esa columna del Excel. Si lo dejas vacío, usa la columna de salario.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Manual: campos + tasa + combinación */}
+        {form.nomina_type === 'manual' && (
+          <div className="space-y-2">
+            <p className="text-[10px] font-bold text-white/30 uppercase tracking-wider">Manual — ejemplo Layla (3 campos):</p>
+            <div className="bg-[#0d0d1e] border border-white/8 rounded-xl p-2.5 space-y-2">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[9px] text-white/30">Tasa:</span>
+                <div className="bg-[#07070f] border border-white/8 rounded px-2 py-0.5">
+                  <span className="text-[9px] font-mono text-violet-300">15500</span>
+                </div>
+                <span className="text-[9px] text-white/25">monedas = $1 USD</span>
+              </div>
+              {[
+                { label: 'Monedas retiradas', salary: true, comm: false },
+                { label: 'Monedas comerciales', salary: false, comm: true },
+                { label: 'Porcentaje', salary: false, comm: false },
+              ].map((f, i) => (
+                <div key={i} className="bg-[#07070f] border border-white/5 rounded-lg p-2 space-y-1">
+                  <p className="text-[9px] text-white/60 font-bold">{f.label}</p>
+                  <div className="flex gap-2 flex-wrap">
+                    <span className=`text-[8px] px-1.5 py-0.5 rounded border ${f.salary ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-white/5 text-white/20 border-white/8'}`}>
+                      💚 Base Salario
+                    </span>
+                    <span className=`text-[8px] px-1.5 py-0.5 rounded border ${f.comm ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-white/5 text-white/20 border-white/8'}`}>
+                      🟡 Base Comisión
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Multi-field combine mockup */}
+            <div className="bg-[#0d0d1e] border border-violet-500/20 rounded-xl p-2.5 space-y-2">
+              <p className="text-[9px] font-bold text-violet-300/70 uppercase tracking-wider">¿Tienes 2+ campos de salario? — Elige el operador:</p>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="bg-[#07070f] border border-emerald-500/25 rounded px-2 py-1">
+                  <span className="text-[9px] text-emerald-300 font-mono">MonedaTipoA</span>
+                </div>
+                <div className="flex gap-1">
+                  {['＋ Sumar', '－ Restar', '× Multiplicar'].map((op, i) => (
+                    <div key={i} className={`px-1.5 py-0.5 rounded border text-[8px] font-bold ${i === 0 ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-300' : 'border-white/10 bg-[#07070f] text-white/25'}`}>{op}</div>
+                  ))}
+                </div>
+                <div className="bg-[#07070f] border border-emerald-500/25 rounded px-2 py-1">
+                  <span className="text-[9px] text-emerald-300 font-mono">MonedaTipoB</span>
+                </div>
+              </div>
+              <p className="text-[9px] text-white/30 leading-relaxed">Este selector aparece automáticamente cuando marcas 2 o más campos como "Base Salario" o "Base Comisión". Por defecto suma (más común).</p>
+            </div>
+          </div>
+        )}
+
+        {/* Formula preview mockup */}
+        <div className="bg-[#07070f] border border-emerald-500/15 rounded-xl p-2.5 space-y-1.5">
+          <p className="text-[9px] font-bold text-emerald-400/70 uppercase tracking-wider">⚡ Vista previa del cálculo — se actualiza en vivo:</p>
+          {form.nomina_type === 'manual' ? (
+            <div className="space-y-1 text-[9px] font-mono">
+              <div className="flex items-center gap-1 flex-wrap text-white/40">
+                <span>USD bruto =</span>
+                <span className="bg-emerald-500/15 text-emerald-300 border border-emerald-500/20 px-1.5 py-0.5 rounded">Monedas retiradas</span>
+                <span>÷ 15,500</span>
+              </div>
+              <div className="flex items-center gap-1 flex-wrap">
+                <span className="text-emerald-400/80">💚 Salario chica =</span>
+                <span className="text-emerald-300/60">USD bruto (valor completo)</span>
+              </div>
+              <div className="flex items-center gap-1 flex-wrap">
+                <span className="text-amber-400/80">🟡 Comisión → Admin =</span>
+                <span className="bg-amber-500/15 text-amber-300 border border-amber-500/20 px-1.5 py-0.5 rounded">Monedas comerciales</span>
+                <span className="text-white/30">÷ 15,500 × 10%</span>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-1 text-[9px] font-mono">
+              <div className="flex items-center gap-1 flex-wrap">
+                <span className="text-emerald-400/80">💚 Salario chica =</span>
+                <span className="bg-emerald-500/15 text-emerald-300 border border-emerald-500/20 px-1.5 py-0.5 rounded">USD</span>
+                <span className="text-white/30">(columna del Excel, íntegro)</span>
+              </div>
+              <div className="flex items-center gap-1 flex-wrap">
+                <span className="text-amber-400/80">🟡 Comisión → Admin =</span>
+                <span className="bg-amber-500/15 text-amber-300 border border-amber-500/20 px-1.5 py-0.5 rounded">USD</span>
+                <span className="text-white/30">× 10%</span>
+              </div>
+            </div>
+          )}
+          <p className="text-[8px] text-blue-300/60">ℹ️ La comisión NO se descuenta del salario de la chica — va directo a Admin → Comisiones.</p>
         </div>
-        <InfoBox color="blue" icon="📂" title="Método Upload (Excel)">
-          La app genera un archivo Excel con las ganancias. El Admin lo descarga y lo sube aquí. Solo necesitas decirle al sistema cómo se llaman las columnas del Excel (ej: la columna de dinero se llama "USD").
-        </InfoBox>
-        <InfoBox color="violet" icon="✏️" title="Método Manual">
-          Si la app no genera Excel, ingresas los datos a mano cada semana. El Admin escribe cuántas monedas ganó cada trabajadora y el sistema calcula el USD automáticamente.
-        </InfoBox>
+
+        <NominaList hlRow />
       </div>
     ),
 
