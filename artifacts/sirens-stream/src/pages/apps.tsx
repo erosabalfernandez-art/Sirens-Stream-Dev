@@ -711,13 +711,20 @@ import { useLanguage } from "@/contexts/LanguageContext";
   /* ── Dynamic Guide Modal (for DB-configured apps) ── */
   function DynamicGuideModal({ app, onClose }: { app: any; onClose: () => void }) {
     const { lang } = useLanguage();
-    const steps: {step:number;title:string;text:string;image_url?:string}[] = app.guide_steps ?? [];
+    const [galleryIdx, setGalleryIdx] = useState<number | null>(null);
+    const allSteps: {step:number;title:string;text:string;image_url?:string;type?:string}[] = app.guide_steps ?? [];
+    const steps = allSteps.filter((s: any) => s.type !== 'gallery');
+    const galleryImages: {src:string;label:string}[] = allSteps.filter((s: any) => s.type === 'gallery' && s.image_url).map((s: any) => ({src: s.image_url, label: s.title || ''}));
+    const accent = app.color_hex || '#3b82f6';
+    const hasDownloads = app.download_url_android || app.download_url_ios;
     return (
+      <>
       <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-black/85 backdrop-blur-sm" onClick={onClose}>
-        <div className="w-full md:max-w-lg max-h-[92vh] bg-[#0d0d1e] border border-blue-500/20 md:rounded-2xl rounded-t-2xl flex flex-col shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="w-full md:max-w-lg max-h-[92vh] bg-[#0d0d1e] border border-white/10 md:rounded-2xl rounded-t-2xl flex flex-col shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+          {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-white/8 shrink-0">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl overflow-hidden shrink-0 flex items-center justify-center text-white font-black text-sm" style={{background:app.color_hex||'#3b3b5c'}}>
+              <div className="w-8 h-8 rounded-xl overflow-hidden shrink-0 flex items-center justify-center text-white font-black text-sm" style={{background:accent}}>
                 {app.icon_url ? <img src={app.icon_url} alt={app.display_name} className="w-full h-full object-cover" /> : app.display_name?.[0]}
               </div>
               <div>
@@ -727,41 +734,101 @@ import { useLanguage } from "@/contexts/LanguageContext";
             </div>
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"><X className="w-4 h-4" /></button>
           </div>
+          {/* App title hero */}
+          <div className="px-5 pt-5 pb-4 text-center border-b border-white/5 shrink-0">
+            <h1 className="text-4xl font-black tracking-widest mb-1" style={{color:accent}}>{app.display_name?.toUpperCase()}</h1>
+            <p className="text-white/40 font-bold text-xs uppercase tracking-widest">{lang==='pt'?'Guia de Instalação Passo a Passo':'Guía de Instalación Paso a Paso'}</p>
+          </div>
           <div className="flex-1 overflow-y-auto p-5 space-y-3">
+            {/* Download + WhatsApp buttons at top */}
+            {(hasDownloads || app.guide_whatsapp) && (
+              <div className="space-y-2 pb-1">
+                {app.download_url_android && (
+                  <a href={app.download_url_android} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full border text-sm font-bold py-3 rounded-xl hover:opacity-80 transition-opacity"
+                    style={{background: accent+'18', borderColor: accent+'50', color: accent}}>
+                    🤖 {lang==='pt'?'Baixar para Android':'Descargar para Android'}
+                  </a>
+                )}
+                {app.download_url_ios && (
+                  <a href={app.download_url_ios} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full border text-sm font-bold py-3 rounded-xl hover:opacity-80 transition-opacity"
+                    style={{background: accent+'18', borderColor: accent+'50', color: accent}}>
+                    🍎 {lang==='pt'?'Baixar para iOS':'Descargar para iOS'}
+                  </a>
+                )}
+                {app.guide_whatsapp && (
+                  <a href={app.guide_whatsapp} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full bg-green-600/20 border border-green-500/30 text-green-300 font-bold py-3 rounded-xl text-sm hover:bg-green-600/30 transition-colors">
+                    <MessageCircle className="w-4 h-4" /> {lang==='pt'?'Enviar Captura + ID por WhatsApp':'Enviar Captura + ID por WhatsApp'}
+                  </a>
+                )}
+              </div>
+            )}
+            {/* Steps section title */}
+            <div className="flex items-center gap-2 pb-1">
+              <div className="w-1 h-4 rounded-full shrink-0" style={{background:accent}} />
+              <p className="text-white/70 text-sm font-bold">{lang==='pt'?'Passos para Instalar':'Pasos para Instalar'}</p>
+            </div>
+            {/* Steps */}
             {steps.length === 0 ? (
               <div className="text-center py-8 text-white/30 text-sm">{lang==='pt'?'Guia não configurado ainda.':'Guía no configurada aún. Configúrala desde el panel Admin.'}</div>
             ) : steps.map((step, i) => (
-              <div key={i} className="bg-[#0a0a14] border border-white/5 rounded-xl p-4">
-                <div className="flex gap-3">
-                  <span className="text-blue-400 font-extrabold text-sm shrink-0 w-6">{String(step.step).padStart(2,'0')}</span>
-                  <div className="flex-1">
-                    <p className="font-bold text-white text-sm">{step.title}</p>
-                    {step.text && <p className="text-white/45 text-xs leading-relaxed mt-1">{step.text}</p>}
-                    {app.agency_code && (step.title?.toLowerCase().includes('código') || step.text?.toLowerCase().includes('código')) && (
-                      <div className="mt-2 font-mono text-sm bg-blue-500/10 border border-blue-500/25 rounded-lg px-3 py-2 text-blue-300 font-bold tracking-widest">{app.agency_code}</div>
-                    )}
-                    {step.image_url && <img src={step.image_url} alt={`Paso ${step.step}`} className="mt-3 w-full rounded-xl object-cover max-h-52 border border-white/5" />}
-                  </div>
-                </div>
+              <div key={i} className="bg-[#13132a] border border-white/8 rounded-2xl p-4">
+                <p className="text-sm text-white/85 mb-1">
+                  <span className="font-black mr-2" style={{color:accent}}>Paso {step.step}</span>{step.title}
+                </p>
+                {step.text && <p className="text-white/50 text-xs leading-relaxed">{step.text}</p>}
+                {app.agency_code && (step.title?.toLowerCase().includes('código') || step.text?.toLowerCase().includes('código')) && (
+                  <div className="mt-2"><CodeCopy code={app.agency_code} /></div>
+                )}
+                {step.image_url && <img src={step.image_url} alt={`Paso ${step.step}`} className="mt-3 w-full rounded-xl object-cover max-h-52 border border-white/5" />}
               </div>
             ))}
+            {/* Agency code standalone if not in steps */}
             {app.agency_code && !steps.some((s:any) => s.title?.toLowerCase().includes('código') || s.text?.toLowerCase().includes('código')) && (
-              <div className="bg-blue-500/10 border border-blue-500/25 rounded-xl p-4">
-                <p className="text-xs font-bold text-blue-300 mb-2">🔑 {lang==='pt'?'Código da Agência':'Código de Agencia'}</p>
-                <p className="font-mono text-lg text-blue-300 font-extrabold tracking-widest text-center">{app.agency_code}</p>
+              <CodeCopy code={app.agency_code} />
+            )}
+            {/* Gallery images grid */}
+            {galleryImages.length > 0 && (
+              <div className="pt-1">
+                <p className="text-white/50 text-xs font-semibold mb-2 uppercase tracking-wider">📖 {lang==='pt'?'Guias visuais (toque para ampliar)':'Guías visuales (toca para ampliar)'}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {galleryImages.map((img, i) => (
+                    <button key={i} onClick={() => setGalleryIdx(i)}
+                      className="rounded-xl overflow-hidden border border-white/10 hover:border-white/30 transition-colors text-left">
+                      <img src={img.src} alt={img.label || `Guía ${i+1}`} className="w-full object-cover aspect-[3/4]" />
+                      {img.label && <p className="text-center text-white/40 text-xs py-1.5 px-1 leading-tight">{img.label}</p>}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
-          {app.guide_whatsapp && (
-            <div className="px-5 py-4 border-t border-white/8 shrink-0">
-              <a href={app.guide_whatsapp} target="_blank" rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-500 text-white font-bold px-5 py-3 rounded-xl text-sm transition-all">
-                <MessageCircle className="w-4 h-4" /> {lang==='pt'?'Enviar captura de tela':'Enviar captura de pantalla'}
-              </a>
+        </div>
+      </div>
+      {/* Full-screen gallery lightbox */}
+      {galleryIdx !== null && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.96)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
+          onClick={() => setGalleryIdx(null)}
+        >
+          <ZoomableImage src={galleryImages[galleryIdx].src} alt={galleryImages[galleryIdx].label} />
+          <button onClick={() => setGalleryIdx(null)}
+            style={{ position: 'absolute', top: 16, right: 16, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <X className="w-4 h-4 text-white" />
+          </button>
+          {galleryImages.length > 1 && (
+            <div style={{ position: 'absolute', bottom: 24, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 8 }}>
+              {galleryImages.map((_, i) => (
+                <button key={i} onClick={e => { e.stopPropagation(); setGalleryIdx(i); }}
+                  style={{ height: 8, borderRadius: 4, background: i === galleryIdx ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.25)', width: i === galleryIdx ? 32 : 16, cursor: 'pointer', border: 'none', transition: 'all 0.2s' }} />
+              ))}
             </div>
           )}
         </div>
-      </div>
+      )}
+      </>
     );
   }
 
@@ -1108,6 +1175,12 @@ import { useLanguage } from "@/contexts/LanguageContext";
                             <Send className="w-4 h-4" /> Canal de Telegram
                           </a>
                         )}
+                        {app.guide_whatsapp && (
+                          <a href={app.guide_whatsapp} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-2 bg-white/6 border border-white/12 text-white/80 font-semibold px-5 py-2.5 rounded-xl text-sm hover:bg-white/10 transition-colors">
+                            <MessageCircle className="w-4 h-4" /> {lang==='pt'?'Contatar Tutora':'Contactar Tutora'}
+                          </a>
+                        )}
                         {app.download_url_android && (
                           <a href={app.download_url_android} target="_blank" rel="noopener noreferrer"
                             className="flex items-center gap-2 bg-green-600/15 border border-green-500/30 text-green-400 font-bold px-5 py-2.5 rounded-xl text-sm hover:bg-green-600/25 transition-colors">
@@ -1158,7 +1231,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
                       {app.agency_code && (
                         <div>
                           <SectionTitle>🔑 {lang==='pt'?'Código da Agência':'Código de Agencia'}</SectionTitle>
-                          <div className="font-mono text-xl text-blue-300 font-extrabold tracking-widest bg-blue-500/10 border border-blue-500/25 rounded-xl px-5 py-4 text-center">{app.agency_code}</div>
+                          <CodeCopy code={app.agency_code} />
                         </div>
                       )}
                     </div>
