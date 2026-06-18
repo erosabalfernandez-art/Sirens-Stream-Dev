@@ -79,8 +79,6 @@ router.delete('/apps-catalog/:name', async (req, res) => {
   }
 });
 
-export default router;
-
 // POST /api/apps-catalog/upload-image — sube imágenes al storage de Supabase
 router.post('/apps-catalog/upload-image', async (req, res) => {
   const { base64, mime, filename, type } = req.body as { base64?: string; mime?: string; filename?: string; type?: 'icon' | 'guide' };
@@ -116,3 +114,5 @@ router.post('/apps-catalog/upload-image', async (req, res) => {
     return res.status(500).json({ error: e instanceof Error ? e.message : 'error' });
   }
 });
+
+export default router;
