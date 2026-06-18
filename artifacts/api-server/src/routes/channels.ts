@@ -241,7 +241,7 @@ import { Router } from 'express';
               }]).catch(() => {});
             });
           }
-          return res.json({ ok: true, granted: appNames.length, apps: appNames });
+          return res.json({ ok: true, v3: true, apps: appNames, granted: appNames.length });
       } catch (e: unknown) {
         return res.status(500).json({ error: e instanceof Error ? e.message : 'error' });
       }
