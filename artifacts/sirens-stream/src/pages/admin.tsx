@@ -100,7 +100,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
   }, [])
 
   // Apps catalog management state
-  interface ManualField { key: string; label: string; type: 'number' | 'text'; is_usd_base?: boolean; is_commission_base?: boolean }
+  interface ManualField { key: string; label: string; type: 'number' | 'text'; is_usd_base?: boolean; is_commission_base?: boolean; combine_op?: '+' | '-' | '×' }
   interface AppSpec { label: string; value: string }
   interface GuideStep { step: number; title: string; text: string; image_url?: string }
   interface AppCatalogEntry {
@@ -4027,20 +4027,58 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                                       </select>
                                     </div>
                                   </div>
-                                  <div className="flex gap-4">
+                                  <div className="flex flex-wrap gap-4">
                                     <label className="flex items-center gap-2 cursor-pointer">
                                       <input type="checkbox" checked={field.is_usd_base ?? false}
                                         onChange={e => setAppFormData(p => { const arr=[...(p.nomina_manual_fields??[])]; arr[idx]={...arr[idx],is_usd_base:e.target.checked}; return {...p,nomina_manual_fields:arr} })}
                                         className="w-3.5 h-3.5 accent-violet-500" />
-                                      <span className="text-xs text-white/60">💚 Base Salario <span className="text-violet-300/50">(÷ tasa · puedes marcar varios · se suman)</span></span>
+                                      <span className="text-xs text-white/60">💚 Base Salario <span className="text-violet-300/50">(÷ tasa · marca varios para combinar)</span></span>
                                     </label>
                                     <label className="flex items-center gap-2 cursor-pointer">
                                       <input type="checkbox" checked={field.is_commission_base ?? false}
                                         onChange={e => setAppFormData(p => { const arr=[...(p.nomina_manual_fields??[])]; arr[idx]={...arr[idx],is_commission_base:e.target.checked}; return {...p,nomina_manual_fields:arr} })}
                                         className="w-3.5 h-3.5 accent-amber-500" />
-                                      <span className="text-xs text-white/60">🟡 Base Comisión Admin <span className="text-amber-300/50">(puedes marcar varios)</span></span>
+                                      <span className="text-xs text-white/60">🟡 Base Comisión Admin <span className="text-amber-300/50">(marca varios para combinar)</span></span>
                                     </label>
                                   </div>
+                                  {/* ── Combine operator: show only when this is 2nd+ field of same type ── */}
+                                  {(() => {
+                                    const fields = appFormData.nomina_manual_fields ?? [];
+                                    const prevUsdIdx = fields.slice(0, idx).findLastIndex((f: ManualField) => f.is_usd_base);
+                                    const prevCommIdx = fields.slice(0, idx).findLastIndex((f: ManualField) => f.is_commission_base);
+                                    const showSalaryOp = field.is_usd_base && prevUsdIdx >= 0;
+                                    const showCommOp = field.is_commission_base && prevCommIdx >= 0;
+                                    if (!showSalaryOp && !showCommOp) return null;
+                                    return (
+                                      <div className="mt-2 p-3 bg-[#0d0d1e] border border-white/8 rounded-xl space-y-2">
+                                        {showSalaryOp && (
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-xs text-white/40 shrink-0">💚 Este campo de salario se combina con el anterior:</span>
+                                            {(['+', '-', '×'] as const).map(op => (
+                                              <button key={op} type="button"
+                                                onClick={() => setAppFormData(p => { const arr=[...(p.nomina_manual_fields??[])]; arr[idx]={...arr[idx],combine_op:op}; return {...p,nomina_manual_fields:arr} })}
+                                                className={`px-3 py-1 rounded-lg text-sm font-bold transition-all border ${(field.combine_op ?? '+') === op ? 'border-emerald-500/60 bg-emerald-500/15 text-emerald-300' : 'border-white/10 bg-[#07070f] text-white/35 hover:border-white/25 hover:text-white/60'}`}>
+                                                {op === '+' ? '＋ Sumar' : op === '-' ? '－ Restar' : '× Multiplicar'}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        )}
+                                        {showCommOp && (
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-xs text-white/40 shrink-0">🟡 Este campo de comisión se combina con el anterior:</span>
+                                            {(['+', '-', '×'] as const).map(op => (
+                                              <button key={op} type="button"
+                                                onClick={() => setAppFormData(p => { const arr=[...(p.nomina_manual_fields??[])]; arr[idx]={...arr[idx],combine_op:op}; return {...p,nomina_manual_fields:arr} })}
+                                                className={`px-3 py-1 rounded-lg text-sm font-bold transition-all border ${(field.combine_op ?? '+') === op ? 'border-amber-500/60 bg-amber-500/15 text-amber-300' : 'border-white/10 bg-[#07070f] text-white/35 hover:border-white/25 hover:text-white/60'}`}>
+                                                {op === '+' ? '＋ Sumar' : op === '-' ? '－ Restar' : '× Multiplicar'}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        )}
+                                        <p className="text-white/20 text-[10px]">ej: Salario = (Campo1 + Campo2) ÷ tasa · O (Campo1 - descuento) ÷ tasa · O (Campo1 × factor) ÷ tasa</p>
+                                      </div>
+                                    );
+                                  })()}
                                   {field.key && <p className="text-white/20 text-xs">Clave: <span className="font-mono text-violet-300/50">{field.key}</span></p>}
                                 </div>
                               ))}
