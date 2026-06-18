@@ -197,7 +197,7 @@ import { Link, useLocation } from "wouter";
 
       async function handleSignOut() {
         await signOut();
-        navigate("/");
+        window.location.replace("/");
       }
 
       useEffect(() => {
