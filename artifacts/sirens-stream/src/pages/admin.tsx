@@ -189,6 +189,12 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
     reader.readAsDataURL(file)
   }
 
+
+  function getAppIconUrl(appName: string): string {
+    const found = appsCatalogFull.find(a => a.name === appName)
+    if (found?.icon_url) return found.icon_url
+    return `https://eyeklnjwbyvsgirsglbx.supabase.co/storage/v1/object/public/app-icons/${appName.toLowerCase()}.jpg`
+  }
   async function fetchAppsCatalog() {
     setAppsLoading(true); setAppsError(null)
     const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
@@ -275,7 +281,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
         // Channel state
         const [solicitudes, setSolicitudes] = useState<{id:string;user_id:string;app_name:string;status:string;created_at:string;profile_email:string}[]>([])
         const [loadingSol, setLoadingSol] = useState(false)
-        const [channelApp, setChannelApp] = useState<'Waha'|'Layla'|'Howdy'>('Waha')
+        const [channelApp, setChannelApp] = useState<string>('Waha')
         const [channelMessages, setChannelMessages] = useState<{id:string;app_name:string;content:string|null;image_url:string|null;created_at:string}[]>([])
         const [channelContent, setChannelContent] = useState('')
         const [channelImage, setChannelImage] = useState('')
@@ -285,7 +291,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
         const [channelPosting, setChannelPosting] = useState(false)
           const [adminPayStk, setAdminPayStk] = useState<{id:string;user_id:string;app_name:string;nombre_en_app:string|null;sticker_index:number;created_at:string}[]>([])
           const [loadingPayStk, setLoadingPayStk] = useState(false)
-          const [adminPayApp, setAdminPayApp] = useState<'Waha'|'Layla'|'Howdy'>('Waha')
+          const [adminPayApp, setAdminPayApp] = useState<string>('Waha')
           const [tgOpen, setTgOpen] = useState(true)
           const [waOpen, setWaOpen] = useState(true)
         const [loadingMsgs, setLoadingMsgs] = useState(false)
@@ -323,7 +329,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
         const [notifLogs, setNotifLogs] = useState<NotifLog[]>([])
           const [pushTestLoading, setPushTestLoading] = useState(false)
           const [pushTestResult, setPushTestResult] = useState<{sent:number;ok:boolean;subs:number}|null>(null)
-        const [pagosApp, setPagosApp] = useState<'Waha'|'Layla'|'Howdy'|'Agentes'>(() => { try { const _sv = localStorage.getItem('ea_pagos_app'); return (['Waha','Layla','Howdy','Agentes'].includes(_sv ?? '') ? _sv : 'Waha') as 'Waha'|'Layla'|'Howdy'|'Agentes' } catch { return 'Waha' } })
+        const [pagosApp, setPagosApp] = useState<string>(() => { try { const _sv = localStorage.getItem('ea_pagos_app'); return _sv ?? 'Waha' } catch { return 'Waha' } })
           const [agentPayData, setAgentPayData] = useState<{confirmed: any[], pending: any[]}>({confirmed: [], pending: []})
           const [agentPayLoading, setAgentPayLoading] = useState(false)
           const [coliderMarks, setColiderMarks] = useState<{paid: any[], pending: any[]}>({paid: [], pending: []})
@@ -1768,7 +1774,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
 
                   {/* ── App selector ───────────────────────────────────── */}
                   <div style={{display:'flex',gap:8,marginBottom:24,flexWrap:'wrap'}}>
-                    {(['Waha','Layla','Howdy'] as const).map(app => (
+                    {catalogApps.map(app => (
                       <button key={app} onClick={() => { setChannelApp(app); setChannelContent(''); setChannelFile(null); setChannelPreview(null); setChannelImage(''); fetchChannelMessages(app); if(adminPayApp===app) fetchAdminPayStk(app) }}
                         style={{display:'flex',alignItems:'center',gap:9,padding:'8px 18px',borderRadius:30,border:'none',cursor:'pointer',fontWeight:700,fontSize:14,transition:'all 0.2s',
                           background: channelApp === app ? 'linear-gradient(135deg,#2ca5e0,#1a7fba)' : 'rgba(255,255,255,0.06)',
@@ -1776,7 +1782,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                           boxShadow: channelApp === app ? '0 4px 14px rgba(44,165,224,0.4)' : 'none',
                           transform: channelApp === app ? 'translateY(-1px)' : 'none'}}>
                         <span style={{width:24,height:24,borderRadius:'50%',overflow:'hidden',display:'inline-flex',flexShrink:0,boxShadow:'0 2px 6px rgba(0,0,0,0.3)'}}>
-                          <img src={`https://eyeklnjwbyvsgirsglbx.supabase.co/storage/v1/object/public/app-icons/${app.toLowerCase()}.jpg`} alt={app} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                          <img src={{getAppIconUrl(app)}} alt={app} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
                         </span>
                         {app}
                       </button>
@@ -1809,7 +1815,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                         {/* Channel header bar */}
                         <div style={{background:'#242f3d',padding:'12px 16px',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
                           <div style={{width:42,height:42,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:'2px solid #2ca5e0',boxShadow:'0 2px 8px rgba(44,165,224,0.3)'}}>
-                            <img src={`https://eyeklnjwbyvsgirsglbx.supabase.co/storage/v1/object/public/app-icons/${channelApp.toLowerCase()}.jpg`} alt={channelApp} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                            <img src={{getAppIconUrl(channelApp)}} alt={channelApp} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
                           </div>
                           <div style={{flex:1}}>
                             <div style={{display:'flex',alignItems:'center',gap:7}}>
@@ -1839,7 +1845,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                                 <div key={msg.id} style={{background:'#1a2838',borderRadius:14,overflow:'hidden',border:'1px solid rgba(44,165,224,0.08)'}}>
                                   <div style={{display:'flex',alignItems:'center',gap:8,padding:'9px 13px 7px',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
                                     <div style={{width:27,height:27,borderRadius:'50%',overflow:'hidden',flexShrink:0}}>
-                                      <img src={`https://eyeklnjwbyvsgirsglbx.supabase.co/storage/v1/object/public/app-icons/${channelApp.toLowerCase()}.jpg`} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                                      <img src={{getAppIconUrl(channelApp)}} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
                                     </div>
                                     <span style={{color:'#2ca5e0',fontWeight:700,fontSize:13,flex:1}}>Canal {channelApp}</span>
                                     <span style={{color:'rgba(255,255,255,0.22)',fontSize:11}}>{new Date(msg.created_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}</span>
@@ -1907,7 +1913,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                       onMouseEnter={e=>(e.currentTarget.style.background='rgba(37,211,102,0.14)')}
                       onMouseLeave={e=>(e.currentTarget.style.background='rgba(37,211,102,0.08)')}>
                       <div style={{width:36,height:36,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:'2px solid rgba(37,211,102,0.5)',boxShadow:'0 2px 8px rgba(37,211,102,0.4)'}}>
-                          <img src={`https://eyeklnjwbyvsgirsglbx.supabase.co/storage/v1/object/public/app-icons/${adminPayApp.toLowerCase()}.jpg`} alt={adminPayApp} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                          <img src={{getAppIconUrl(adminPayApp)}} alt={adminPayApp} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
                         </div>
                       <div style={{flex:1}}>
                         <div style={{color:'white',fontWeight:700,fontSize:15}}>Pagos WhatsApp — {adminPayApp}</div>
@@ -1925,7 +1931,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                         {/* Channel header bar */}
                         <div style={{background:'#1f2c34',padding:'12px 16px',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid rgba(0,0,0,0.3)'}}>
                           <div style={{width:42,height:42,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:'2px solid #25d366',boxShadow:'0 2px 8px rgba(37,211,102,0.3)'}}>
-                            <img src={`https://eyeklnjwbyvsgirsglbx.supabase.co/storage/v1/object/public/app-icons/${adminPayApp.toLowerCase()}.jpg`} alt={adminPayApp} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                            <img src={{getAppIconUrl(adminPayApp)}} alt={adminPayApp} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
                           </div>
                           <div style={{flex:1}}>
                             <div style={{display:'flex',alignItems:'center',gap:7}}>
@@ -1937,14 +1943,14 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                         </div>
                         {/* App sub-selector */}
                         <div style={{padding:'12px 16px 8px',background:'#111c22',display:'flex',gap:6,flexWrap:'wrap',borderBottom:'1px solid rgba(255,255,255,0.04)',alignItems:'center'}}>
-                          {(['Waha','Layla','Howdy'] as const).map(app=>(
+                          {catalogApps.map(app=>(
                             <button key={app} onClick={()=>{setAdminPayApp(app);fetchAdminPayStk(app)}}
                               style={{display:'flex',alignItems:'center',gap:7,padding:'5px 14px',borderRadius:20,border:'none',cursor:'pointer',fontSize:13,fontWeight:700,transition:'all 0.15s',
                                 background:adminPayApp===app?'#25d366':'rgba(255,255,255,0.06)',
                                 color:adminPayApp===app?'white':'rgba(255,255,255,0.4)',
                                 boxShadow:adminPayApp===app?'0 2px 8px rgba(37,211,102,0.35)':'none'}}>
                               <span style={{width:20,height:20,borderRadius:'50%',overflow:'hidden',display:'inline-flex',flexShrink:0}}>
-                                <img src={`https://eyeklnjwbyvsgirsglbx.supabase.co/storage/v1/object/public/app-icons/${app.toLowerCase()}.jpg`} alt={app} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                                <img src={{getAppIconUrl(app)}} alt={app} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
                               </span>
                               {app}
                             </button>
@@ -4513,6 +4519,7 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                             {k:'🏷 Badge', v:appFormData.badge_label?`${appFormData.badge_label} (${appFormData.badge_color})`:'—', req:false},
                             {k:'💬 Tagline', v:appFormData.tagline?appFormData.tagline.slice(0,35):'—', req:false},
                             {k:'🎨 Color', v:appFormData.color_hex, req:false},
+                            {k:'🖼 Logo', v:appFormData.icon_url?'✅ (subido)':'⚠️ SIN logo — app sin imagen', req:false},
                             {k:'🔑 Código agencia', v:appFormData.agency_code||'—', req:false},
                             {k:'💰 Retiro', v:appFormData.payment_frequency?`${appFormData.payment_frequency} · $${appFormData.payment_min_usd??'?'}`:'—', req:false},
                             {k:'📊 Nómina', v:appFormData.nomina_type==='manual'?`Manual (${(appFormData.nomina_manual_fields??[]).length} campos)`:appFormData.nomina_type==='upload'?'Upload Excel':'—', req:false},
