@@ -21,6 +21,10 @@ import { Router } from 'express';
   }
 
   // GET /api/channel-access?user_id=X
+    router.get('/test-deploy-marker', (_req, res) => {
+      res.json({ v: '2026-06-18-v4', catalog_fix: true, ts: Date.now() });
+    });
+
   router.get('/channel-access', async (req, res) => {
     const user_id = req.query.user_id as string | undefined;
     if (!user_id) return res.status(400).json({ error: 'user_id requerido' });
