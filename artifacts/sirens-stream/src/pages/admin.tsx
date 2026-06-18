@@ -3763,7 +3763,7 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                       <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
                         <div>
                           <p className="text-white font-bold text-base mb-1">Nombre e Identidad</p>
-                          <p className="text-white/40 text-sm leading-relaxed">Define cómo se llama la app. El <strong className="text-white/60">nombre interno</strong> es una clave única sin espacios que se usa en toda la base de datos.</p>
+                          <p className="text-white/40 text-sm leading-relaxed">Ponle nombre a tu app. Tiene <strong className="text-white/60">dos nombres</strong>: uno <em>interno</em> (solo lo ve el sistema, sin espacios) y uno <em>visible</em> (lo que leerán las trabajadoras). Mira la guía a la derecha — verás exactamente dónde aparece cada uno. →</p>
                         </div>
                         {!editingApp && (
                           <div>
@@ -3795,7 +3795,7 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                       <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
                         <div>
                           <p className="text-white font-bold text-base mb-1">Logo, Colores y Presentación</p>
-                          <p className="text-white/40 text-sm">El logo, colores, tagline y badge aparecen en la tarjeta de la app.</p>
+                          <p className="text-white/40 text-sm">La "cara" de tu app: el logo, los colores, el subtítulo (tagline) y la etiqueta de colores (badge). Mira la vista previa a la derecha — verás cómo quedará la tarjeta en la página Apps antes de guardar. →</p>
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">URL del logo / icono</label>
@@ -3865,7 +3865,7 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                       <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
                         <div>
                           <p className="text-white font-bold text-base mb-1">Descripción de la App</p>
-                          <p className="text-white/40 text-sm">Explica qué tipo de app es y cómo funciona. Aparece al expandir la tarjeta en Apps.</p>
+                          <p className="text-white/40 text-sm">Escribe una explicación de qué hace esta app. Aparece cuando alguien hace clic en la tarjeta para ver más detalles. La IA Ángela también usará este texto para responder preguntas. Si tienes usuarias en Brasil, agrega la versión en portugués. →</p>
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Descripción en Español</label>
@@ -3886,7 +3886,7 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                       <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
                         <div>
                           <p className="text-white font-bold text-base mb-1">Ganancias y Sistema de Pago</p>
-                          <p className="text-white/40 text-sm">Detalla cuánto gana la trabajadora y cómo funciona el sistema de retiro.</p>
+                          <p className="text-white/40 text-sm">Describe cuánto gana la trabajadora y cómo puede retirar su dinero. <strong className="text-red-400/70">⚠️ El Código de Agencia es obligatorio</strong> — sin él la trabajadora no puede cobrar. Mira a la derecha para ver exactamente dónde aparece. →</p>
                         </div>
                         <div className="bg-amber-500/8 border border-amber-500/20 rounded-xl p-3">
                           <p className="text-amber-300 text-xs font-bold mb-1.5">📋 Formato recomendado:</p>
@@ -4178,7 +4178,7 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                       <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
                         <div>
                           <p className="text-white font-bold text-base mb-1">Comisión del Agente</p>
-                          <p className="text-white/40 text-sm">Cuánto te queda a ti por chica.</p>
+                          <p className="text-white/40 text-sm">El porcentaje que recibes tú cuando una trabajadora cobra. <strong className="text-white/60">La trabajadora siempre recibe su salario completo</strong> — la comisión viene aparte y va a tu panel de Admin. Ej: 10% → ella gana $100, tú recibes $10 extra. →</p>
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Porcentaje de comisión del agente (%)</label>
@@ -4225,7 +4225,7 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                       <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
                         <div>
                           <p className="text-white font-bold text-base mb-1">Especificaciones y Requisitos</p>
-                          <p className="text-white/40 text-sm">Aparecen en la tarjeta expandida en la página de Apps.</p>
+                          <p className="text-white/40 text-sm">Agrega datos concretos de la app (nombre Android, iOS, horas mínimas) y los requisitos para unirse (mayor de edad, WiFi, etc.). Mira la vista previa a la derecha para ver cómo se ven. →</p>
                         </div>
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
@@ -4280,7 +4280,7 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                       <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
                         <div>
                           <p className="text-white font-bold text-base mb-1">Guía de Instalación</p>
-                          <p className="text-white/40 text-sm">Define los pasos que la trabajadora sigue para registrarse. Aparecen en el modal "Guía de Instalación".</p>
+                          <p className="text-white/40 text-sm">El tutorial paso a paso para que la trabajadora sepa cómo instalar y registrarse. Aparece cuando hace clic en el botón 📖 Guía. Puedes subir imágenes con el botón 📤. El WhatsApp es para que envíe la captura confirmando su registro. →</p>
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">WhatsApp para envío de capturas</label>
@@ -4347,7 +4347,7 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                       <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
                         <div>
                           <p className="text-white font-bold text-base mb-1">🤖 Conocimiento para Ángela (IA)</p>
-                          <p className="text-white/40 text-sm">¿Qué debe saber Ángela sobre esta app? Esto se inyecta automáticamente en su sistema de respuestas cuando alguien pregunta por la app.</p>
+                          <p className="text-white/40 text-sm">Escribe todo lo que quieres que Ángela (la IA del chat) sepa sobre esta app. Cuando alguien le pregunte por ganancias, cómo registrarse o el código de agencia, usará exactamente este texto. <strong className="text-white/60">Si lo dejas vacío, Ángela solo sabrá el nombre.</strong> →</p>
                         </div>
                         <div className="bg-blue-500/8 border border-blue-500/20 rounded-xl p-3 text-xs text-blue-300 leading-relaxed">
                           💡 <strong>Incluye:</strong> nombre, tipo de actividad, ganancias (tarifas, metas), código de agencia, formas de retiro, requisitos, y cualquier dato que las usuarias suelen preguntar. Si lo dejas vacío, Ángela solo sabrá el nombre de la app.
@@ -4376,7 +4376,7 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                       <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
                         <div>
                           <p className="text-white font-bold text-base mb-1">Links de Descarga</p>
-                          <p className="text-white/40 text-sm">Aparecen como botones en la tarjeta y dentro de la guía de instalación.</p>
+                          <p className="text-white/40 text-sm">Los links para instalar la app en el teléfono. Android va a Play Store o APK directo, iOS va a App Store. Si la app solo existe para Android, deja iOS vacío. También puedes agregar el canal de Telegram de la app. →</p>
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">🤖 Descarga Android (Play Store o APK directo)</label>
@@ -4403,7 +4403,7 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                       <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
                         <div>
                           <p className="text-white font-bold text-base mb-1">Configuración Final</p>
-                          <p className="text-white/40 text-sm">Define el orden y visibilidad. Revisa el resumen completo antes de guardar.</p>
+                          <p className="text-white/40 text-sm">Elige en qué posición aparece tu app (1 = primera en la lista) y si está visible para el público. Puedes dejarla oculta mientras la configuras y activarla cuando esté lista. Revisa el resumen abajo antes de guardar. →</p>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
