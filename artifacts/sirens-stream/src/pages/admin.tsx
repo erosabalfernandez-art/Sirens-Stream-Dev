@@ -102,7 +102,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
   // Apps catalog management state
   interface ManualField { key: string; label: string; type: 'number' | 'text'; is_usd_base?: boolean; is_commission_base?: boolean; combine_op?: '+' | '-' | '×' }
   interface AppSpec { label: string; value: string }
-  interface GuideStep { step: number; title: string; text: string; image_url?: string }
+  interface GuideStep { step: number; title: string; text: string; image_url?: string; type?: string }
   interface AppCatalogEntry {
     id: string; name: string; display_name: string; ios_name: string | null;
     description_es: string | null; description_pt: string | null;
@@ -4376,6 +4376,51 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                         <div className="bg-[#07070f] border border-white/5 rounded-xl p-3">
                           <p className="text-violet-300/70 text-xs font-semibold mb-1">📸 Imágenes de los pasos:</p>
                           <p className="text-white/30 text-xs">Usa el botón 📤 en cada paso para subir capturas directamente. Se guardan en Supabase Storage y el URL se completa automáticamente.</p>
+                        </div>
+                        {/* ── Galería de imágenes visuales ── */}
+                        <div className="space-y-3 pt-2 border-t border-white/5">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-xs font-bold text-white/50 uppercase tracking-wide">Galería de imágenes visuales</p>
+                              <p className="text-white/25 text-xs mt-0.5">Capturas de la app que aparecen al final de la guía en cuadrícula ampliable (como Howdy con 6 imágenes). Ayudan a la chica a reconocer la app.</p>
+                            </div>
+                            <button onClick={() => setAppFormData(p => ({...p, guide_steps: [...(p.guide_steps??[]), {step:0, title:'', text:'', image_url:'', type:'gallery'}]}))}
+                              className="text-xs text-violet-400/70 hover:text-violet-300 transition-colors px-2 py-1 rounded-lg hover:bg-violet-500/10 shrink-0">+ Agregar imagen</button>
+                          </div>
+                          {(appFormData.guide_steps ?? []).filter(s => s.type === 'gallery').length === 0 && (
+                            <div className="bg-[#07070f] border border-white/5 rounded-xl p-3 text-xs text-white/25">
+                              Ej: pantalla principal de la app, cómo se ve el perfil, la tabla de ganancias, el chat, etc.
+                            </div>
+                          )}
+                          {(appFormData.guide_steps ?? []).map((step, realIdx) => step.type !== 'gallery' ? null : (
+                            <div key={realIdx} className="bg-[#07070f] border border-white/10 rounded-xl p-3 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <p className="text-xs text-violet-400 font-bold">📷 Imagen de galería</p>
+                                <button onClick={() => setAppFormData(p => { const arr=[...(p.guide_steps??[])]; arr.splice(realIdx,1); return {...p,guide_steps:arr} })}
+                                  className="text-red-400/40 hover:text-red-400 text-xs transition-colors">✕ Eliminar</button>
+                              </div>
+                              <div>
+                                <label className="block text-xs text-white/40 mb-1">Etiqueta <span className="text-white/25">(opcional, ej: "Pantalla principal")</span></label>
+                                <input type="text" placeholder="Ej: Pantalla principal, Tabla de ganancias..." value={step.title}
+                                  onChange={e => setAppFormData(p => { const arr=[...(p.guide_steps??[])]; arr[realIdx]={...arr[realIdx],title:e.target.value}; return {...p,guide_steps:arr} })}
+                                  className="w-full bg-[#0d0d1e] border border-white/8 rounded-lg px-2.5 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50" />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-white/40 mb-1">URL de la imagen</label>
+                                <div className="flex gap-2">
+                                  <input type="text" placeholder="https://... o sube →" value={step.image_url ?? ''}
+                                    onChange={e => setAppFormData(p => { const arr=[...(p.guide_steps??[])]; arr[realIdx]={...arr[realIdx],image_url:e.target.value}; return {...p,guide_steps:arr} })}
+                                    className="flex-1 bg-[#0d0d1e] border border-white/8 rounded-lg px-2.5 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50" />
+                                  <input type="file" accept="image/*" className="hidden" id={`gal-img-${realIdx}`} onChange={e => { if(e.target.files?.[0]) uploadAppImage(e.target.files[0], 'guide', realIdx); e.target.value='' }} />
+                                  <button type="button" onClick={() => { const el=document.getElementById(`gal-img-${realIdx}`) as HTMLInputElement|null; el?.click() }} disabled={uploadingGuideImgs[realIdx]}
+                                    className="shrink-0 px-2.5 py-2 rounded-lg border border-violet-500/30 bg-violet-500/10 text-violet-300 text-xs font-bold hover:bg-violet-500/20 transition-all disabled:opacity-40">
+                                    {uploadingGuideImgs[realIdx] ? '⏳' : '📤'}
+                                  </button>
+                                </div>
+                                {step.image_url && <img src={step.image_url} alt={step.title||'preview'} className="mt-2 w-full h-24 object-cover rounded-lg border border-white/10" />}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
