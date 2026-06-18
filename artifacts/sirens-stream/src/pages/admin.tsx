@@ -115,6 +115,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
     specs: AppSpec[] | null; requisitos: string[] | null;
     nomina_type: 'upload' | 'manual' | null;
     nomina_col_uid: string | null; nomina_col_usd: string | null;
+    nomina_col_commission: string | null;
     nomina_col_apodo: string | null; nomina_col_semana: string | null;
     nomina_col_metric: string | null; nomina_metric_label: string | null;
     nomina_currency: 'USD' | 'BRL' | null;
@@ -143,7 +144,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
     tagline: '', badge_label: 'Retiro semanal', badge_color: 'red',
     specs: [], requisitos: [],
     nomina_type: 'upload',
-    nomina_col_uid: 'UID del Host', nomina_col_usd: 'USD',
+    nomina_col_uid: 'UID del Host', nomina_col_usd: 'USD', nomina_col_commission: null,
     nomina_col_apodo: 'Apodo', nomina_col_semana: 'Semana',
     nomina_col_metric: 'Diamantes Totales', nomina_metric_label: 'Diamantes',
     nomina_currency: 'USD', nomina_manual_fields: [], nomina_rate: null,
@@ -3951,14 +3952,16 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                             </div>
                             <p className="text-white/30 text-xs">Escribe los nombres tal como aparecen en el archivo Excel/CSV de la app.</p>
                             {([
-                              {key:'nomina_col_uid',label:'Columna: ID del usuario *',placeholder:'ej: UID del Host'},
-                              {key:'nomina_col_usd',label:'Columna: Ganancias USD *',placeholder:'ej: USD'},
-                              {key:'nomina_col_apodo',label:'Columna: Nombre/Apodo',placeholder:'ej: Apodo'},
-                              {key:'nomina_col_semana',label:'Columna: Semana',placeholder:'ej: Semana'},
-                              {key:'nomina_col_metric',label:'Columna: Métrica (diamantes/puntos)',placeholder:'ej: Diamantes Totales'},
-                            ] as {key:keyof typeof appFormData;label:string;placeholder:string}[]).map(f => (
+                              {key:'nomina_col_uid',label:'🔑 Columna: ID de la trabajadora *',placeholder:'ej: UID del Host',desc:'Identifica a cada chica en tu base de datos. Obligatorio.'},
+                              {key:'nomina_col_usd',label:'💚 Columna: Salario (USD) *',placeholder:'ej: USD',desc:'Valor que recibe la chica íntegro — sin descuentos. Obligatorio.'},
+                              {key:'nomina_col_commission',label:'🟡 Columna: Base de Comisión Admin',placeholder:'ej: Monedas Comerciales (opcional)',desc:'Columna sobre la que se calcula TU comisión. Si la dejas vacía, usa la columna de salario.'},
+                              {key:'nomina_col_apodo',label:'👤 Columna: Nombre / Apodo',placeholder:'ej: Apodo',desc:'Nombre visible en la nómina. Opcional.'},
+                              {key:'nomina_col_semana',label:'📅 Columna: Semana',placeholder:'ej: Semana',desc:'Período del pago. Se usa para organizar cobros. Opcional.'},
+                              {key:'nomina_col_metric',label:'📊 Columna: Métrica de actividad',placeholder:'ej: Diamantes Totales',desc:'Diamantes, monedas, puntos… solo informativo.'},
+                            ] as {key:keyof typeof appFormData;label:string;placeholder:string;desc:string}[]).map(f => (
                               <div key={f.key}>
-                                <label className="block text-xs font-bold text-violet-300/70 mb-1 uppercase tracking-wide">{f.label}</label>
+                                <label className="block text-xs font-bold text-violet-300/70 mb-0.5 uppercase tracking-wide">{f.label}</label>
+                                <p className="text-white/25 text-[10px] mb-1.5 leading-relaxed">{f.desc}</p>
                                 <input type="text" placeholder={f.placeholder} value={(appFormData[f.key] as string) ?? ''}
                                   onChange={e => setAppFormData(p => ({...p, [f.key]: e.target.value}))}
                                   className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
@@ -4027,15 +4030,15 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                                   <div className="flex gap-4">
                                     <label className="flex items-center gap-2 cursor-pointer">
                                       <input type="checkbox" checked={field.is_usd_base ?? false}
-                                        onChange={e => setAppFormData(p => { const arr=[...(p.nomina_manual_fields??[])].map((f,i) => i===idx ? {...f,is_usd_base:e.target.checked} : e.target.checked ? {...f,is_usd_base:false} : f); return {...p,nomina_manual_fields:arr} })}
+                                        onChange={e => setAppFormData(p => { const arr=[...(p.nomina_manual_fields??[])]; arr[idx]={...arr[idx],is_usd_base:e.target.checked}; return {...p,nomina_manual_fields:arr} })}
                                         className="w-3.5 h-3.5 accent-violet-500" />
-                                      <span className="text-xs text-white/50">Base USD <span className="text-violet-300/50">(÷ tasa)</span></span>
+                                      <span className="text-xs text-white/60">💚 Base Salario <span className="text-violet-300/50">(÷ tasa · puedes marcar varios · se suman)</span></span>
                                     </label>
                                     <label className="flex items-center gap-2 cursor-pointer">
                                       <input type="checkbox" checked={field.is_commission_base ?? false}
                                         onChange={e => setAppFormData(p => { const arr=[...(p.nomina_manual_fields??[])]; arr[idx]={...arr[idx],is_commission_base:e.target.checked}; return {...p,nomina_manual_fields:arr} })}
                                         className="w-3.5 h-3.5 accent-amber-500" />
-                                      <span className="text-xs text-white/50">Base comisión agente</span>
+                                      <span className="text-xs text-white/60">🟡 Base Comisión Admin <span className="text-amber-300/50">(puedes marcar varios)</span></span>
                                     </label>
                                   </div>
                                   {field.key && <p className="text-white/20 text-xs">Clave: <span className="font-mono text-violet-300/50">{field.key}</span></p>}
@@ -4051,14 +4054,13 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
 
                         {/* ── Fórmula de cálculo en vivo ── */}
                         {appFormData.nomina_type && (() => {
-                          const usdBase = appFormData.nomina_manual_fields?.find(f => f.is_usd_base);
-                          const commBase = appFormData.nomina_manual_fields?.find(f => f.is_commission_base);
+                          const usdBases = appFormData.nomina_manual_fields?.filter(f => f.is_usd_base) ?? [];
+                          const commBases = appFormData.nomina_manual_fields?.filter(f => f.is_commission_base) ?? [];
                           const rate = appFormData.nomina_rate ?? 15500;
                           const pct = appFormData.commission_pct_default ?? 10;
-                          const usdCol = appFormData.nomina_col_usd || '[columna USD]';
-                          const usdLabel = usdBase?.label || '[campo sin marcar]';
-                          const commLabel = commBase?.label || usdBase?.label || '[campo sin marcar]';
-                          const ex = 50; const exUnits = rate * 30;
+                          const usdCol = appFormData.nomina_col_usd || '[columna salario]';
+                          const commCol = (appFormData as any).nomina_col_commission || usdCol;
+                          const ex = 50;
                           return (
                             <div className="bg-[#07070f] border border-emerald-500/20 rounded-2xl p-5 space-y-4">
                               <div className="flex items-center gap-2">
@@ -4071,31 +4073,33 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                                 <div className="space-y-3">
                                   <div className="bg-[#0d0d1e] border border-white/5 rounded-xl p-3.5 space-y-2.5">
                                     <p className="text-[10px] font-bold text-violet-300/60 uppercase tracking-wider">Fórmula — Subida Excel/CSV</p>
-                                    <div className="space-y-1.5 text-xs font-mono">
-                                      <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="text-white/40">Salario chica =</span>
+                                    <div className="space-y-2 text-xs font-mono">
+                                      <div className="flex items-start gap-2 flex-wrap">
+                                        <span className="text-emerald-400/80 shrink-0">💚 Salario chica =</span>
                                         <span className="bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 px-2 py-0.5 rounded">{usdCol}</span>
-                                        <span className="text-white/30">× (1 − {pct}%)</span>
+                                        <span className="text-white/30">(valor completo del Excel)</span>
                                       </div>
-                                      <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="text-white/40">Comisión agente =</span>
-                                        <span className="bg-amber-500/15 text-amber-300 border border-amber-500/25 px-2 py-0.5 rounded">{usdCol}</span>
+                                      <div className="flex items-start gap-2 flex-wrap">
+                                        <span className="text-amber-400/80 shrink-0">🟡 Comisión → tu Admin =</span>
+                                        <span className="bg-amber-500/15 text-amber-300 border border-amber-500/25 px-2 py-0.5 rounded">{commCol}</span>
                                         <span className="text-white/30">× {pct}%</span>
                                       </div>
+                                    </div>
+                                    <div className="bg-blue-500/8 border border-blue-500/15 rounded-lg p-2 mt-1">
+                                      <p className="text-blue-300 text-[10px] leading-relaxed">ℹ️ La comisión <strong>NO se descuenta</strong> del salario de la chica — va directo a <strong>Admin → Comisiones</strong> para que la revises y publiques al agente.</p>
                                     </div>
                                     {appFormData.nomina_currency === 'BRL' && (
                                       <div className="bg-amber-500/8 border border-amber-500/20 rounded-lg p-2.5 mt-1">
                                         <p className="text-amber-300 text-xs font-bold">💱 Moneda: BRL (Reais)</p>
-                                        <p className="text-amber-200/50 text-xs mt-0.5 leading-relaxed">La columna <span className="font-mono text-amber-300/70">{usdCol}</span> se lee como Reais. La conversión BRL→USD usa la <strong className="text-amber-300/60">tasa global</strong> configurada en Admin → Nómina → Tipo de Cambio.</p>
+                                        <p className="text-amber-200/50 text-xs mt-0.5 leading-relaxed">La columna <span className="font-mono text-amber-300/70">{usdCol}</span> se lee como Reais. La conversión BRL→USD usa la <strong className="text-amber-300/60">tasa global</strong> en Admin → Nómina → Tipo de Cambio.</p>
                                       </div>
                                     )}
                                   </div>
                                   <div className="bg-[#0d0d1e] border border-white/5 rounded-xl p-3.5">
-                                    <p className="text-[10px] font-bold text-white/25 mb-2">EJEMPLO — chica con ${ex}.00 USD en la app:</p>
+                                    <p className="text-[10px] font-bold text-white/25 mb-2">EJEMPLO — chica con ${ex}.00 en columna {usdCol}:</p>
                                     <div className="space-y-1 text-xs">
-                                      <div className="flex justify-between"><span className="text-white/35">Ganancias brutas</span><span className="text-white/60 font-mono">${ex}.00 USD</span></div>
-                                      <div className="flex justify-between"><span className="text-white/35">Comisión agente ({pct}%)</span><span className="text-amber-400/80 font-mono">− ${(ex * pct / 100).toFixed(2)} USD</span></div>
-                                      <div className="border-t border-white/5 pt-1.5 flex justify-between font-bold"><span className="text-white/50">Salario chica</span><span className="text-green-400 font-mono">${(ex * (1 - pct / 100)).toFixed(2)} USD</span></div>
+                                      <div className="flex justify-between"><span className="text-emerald-300/70">Salario chica (íntegro)</span><span className="text-green-400 font-mono">${ex}.00 USD</span></div>
+                                      <div className="flex justify-between"><span className="text-amber-300/70">Comisión Admin ({pct}%) → tu panel</span><span className="text-amber-400/80 font-mono">${(ex * pct / 100).toFixed(2)} USD</span></div>
                                     </div>
                                   </div>
                                 </div>
@@ -4109,37 +4113,52 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                                     <>
                                       <div className="bg-[#0d0d1e] border border-white/5 rounded-xl p-3.5 space-y-2.5">
                                         <p className="text-[10px] font-bold text-violet-300/60 uppercase tracking-wider">Fórmula — Entrada Manual</p>
-                                        <div className="space-y-1.5 text-xs font-mono">
-                                          <div className="flex items-center gap-1.5 flex-wrap">
-                                            <span className="text-white/40">USD bruto =</span>
-                                            <span className={`px-2 py-0.5 rounded border ${usdBase ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25' : 'bg-red-500/10 text-red-400 border-red-500/25'}`}>{usdLabel}</span>
+                                        <div className="space-y-2 text-xs font-mono">
+                                          <div className="flex items-start gap-1.5 flex-wrap">
+                                            <span className="text-white/40 shrink-0">USD bruto =</span>
+                                            {usdBases.length > 0 ? usdBases.map((f, i) => (
+                                              <span key={f.key} className="flex items-center gap-1">
+                                                <span className="bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 px-2 py-0.5 rounded">{f.label}</span>
+                                                {i < usdBases.length - 1 && <span className="text-white/30">+</span>}
+                                              </span>
+                                            )) : <span className="bg-red-500/10 text-red-400 border border-red-500/25 px-2 py-0.5 rounded">[ningún campo marcado]</span>}
                                             <span className="text-white/30">÷ {rate.toLocaleString()}</span>
                                           </div>
                                           <div className="flex items-center gap-1.5 flex-wrap">
-                                            <span className="text-white/40">Salario chica =</span>
-                                            <span className="text-emerald-400/70">USD bruto</span>
-                                            <span className="text-white/30">× (1 − {pct}%)</span>
+                                            <span className="text-emerald-400/80 shrink-0">💚 Salario chica =</span>
+                                            <span className="text-emerald-400/60">USD bruto</span>
+                                            <span className="text-white/30">(valor completo)</span>
                                           </div>
-                                          <div className="flex items-center gap-1.5 flex-wrap">
-                                            <span className="text-white/40">Comisión =</span>
-                                            <span className={`px-2 py-0.5 rounded border ${commBase ? 'bg-amber-500/15 text-amber-300 border-amber-500/25' : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25'}`}>{commLabel}</span>
+                                          <div className="flex items-start gap-1.5 flex-wrap">
+                                            <span className="text-amber-400/80 shrink-0">🟡 Comisión → Admin =</span>
+                                            {commBases.length > 0 ? commBases.map((f, i) => (
+                                              <span key={f.key} className="flex items-center gap-1">
+                                                <span className="bg-amber-500/15 text-amber-300 border border-amber-500/25 px-2 py-0.5 rounded">{f.label}</span>
+                                                {i < commBases.length - 1 && <span className="text-white/30">+</span>}
+                                              </span>
+                                            )) : <span className="bg-emerald-500/10 text-emerald-300/60 border border-emerald-500/15 px-2 py-0.5 rounded text-[10px]">usa Base Salario</span>}
                                             <span className="text-white/30">÷ {rate.toLocaleString()} × {pct}%</span>
                                           </div>
                                         </div>
-                                        {!usdBase && (
+                                        <div className="bg-blue-500/8 border border-blue-500/15 rounded-lg p-2 mt-1">
+                                          <p className="text-blue-300 text-[10px] leading-relaxed">ℹ️ La comisión <strong>NO se descuenta</strong> del salario de la chica — va directo a <strong>Admin → Comisiones</strong>.</p>
+                                        </div>
+                                        {usdBases.length === 0 && (
                                           <div className="bg-red-500/8 border border-red-500/20 rounded-lg p-2.5 mt-1">
-                                            <p className="text-red-400 text-xs">⚠ Ningún campo tiene <strong>"Base USD"</strong> marcado — sin esto no se calcula el salario.</p>
+                                            <p className="text-red-400 text-xs">⚠ Ningún campo tiene <strong>"Base Salario"</strong> marcado — sin esto no se calcula el salario.</p>
                                           </div>
                                         )}
                                       </div>
-                                      {usdBase && (
+                                      {usdBases.length > 0 && (
                                         <div className="bg-[#0d0d1e] border border-white/5 rounded-xl p-3.5">
-                                          <p className="text-[10px] font-bold text-white/25 mb-2">EJEMPLO — chica con {exUnits.toLocaleString()} unidades en "{usdBase.label}":</p>
+                                          <p className="text-[10px] font-bold text-white/25 mb-2">EJEMPLO — chica con {(rate * 30).toLocaleString()} unidades totales (Base Salario):</p>
                                           <div className="space-y-1 text-xs">
-                                            <div className="flex justify-between"><span className="text-white/35">{usdBase.label}</span><span className="text-white/60 font-mono">{exUnits.toLocaleString()} unid.</span></div>
+                                            {usdBases.map(f => (
+                                              <div key={f.key} className="flex justify-between"><span className="text-white/35">{f.label}</span><span className="text-white/60 font-mono">≈ {Math.round(rate * 30 / usdBases.length).toLocaleString()} unid.</span></div>
+                                            ))}
                                             <div className="flex justify-between"><span className="text-white/35">USD bruto (÷ {rate.toLocaleString()})</span><span className="text-white/60 font-mono">$30.00 USD</span></div>
-                                            <div className="flex justify-between"><span className="text-white/35">Comisión agente ({pct}%)</span><span className="text-amber-400/80 font-mono">− ${(30 * pct / 100).toFixed(2)} USD</span></div>
-                                            <div className="border-t border-white/5 pt-1.5 flex justify-between font-bold"><span className="text-white/50">Salario chica</span><span className="text-green-400 font-mono">${(30 * (1 - pct / 100)).toFixed(2)} USD</span></div>
+                                            <div className="flex justify-between"><span className="text-emerald-300/70">Salario chica (íntegro)</span><span className="text-green-400 font-mono">$30.00 USD</span></div>
+                                            <div className="flex justify-between"><span className="text-amber-300/70">Comisión Admin ({pct}%) → tu panel</span><span className="text-amber-400/80 font-mono">${(30 * pct / 100).toFixed(2)} USD</span></div>
                                           </div>
                                         </div>
                                       )}
@@ -4158,15 +4177,23 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                     {wizardStep === 6 && (
                       <div className="bg-[#0d0d1e] border border-violet-500/15 rounded-2xl p-6 space-y-5">
                         <div>
-                          <p className="text-white font-bold text-base mb-1">Configuración de Comisiones</p>
-                          <p className="text-white/40 text-sm">Define cuánto cobra el agente y opciones especiales de pago.</p>
+                          <p className="text-white font-bold text-base mb-1">Comisión del Agente</p>
+                          <p className="text-white/40 text-sm">Cuánto te queda a ti por chica.</p>
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Porcentaje de comisión del agente (%)</label>
                           <input type="number" min={0} max={100} step={1} placeholder="10" value={appFormData.commission_pct_default ?? ''}
                             onChange={e => setAppFormData(p => ({...p, commission_pct_default: parseFloat(e.target.value) || null}))}
                             className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60" />
-                          <p className="text-white/25 text-xs mt-1.5">La comisión se calcula sobre las ganancias de la chica, pero la paga la agencia — no se descuenta del salario de la trabajadora.</p>
+                          <p className="text-white/25 text-xs mt-1.5">Ejemplo: si la chica gana $100 y el % es 10 → ella recibe $100, tú obtienes $10 de comisión en tu panel Admin.</p>
+                          <div className="mt-3 bg-blue-500/8 border border-blue-500/15 rounded-xl p-3.5">
+                            <p className="text-blue-300 text-xs font-bold mb-1">💡 ¿Cómo funciona la comisión? (Forma B)</p>
+                            <div className="space-y-1.5 text-[11px] text-white/50 leading-relaxed">
+                              <div className="flex gap-2"><span className="text-emerald-400 shrink-0">💚 Chica recibe:</span><span>Su salario <strong className="text-white/70">completo</strong>, sin descuento.</span></div>
+                              <div className="flex gap-2"><span className="text-amber-400 shrink-0">🟡 Tú recibes:</span><span>La comisión va a tu panel <strong className="text-white/70">Admin → Comisiones</strong>. La revisas y publicas cuando quieras al agente.</span></div>
+                              <div className="flex gap-2"><span className="text-red-400/60 shrink-0">❌ No aplica:</span><span>La comisión <strong className="text-white/70">no</strong> sale del bolsillo de la chica.</span></div>
+                            </div>
+                          </div>
                         </div>
                         <div className="space-y-3">
                           <div className="flex items-start justify-between p-4 bg-[#07070f] rounded-xl border border-white/8 gap-3">
