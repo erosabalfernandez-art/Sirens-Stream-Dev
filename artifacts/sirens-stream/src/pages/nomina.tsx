@@ -31,7 +31,7 @@ function isoWeekLabel(date = new Date()): string {
     extras: Record<string, string | number>
   }
 
-  type ColConfig = { uid: number; usd: number; apodo: number; semana: number; metric: number; metricLabel: string; currency: 'USD' | 'BRL' }
+  type ColConfig = { uid: number; usd: number; apodo: number; semana: number; metric: number; commission: number; metricLabel: string; currency: 'USD' | 'BRL' }
   interface WorkerRow extends WorkerEntry { profile_email: string }
   interface Matched  { worker: WorkerRow; nomina: NominaRow }
   interface NoCobro  { worker: WorkerRow; nomina: NominaRow | null }
@@ -78,6 +78,7 @@ function isoWeekLabel(date = new Date()): string {
     color_hex?: string | null
     nomina_col_uid?: string | null
     nomina_col_usd?: string | null
+    nomina_col_commission?: string | null
     nomina_col_apodo?: string | null
     nomina_col_semana?: string | null
     nomina_col_metric?: string | null
@@ -724,9 +725,10 @@ function GenericManualSection({ appCatalog, exchangeRates = {} }: { appCatalog: 
   const fields: ManualField[] = appCatalog.nomina_manual_fields ?? [
     { key: 'usd', label: 'USD', type: 'number', is_usd_base: true }
   ]
-  const usdField = fields.find(f => f.is_usd_base) ?? fields[0]
-  const commField = fields.find(f => f.is_commission_base)
-  const pctField = fields.find(f => !f.is_usd_base && !f.is_commission_base)
+  const usdFields = fields.filter(f => f.is_usd_base)
+  const usdField = usdFields[0] ?? fields[0]
+  const commFields = fields.filter(f => f.is_commission_base)
+  const pctField = fields.find(f => !f.is_usd_base && !f.is_commission_base && f.type === 'number')
   const commPctDefault = appCatalog.commission_pct_default ?? 10
   const color = appCatalog.color_hex ?? '#7c3aed'
 
@@ -781,7 +783,7 @@ function GenericManualSection({ appCatalog, exchangeRates = {} }: { appCatalog: 
               const entry: Record<string,string> = {}
               if (usdField) entry[usdField.key] = String(pub.diamantes ?? '')
               for (const f of fields) {
-                if (!f.is_usd_base && (pub.extras as any)?.[f.key] != null)
+                if (f.key !== usdField?.key && (pub.extras as any)?.[f.key] != null)
                   entry[f.key] = String((pub.extras as any)[f.key])
               }
               merged[w.id] = entry
@@ -812,13 +814,13 @@ function GenericManualSection({ appCatalog, exchangeRates = {} }: { appCatalog: 
     return values[workerId]?.[fieldKey] ?? ''
   }
   function calcUSD(workerId: string): number {
-    if (!usdField) return 0
-    const val = parseFloat(getFieldVal(workerId, usdField.key)) || 0
-    return rate > 1 ? val / rate : val
+    if (usdFields.length === 0) return 0
+    const total = usdFields.reduce((s, f) => s + (parseFloat(getFieldVal(workerId, f.key)) || 0), 0)
+    return rate > 1 ? total / rate : total
   }
   function calcCommission(workerId: string): number {
-    const commBase = commField
-      ? (parseFloat(getFieldVal(workerId, commField.key)) || 0) / (rate > 1 ? rate : 1)
+    const commBase = commFields.length > 0
+      ? commFields.reduce((s, f) => s + (parseFloat(getFieldVal(workerId, f.key)) || 0), 0) / (rate > 1 ? rate : 1)
       : calcUSD(workerId)
     const pct = pctField
       ? parseFloat(getFieldVal(workerId, pctField.key)) || 0
@@ -835,7 +837,7 @@ function GenericManualSection({ appCatalog, exchangeRates = {} }: { appCatalog: 
         const usd = calcUSD(w.id)
         const usdBaseVal = parseFloat(getFieldVal(w.id, usdField?.key ?? '')) || 0
         const extras: Record<string,unknown> = {}
-        for (const f of fields) { if (!f.is_usd_base) extras[f.key] = parseFloat(getFieldVal(w.id, f.key)) || 0 }
+        for (const f of fields) { if (f.key !== (usdField?.key ?? '')) extras[f.key] = parseFloat(getFieldVal(w.id, f.key)) || 0 }
         return { user_id: w.user_id, app_name: appName, semana, usd, diamantes: usdBaseVal, extras }
       })
       const cobradas = workers.filter(w => calcUSD(w.id) > 0).map(w => ({
@@ -844,7 +846,7 @@ function GenericManualSection({ appCatalog, exchangeRates = {} }: { appCatalog: 
           uid: w.id_aplicacion ?? '', apodo: w.nombre_en_app ?? w.nombre_real ?? '',
           usd: calcUSD(w.id), diamantes: parseFloat(getFieldVal(w.id, usdField?.key ?? '')) || 0,
           semana, comision: calcCommission(w.id), agente: w.agente ?? null,
-          extras: Object.fromEntries(fields.filter(f => !f.is_usd_base).map(f => [f.key, parseFloat(getFieldVal(w.id, f.key)) || 0])),
+          extras: Object.fromEntries(fields.filter(f => f.key !== (usdField?.key ?? '')).map(f => [f.key, parseFloat(getFieldVal(w.id, f.key)) || 0])),
         },
       }))
       const noCobro = workers.filter(w => !(calcUSD(w.id) > 0)).map(w => ({ worker: { ...w, profile_email: '' }, nomina: null }))
@@ -1017,11 +1019,11 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
   const [publishingAgents, setPublishingAgents] = useState(false)
   const [agentPublishOk, setAgentPublishOk] = useState(false)
   const [commissionPct, setCommissionPct] = useState<number>(() => { try { return parseFloat(localStorage.getItem(`ea_comm_pct_${app}`) ?? '10') || 10 } catch { return 10 } })
-    const [savedColConfig, setSavedColConfig] = useState<ColConfig | null>(() => { try { const s = localStorage.getItem(`ea_col_cfg_${app}`); return s ? JSON.parse(s) as ColConfig : null } catch { return null } })
+    const [savedColConfig, setSavedColConfig] = useState<ColConfig | null>(() => { try { const s = localStorage.getItem(`ea_col_cfg_${app}`); if (!s) return null; const p = JSON.parse(s) as Partial<ColConfig>; return { commission: -1, ...p } as ColConfig } catch { return null } })
     const [pendingHeaders, setPendingHeaders] = useState<string[]>([])
     const [pendingRaw, setPendingRaw] = useState<unknown[][]>([])
     const [pendingFileName, setPendingFileName] = useState('')
-    const [wizardCfg, setWizardCfg] = useState<ColConfig>({ uid: -1, usd: -1, apodo: -1, semana: -1, metric: -1, metricLabel: 'Diamantes', currency: 'USD' })
+    const [wizardCfg, setWizardCfg] = useState<ColConfig>({ uid: -1, usd: -1, apodo: -1, semana: -1, metric: -1, commission: -1, metricLabel: 'Diamantes', currency: 'USD' })
     const [wizardLoading, setWizardLoading] = useState(false)
     const [stepBeforeConfig, setStepBeforeConfig] = useState<'upload' | 'results'>('upload')
   const fileRef = useRef<HTMLInputElement>(null)
@@ -1331,7 +1333,7 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
     }
 
     async function applyColConfig(headers: string[], raw: unknown[][], cfg: ColConfig, fileName: string) {
-      const { uid: uidCol, usd: usdCol, apodo: apodoCol, semana: semanaCol, metric: metricCol } = cfg
+      const { uid: uidCol, usd: usdCol, apodo: apodoCol, semana: semanaCol, metric: metricCol, commission: commissionCol } = cfg
       if (uidCol < 0 || usdCol < 0) {
         setParseError('Necesitas configurar al menos la columna de ID de trabajadora y la de salario.')
         setStep('upload')
@@ -1346,18 +1348,19 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
         setAiColDetect(null)
 
         const dataRows = (raw.slice(1) as unknown[][]).filter(r => r.length > 0)
-        const mainCols = new Set([semanaCol, uidCol, apodoCol, usdCol, metricCol].filter(i => i >= 0))
+        const mainCols = new Set([semanaCol, uidCol, apodoCol, usdCol, metricCol, commissionCol].filter(i => i >= 0))
 
         const nominaRows: NominaRow[] = dataRows.map(r => {
           const extras: Record<string, string | number> = {}
           headers.forEach((h, i) => { if (!mainCols.has(i) && h && r[i] !== undefined && r[i] !== null && r[i] !== '') extras[h] = r[i] as string | number })
           const usd = parseFloat(String(usdCol >= 0 ? (r[usdCol] ?? 0) : 0)) || 0
+          const commBase = commissionCol >= 0 ? parseFloat(String(r[commissionCol] ?? 0)) || 0 : usd
           return {
             uid: normalizeUID(uidCol >= 0 ? r[uidCol] : ''),
             apodo: String(apodoCol >= 0 ? (r[apodoCol] ?? '') : ''),
             usd,
             diamantes: parseFloat(String(metricCol >= 0 ? (r[metricCol] ?? 0) : 0)) || 0,
-            comision: (app === 'Waha' || app === 'Howdy') ? usd * (commissionPct / 100) : usd * 0.10,
+            comision: commBase * (commissionPct / 100),
             semana: String(semanaCol >= 0 ? (r[semanaCol] ?? '') : isoWeekLabel()),
             agente: null,
             extras,
@@ -1462,12 +1465,14 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
           // ── Step 2: try smartCOL alias detection — Waha always passes here ──
           const catUid = appCatalogEntry?.nomina_col_uid?.trim().toLowerCase() ?? null
           const catUsd = appCatalogEntry?.nomina_col_usd?.trim().toLowerCase() ?? null
+          const catCommission = appCatalogEntry?.nomina_col_commission?.trim().toLowerCase() ?? null
           const catApodo = appCatalogEntry?.nomina_col_apodo?.trim().toLowerCase() ?? null
           const catSemana = appCatalogEntry?.nomina_col_semana?.trim().toLowerCase() ?? null
           const catMetric = appCatalogEntry?.nomina_col_metric?.trim().toLowerCase() ?? null
           const COLUMN_ALIASES: [string, string[]][] = [
             ['UID del Host',      [...(catUid ? [catUid] : []), 'uid', 'host id', 'id del host', 'id host', 'host_id', 'userid', 'user id']],
             ['USD',               [...(catUsd ? [catUsd] : []), 'usd', 'host salary', 'salario en usd', 'dólar', 'dollar', 'monto', 'pago usd', 'ganancia', 'ingreso', 'earning']],
+            ['Comisión',          [...(catCommission ? [catCommission] : []), 'comision base', 'commission base', 'base comision']],
             ['Apodo',             [...(catApodo ? [catApodo] : []), 'name', 'nombre', 'apodo', 'nick', 'nickname', 'nombre en app', 'nombre_app', 'username']],
             ['Semana',            [...(catSemana ? [catSemana] : []), 'week', 'semana', 'periodo', 'período', 'date', 'fecha']],
             ['Diamantes Totales', [...(catMetric ? [catMetric] : []), 'total monedas', 'total diamante', 'diamante', 'diamond', 'gem', 'piedra', 'coins', 'moneda', 'total dia']],
@@ -1497,7 +1502,9 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
             const autoCfg: ColConfig = {
               uid: uidAuto, usd: usdAuto,
               apodo: smartCOL('Apodo'), semana: smartCOL('Semana'), metric: smartCOL('Diamantes Totales'),
-              metricLabel: 'Diamantes', currency: 'USD',
+              commission: smartCOL('Comisión'),
+              metricLabel: appCatalogEntry?.nomina_metric_label ?? 'Diamantes',
+              currency: (appCatalogEntry?.nomina_currency as 'USD' | 'BRL') ?? 'USD',
             }
             setParsing(false)
             await applyColConfig(headers, raw, autoCfg, file.name)
@@ -1740,7 +1747,19 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
                       </div>
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
-                          <span className="text-white text-sm font-semibold">5. Puntos / Métrica adicional</span>
+                          <span className="text-white text-sm font-semibold">5. 🟡 Base de Comisión Admin <span className="text-amber-400/60 text-xs font-normal">(opcional)</span></span>
+                          <button onClick={() => setWizardCfg(c => ({ ...c, commission: -1 }))} className="text-white/30 text-xs hover:text-white/60 transition-colors">Saltar →</button>
+                        </div>
+                        <p className="text-white/40 text-xs">Columna sobre la que se calcula TU comisión de Admin. Si la saltas, usa la columna de salario.</p>
+                        <select value={wizardCfg.commission} onChange={e => setWizardCfg(c => ({ ...c, commission: parseInt(e.target.value) }))}
+                          className="w-full bg-[#0a0a18] border border-amber-500/20 text-white text-sm rounded-xl px-3 py-2.5 outline-none focus:border-amber-400">
+                          <option value={-1}>No aplica / Usar columna de salario</option>
+                          {pendingHeaders.map((h, i) => <option key={i} value={i}>[col {i}] {h}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-white text-sm font-semibold">6. Puntos / Métrica adicional</span>
                           <button onClick={() => setWizardCfg(c => ({ ...c, metric: -1 }))} className="text-white/30 text-xs hover:text-white/60 transition-colors">Saltar →</button>
                         </div>
                         <p className="text-white/40 text-xs">Diamantes, monedas, coins u otra métrica de la app (opcional)</p>
