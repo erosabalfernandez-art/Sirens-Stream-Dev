@@ -181,8 +181,11 @@ import { Router } from 'express';
       const { user_id } = req.body as { user_id?: string };
       if (!user_id) return res.status(400).json({ error: 'user_id requerido' });
       try {
-        // Grant all active app channels — admin assigns directly, no need for messages to exist yet
-        const appNames = await getAllAppNames();
+        // Fetch active apps directly from catalog (guarantees latest list including new apps)
+        const catalogRes = await fetch(sbUrl('apps_catalog?is_active=eq.true&select=name&order=sort_order.asc'), { headers: sbH() });
+        const catalogRows: { name: string }[] = catalogRes.ok ? await catalogRes.json() : [];
+        const appNames = catalogRows.map((row: { name: string }) => row.name).filter(Boolean);
+        if (appNames.length === 0) return res.status(500).json({ error: 'No se encontraron apps activas' });
 
         // Get existing channel_requests for this user
         const existingRes = await fetch(
