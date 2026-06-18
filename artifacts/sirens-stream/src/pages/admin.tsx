@@ -215,6 +215,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
       else {
         setAppSaveMsg({ ok: true, text: isEdit ? 'App actualizada correctamente' : 'App creada correctamente' })
         setShowAddAppForm(false); setEditingApp(null); setAppFormData(emptyAppForm)
+        setWizardMode('list'); setWizardStep(1)
         await fetchAppsCatalog()
         const rd = await fetch(`${apiBase}/api/apps-catalog`)
         const rj = await rd.json()
@@ -3679,7 +3680,7 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                     ))}
                   </div>
                   <div className="flex justify-between px-0.5">
-                    {['1·Nombre','2·Visual','3·Desc','4·Ganar','5·Nómina','6·Comis','7·Specs','8·Guía','9·Desc','10·Config','11·IA'].map((s, i) => (
+                    {['1·Nombre','2·Visual','3·Desc','4·Ganar','5·Nómina','6·Comis','7·Specs','8·Guía','9·Links','10·Config','11·IA'].map((s, i) => (
                       <span key={i} className={`text-[10px] transition-colors ${wizardStep === i + 1 ? 'text-violet-300 font-bold' : 'text-white/15'}`}>{s}</span>
                     ))}
                   </div>
@@ -3738,6 +3739,12 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                             title={app.is_active ? 'Desactivar' : 'Activar'}>
                             <Power className="w-3.5 h-3.5" />
                           </button>
+                          {!['Waha','Layla','Howdy'].includes(app.name) && (
+                            <button onClick={() => { if (window.confirm(`¿Eliminar "${app.display_name}"? Esta acción desactiva la app permanentemente.`)) deactivateApp(app.name) }}
+                              className="p-2 rounded-lg bg-white/5 hover:bg-red-500/15 text-white/25 hover:text-red-400 transition-all" title="Eliminar app">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
