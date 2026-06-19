@@ -227,7 +227,7 @@ export default function Canales() {
                 style={{width:'100%',display:'flex',alignItems:'center',gap:12,padding:'8px 14px',border:'none',cursor:'pointer',textAlign:'left',background:isActive?'rgba(44,165,224,0.13)':'transparent',transition:'background 0.15s',borderLeft:`3px solid ${isActive?'#2ca5e0':'transparent'}`}}>
                 <div style={{position:'relative',flexShrink:0}}>
                   <div style={{width:46,height:46,borderRadius:'50%',overflow:'hidden',border:`2px solid ${isActive?'#2ca5e0':'rgba(255,255,255,0.08)'}`}}>
-                    <img src={appIcons[c.app]} alt={c.app} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                    <img src={appIcons[c.app]||''} alt={c.app} style={{width:'100%',height:'100%',objectFit:'cover'}} onError={e=>{(e.target as HTMLImageElement).style.display='none'}}/>
                   </div>
                   <div style={{position:'absolute',bottom:-1,right:-1,width:17,height:17,borderRadius:'50%',background:'#2ca5e0',border:'2px solid #17212b',display:'flex',alignItems:'center',justifyContent:'center'}}>
                     <Megaphone size={8} color="white"/>
@@ -280,7 +280,7 @@ export default function Canales() {
             <ChevronLeft size={22}/>
           </button>
           <div style={{width:38,height:38,borderRadius:'50%',overflow:'hidden',flexShrink:0}}>
-            <img src={appIcons[ch.app]} alt={ch.app} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+            <img src={appIcons[ch.app]||''} alt={ch.app} style={{width:'100%',height:'100%',objectFit:'cover'}} onError={e=>{(e.target as HTMLImageElement).style.display='none'}}/>
           </div>
           <div style={{flex:1,minWidth:0}}>
             <div style={{display:'flex',alignItems:'center',gap:6}}>
@@ -325,7 +325,7 @@ export default function Canales() {
                       {/* Channel identity row — compact, no divider */}
                       <div style={{display:'flex',alignItems:'center',gap:7,padding:'10px 14px 5px'}}>
                         <div style={{width:22,height:22,borderRadius:'50%',overflow:'hidden',flexShrink:0,border:'1.5px solid rgba(44,165,224,0.4)'}}>
-                          <img src={appIcons[ch.app]} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                          <img src={appIcons[ch.app]||''} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} onError={e=>{(e.target as HTMLImageElement).style.display='none'}}/>
                         </div>
                         <span style={{color:'#2ca5e0',fontWeight:700,fontSize:13,lineHeight:1}}>Canal {ch.app}</span>
                         <span style={{color:'rgba(255,255,255,0.2)',fontSize:10,marginLeft:1}}>· Eclipse Angels</span>
