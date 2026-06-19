@@ -99,6 +99,14 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
       .catch(() => {})
   }, [])
 
+  useEffect(()=>{
+    if(wizardMode==='wizard'){
+      setEarningsES(_parseEarnings(appFormData.earnings_info_es))
+      setEarningsPT(_parseEarnings(appFormData.earnings_info_pt))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[editingApp?.id,wizardMode])
+
   // Apps catalog management state
   interface ManualField { key: string; label: string; type: 'number' | 'text'; is_usd_base?: boolean; is_commission_base?: boolean; combine_op?: '+' | '-' | '×' }
   interface AppSpec { label: string; value: string }
@@ -161,6 +169,8 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
   const [uploadingIcon, setUploadingIcon] = useState(false)
   const [uploadingGuideImgs, setUploadingGuideImgs] = useState<Record<number, boolean>>({})
   const iconFileRef = useRef<HTMLInputElement>(null)
+  const [earningsES, setEarningsES] = useState<{title:string;subtitle?:string;headers?:string[];rows:string[][]}[]>([])
+  const [earningsPT, setEarningsPT] = useState<{title:string;subtitle?:string;headers?:string[];rows:string[][]}[]>([])
 
   async function uploadAppImage(file: File, type: 'icon' | 'guide', guideIdx?: number) {
     const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
@@ -195,6 +205,10 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
     if (found?.icon_url) return found.icon_url
     return `https://eyeklnjwbyvsgirsglbx.supabase.co/storage/v1/object/public/app-icons/${appName.toLowerCase()}.jpg`
   }
+  function _parseEarnings(json:string|null|undefined):{title:string;subtitle?:string;headers?:string[];rows:string[][]}[]{if(!json)return[];try{const p=JSON.parse(json);return(p.sections||[]).map((s:any)=>({title:s.title||'',subtitle:s.subtitle||undefined,headers:s.headers,rows:s.rows||[]}))}catch{return[]}}
+  function _serializeEarnings(secs:{title:string;subtitle?:string;headers?:string[];rows:string[][]}[]):string{if(!secs.length)return'';return JSON.stringify({sections:secs.map(s=>{const o:any={title:s.title,rows:s.rows};if(s.subtitle)o.subtitle=s.subtitle;if(s.headers?.length)o.headers=s.headers;return o})})}
+  function _updEarningsES(s:{title:string;subtitle?:string;headers?:string[];rows:string[][]}[]){setEarningsES(s);setAppFormData(p=>({...p,earnings_info_es:_serializeEarnings(s)||''}))}
+  function _updEarningsPT(s:{title:string;subtitle?:string;headers?:string[];rows:string[][]}[]){setEarningsPT(s);setAppFormData(p=>({...p,earnings_info_pt:_serializeEarnings(s)||''}))}
   async function fetchAppsCatalog() {
     setAppsLoading(true); setAppsError(null)
     const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
