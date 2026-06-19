@@ -3908,20 +3908,118 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                           <p className="text-white font-bold text-base mb-1">Ganancias y Sistema de Pago</p>
                           <p className="text-white/40 text-sm">Describe cuánto gana la trabajadora y cómo puede retirar su dinero. <strong className="text-red-400/70">⚠️ El Código de Agencia es obligatorio</strong> — sin él la trabajadora no puede cobrar. Mira a la derecha para ver exactamente dónde aparece. →</p>
                         </div>
-                        <div className="bg-amber-500/8 border border-amber-500/20 rounded-xl p-3">
-                          <p className="text-amber-300 text-xs font-bold mb-1.5">📋 Formato recomendado:</p>
-                          <pre className="text-white/40 text-xs leading-relaxed whitespace-pre-wrap font-mono">{"Mensajes VIP: 70 diamantes\nVideo privada/min: 700 diamantes\nMeta mínima: 10,000 diamantes = $2.50 USD\nPago: Martes a Viernes (por agencia)"}</pre>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Ganancias en Español</label>
-                          <textarea rows={6} placeholder={"Mensajes VIP: X puntos\nVideollamada/min: X\nMeta mínima: X = $X USD"} value={appFormData.earnings_info_es ?? ''} onChange={e => setAppFormData(p => ({ ...p, earnings_info_es: e.target.value }))}
-                            className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60 resize-none font-mono text-xs" />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">Ganancias en Portugués</label>
-                          <textarea rows={4} placeholder={"Mensagens VIP: X\nMeta mínima: X = $X USD"} value={appFormData.earnings_info_pt ?? ''} onChange={e => setAppFormData(p => ({ ...p, earnings_info_pt: e.target.value }))}
-                            className="w-full bg-[#07070f] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500/60 resize-none font-mono text-xs" />
-                        </div>
+                        {/* ── Earnings Visual Builder ── */}
+                        {(['es','pt'] as const).map(lang => {
+                          const isEs = lang==='es'
+                          const sections = isEs ? earningsES : earningsPT
+                          const updFn = isEs ? _updEarningsES : _updEarningsPT
+                          const ph = isEs
+                            ? {title:'ej: TARIFA DE LLAMADA PRIVADA',sub:'ej: 10,000 Puntos = $1 USD · Meta mínima: 100,000 pts',hdr:'ej: DURACIÓN',cell:'ej: 1800s+',val:'ej: $0.30/min'}
+                            : {title:'ej: TARIFA DE CHAMADA PRIVADA',sub:'ej: 10.000 Pontos = $1 USD · Meta mínima',hdr:'ej: DURAÇÃO',cell:'ej: 1800s+',val:'ej: $0,30/min'}
+                          const addSec=()=>updFn([...sections,{title:'',rows:[['','']]}])
+                          const delSec=(i:number)=>{const a=[...sections];a.splice(i,1);updFn(a)}
+                          const upd=(i:number,s:typeof sections[number])=>{const a=[...sections];a[i]=s;updFn(a)}
+                          const addRow=(si:number)=>{const s=sections[si];const cols=s.headers?s.headers.length:(s.rows[0]?.length??2);const a=[...sections];a[si]={...s,rows:[...s.rows,Array(cols).fill('')]};updFn(a)}
+                          const delRow=(si:number,ri:number)=>{const a=[...sections];const r=[...a[si].rows];r.splice(ri,1);a[si]={...a[si],rows:r};updFn(a)}
+                          const setCell=(si:number,ri:number,ci:number,v:string)=>{const a=[...sections];const rows=a[si].rows.map(r=>[...r]);rows[ri][ci]=v;a[si]={...a[si],rows};updFn(a)}
+                          const addHdr=(si:number)=>{const s=sections[si];const h=[...(s.headers||[]),''];const rows=s.rows.map(r=>[...r,'']);const a=[...sections];a[si]={...s,headers:h,rows};updFn(a)}
+                          const delHdr=(si:number,hi:number)=>{const s=sections[si];if(!s.headers)return;const h=s.headers.filter((_,i2)=>i2!==hi);const rows=s.rows.map(r=>r.filter((_,i2)=>i2!==hi));const a=[...sections];a[si]={...s,headers:h.length?h:undefined,rows};updFn(a)}
+                          const setHdr=(si:number,hi:number,v:string)=>{const s=sections[si];if(!s.headers)return;const h=[...s.headers];h[hi]=v;const a=[...sections];a[si]={...s,headers:h};updFn(a)}
+                          const toggleHdr=(si:number)=>{const s=sections[si];if(s.headers){const a=[...sections];a[si]={...s,headers:undefined};updFn(a)}else{const h=s.rows[0]?.map((_,i2)=>`Col ${i2+1}`)||['Col 1','Col 2'];const a=[...sections];a[si]={...s,headers:h};updFn(a)}}
+                          return (
+                            <div key={lang} className="border border-violet-500/15 rounded-2xl overflow-hidden mb-2">
+                              <div className="bg-violet-500/8 px-4 py-3 flex items-center justify-between border-b border-violet-500/15">
+                                <div>
+                                  <p className="text-white font-bold text-sm">{isEs?'🇪🇸 Ganancias en Español':'🇧🇷 Ganancias en Portugués'}</p>
+                                  <p className="text-white/30 text-xs mt-0.5">{isEs?'Texto que verán tus trabajadoras de habla hispana':'Texto que verán tus trabajadoras de habla portuguesa'}</p>
+                                </div>
+                                <span className="text-violet-300/40 text-xs">{sections.length} sección{sections.length!==1?'es':''}</span>
+                              </div>
+                              <div className="p-4 space-y-3">
+                                <div className="bg-sky-500/8 border border-sky-500/20 rounded-xl p-3">
+                                  <p className="text-sky-300 text-xs font-bold mb-1">📍 ¿Dónde aparece esto?</p>
+                                  <p className="text-white/35 text-xs leading-relaxed">En la tarjeta expandida de la app → sección <strong className="text-white/50">"Ganancias por actividad"</strong>. También lo usa la IA Ángela para responder preguntas de pago.</p>
+                                </div>
+                                {sections.length===0&&(
+                                  <div className="border border-dashed border-white/10 rounded-xl p-6 text-center">
+                                    <p className="text-white/25 text-sm mb-1">Sin secciones todavía</p>
+                                    <p className="text-white/15 text-xs">Haz clic en "+ Nueva sección" para agregar tu primera tabla de ganancias</p>
+                                  </div>
+                                )}
+                                {sections.map((section,si)=>(
+                                  <div key={si} className="bg-[#07070f] border border-white/8 rounded-xl p-4 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-violet-300/70 text-xs font-bold uppercase tracking-wide">📋 Sección {si+1}</span>
+                                      <button type="button" onClick={()=>delSec(si)} className="text-red-400/50 hover:text-red-400 text-xs transition-colors">🗑️ Borrar sección</button>
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] font-bold text-white/40 mb-1 uppercase tracking-wide">Nombre de la sección <span className="text-red-400/60">*</span></label>
+                                      <p className="text-white/20 text-[10px] mb-1.5">Ej: "TARIFA DE LLAMADA PRIVADA" · Aparece como título en negrita en la tarjeta</p>
+                                      <input type="text" value={section.title} placeholder={ph.title} onChange={e=>upd(si,{...section,title:e.target.value})}
+                                        className="w-full bg-[#0d0d1e] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/60" />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] font-bold text-white/40 mb-1 uppercase tracking-wide">Subtítulo <span className="text-white/20 normal-case font-normal">(opcional)</span></label>
+                                      <p className="text-white/20 text-[10px] mb-1.5">Ej: "10,000 Puntos = $1 USD · Meta mínima: 100,000 pts" · Aparece en gris debajo del nombre de la sección</p>
+                                      <input type="text" value={section.subtitle||''} placeholder={ph.sub} onChange={e=>upd(si,{...section,subtitle:e.target.value||undefined})}
+                                        className="w-full bg-[#0d0d1e] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/60" />
+                                    </div>
+                                    <div>
+                                      <label className="flex items-center gap-2 cursor-pointer mb-2">
+                                        <input type="checkbox" checked={!!section.headers} onChange={()=>toggleHdr(si)} className="accent-violet-500 w-4 h-4 shrink-0" />
+                                        <div>
+                                          <span className="text-xs text-white/60 font-semibold">Esta sección tiene cabeceras de columna</span>
+                                          <p className="text-white/20 text-[10px]">Ej: "DURACIÓN · PUNTOS/MIN · USD/MIN" — la fila de títulos que aparece arriba de los datos</p>
+                                        </div>
+                                      </label>
+                                      {section.headers&&(
+                                        <div className="p-3 bg-violet-500/5 border border-violet-500/15 rounded-lg space-y-2">
+                                          <p className="text-[10px] text-violet-300/50 font-bold uppercase tracking-wide">Nombres de columna (cabeceras)</p>
+                                          <div className="flex flex-wrap gap-2">
+                                          {section.headers.map((h,hi)=>(
+                                          <div key={hi} className="flex items-center gap-1">
+                                          <input type="text" value={h} placeholder={ph.hdr} onChange={e=>setHdr(si,hi,e.target.value)}
+                                            className="w-28 bg-[#0d0d1e] border border-violet-500/30 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-violet-500/60" />
+                                          <button type="button" onClick={()=>delHdr(si,hi)} className="text-red-400/50 hover:text-red-400 text-sm px-1 transition-colors">×</button>
+                                          </div>
+                                          )}
+                                          <button type="button" onClick={()=>addHdr(si)} className="px-3 py-1.5 rounded-lg border border-violet-500/25 text-violet-300/60 text-xs hover:bg-violet-500/10 transition-all">+ Col</button>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div>
+                                      <label className="block text-[10px] font-bold text-white/40 mb-1 uppercase tracking-wide">
+                                        Filas de datos
+                                        {section.headers&&<span className="text-white/20 normal-case font-normal ml-1">— {section.headers.length} celda{section.headers.length!==1?'s':''} por fila (igual que las cabeceras)</span>}
+                                      </label>
+                                      <p className="text-white/20 text-[10px] mb-2">Cada fila es una línea de la tabla. Ej: primera celda "1800s+" · segunda celda "$0.30/min"</p>
+                                      <div className="space-y-2">
+                                        {section.rows.map((row,ri)=>(
+                                          <div key={ri} className="flex gap-2 items-center">
+                                          {row.map((cell,ci)=>(
+                                          <input key={ci} type="text" value={cell} placeholder={ci===0?ph.cell:ph.val} onChange={e=>setCell(si,ri,ci,e.target.value)}
+                                            className="flex-1 min-w-0 bg-[#0d0d1e] border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-violet-500/50" />
+                                          )}
+                                          <button type="button" onClick={()=>delRow(si,ri)} title="Borrar fila" className="shrink-0 text-red-400/40 hover:text-red-400 text-sm px-1.5 transition-colors">🗑️</button>
+                                          </div>
+                                        )}
+                                      </div>
+                                      <button type="button" onClick={()=>addRow(si)}
+                                        className="mt-2 w-full py-2 rounded-lg border border-dashed border-white/10 text-white/25 text-xs hover:border-violet-500/30 hover:text-violet-300/50 transition-all">
+                                        + Agregar fila
+                                      </button>
+                                    </div>
+                                  </div>
+                                )})}
+                                <button type="button" onClick={addSec}
+                                  className="w-full py-2.5 rounded-xl border border-dashed border-violet-500/25 text-violet-300/50 text-sm font-semibold hover:bg-violet-500/8 hover:border-violet-500/40 hover:text-violet-300/80 transition-all">
+                                  + Nueva sección
+                                </button>
+                              </div>
+                            </div>
+                          )
+                        })}
                         <div>
                           <label className="block text-xs font-bold text-violet-300/80 mb-1.5 uppercase tracking-wide">🔑 Código de Agencia</label>
                           <input type="text" placeholder="Ej: R3DKXB5 · G-84Y3AG7HL" value={appFormData.agency_code ?? ''} onChange={e => setAppFormData(p => ({ ...p, agency_code: e.target.value.toUpperCase() }))}
