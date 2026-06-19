@@ -133,6 +133,36 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
   const [appsCatalogFull, setAppsCatalogFull] = useState<AppCatalogEntry[]>([])
   const [appsLoading, setAppsLoading] = useState(false)
   const [appsError, setAppsError] = useState<string | null>(null)
+
+  // Telegram links state
+  interface TelegramLinkRow {
+    user_id: string; chat_id: string; username: string | null; first_name: string | null; linked_at: string;
+    profile: { email: string | null; display_name: string | null; is_admin: boolean; is_agent: boolean; is_colider: boolean } | null
+  }
+  const [telegramLinks, setTelegramLinks] = useState<TelegramLinkRow[]>([])
+  const [telegramLoading, setTelegramLoading] = useState(false)
+  const [telegramSearch, setTelegramSearch] = useState('')
+  const [telegramDeleting, setTelegramDeleting] = useState<string | null>(null)
+
+  async function fetchTelegramLinks() {
+    setTelegramLoading(true)
+    try {
+      const r = await fetch(`${apiBase}/api/telegram/admin/links`)
+      const d = await r.json()
+      setTelegramLinks(d.links ?? [])
+    } catch { /* ignore */ }
+    setTelegramLoading(false)
+  }
+
+  async function deleteTelegramLink(userId: string) {
+    setTelegramDeleting(userId)
+    try {
+      await fetch(`${apiBase}/api/telegram/link/${encodeURIComponent(userId)}`, { method: 'DELETE' })
+      setTelegramLinks(prev => prev.filter(l => l.user_id !== userId))
+    } catch { /* ignore */ }
+    setTelegramDeleting(null)
+  }
+
   const [editingApp, setEditingApp] = useState<AppCatalogEntry | null>(null)
   const [showAddAppForm, setShowAddAppForm] = useState(false)
   const emptyAppForm: Partial<AppCatalogEntry> = {
@@ -287,7 +317,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
       const [filterIdApp, setFilterIdApp] = useState(() => { try { return localStorage.getItem('ea_af_id_app') ?? '' } catch { return '' } })
       const [filterTelefono, setFilterTelefono] = useState(() => { try { return localStorage.getItem('ea_af_telefono') ?? '' } catch { return '' } })
       const [expanded, setExpanded] = useState<string | null>(null)
-      const [tab, setTab] = useState<'list' | 'dupes' | 'config' | 'solicitudes' | 'canales' | 'pagos' | 'agentes' | 'cambio' | 'nocobro' | 'chicas' | 'apps'>('list')
+      const [tab, setTab] = useState<'list' | 'dupes' | 'config' | 'solicitudes' | 'canales' | 'pagos' | 'agentes' | 'cambio' | 'nocobro' | 'chicas' | 'apps' | 'telegram'>('list')
         const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
         const [chicasModal, setChicasModal] = useState<WorkerRow[] | null>(null)
 
@@ -1476,6 +1506,10 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'apps' ? 'bg-violet-600 text-white' : 'text-white/40 hover:text-white'}`}>
                 <Package className="w-3.5 h-3.5" />
                 Apps
+              </button>
+              <button onClick={() => { setTab('telegram'); fetchTelegramLinks() }}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'telegram' ? 'bg-sky-600 text-white' : 'text-white/40 hover:text-white'}`}>
+                📲 Telegram
               </button>
             </div>
 
@@ -4756,6 +4790,83 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                   </button>
                 )}
               </div>
+            </div>
+          )}
+
+
+          {tab === 'telegram' && (
+            <div className="space-y-4 max-w-3xl">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">📲</span>
+                  <h2 className="text-lg font-bold text-white">Suscripciones Telegram</h2>
+                  <span className="text-xs text-white/30 font-medium">{telegramLinks.length} vinculadas</span>
+                </div>
+                <button onClick={fetchTelegramLinks} disabled={telegramLoading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-xs font-semibold transition-all border border-white/10 disabled:opacity-40">
+                  {telegramLoading ? <><div className="w-3 h-3 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" /> Cargando...</> : '↻ Actualizar'}
+                </button>
+              </div>
+
+              <div className="relative">
+                <input
+                  value={telegramSearch} onChange={e => setTelegramSearch(e.target.value)}
+                  placeholder="Buscar por nombre, email o usuario Telegram..."
+                  className="w-full bg-[#0d0d1e] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-sky-500/50"
+                />
+              </div>
+
+              {telegramLoading && !telegramLinks.length ? (
+                <div className="flex items-center justify-center py-16">
+                  <div className="w-6 h-6 border-2 border-sky-500/30 border-t-sky-400 rounded-full animate-spin" />
+                </div>
+              ) : telegramLinks.length === 0 ? (
+                <div className="text-center py-16 text-white/20 text-sm">No hay cuentas vinculadas a Telegram.</div>
+              ) : (
+                <div className="space-y-2">
+                  {telegramLinks
+                    .filter(l => {
+                      if (!telegramSearch) return true
+                      const q = telegramSearch.toLowerCase()
+                      return (
+                        (l.profile?.display_name ?? '').toLowerCase().includes(q) ||
+                        (l.profile?.email ?? '').toLowerCase().includes(q) ||
+                        (l.username ?? '').toLowerCase().includes(q) ||
+                        (l.first_name ?? '').toLowerCase().includes(q)
+                      )
+                    })
+                    .map(l => (
+                      <div key={l.user_id} className="bg-[#0d0d1e] border border-white/8 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-9 h-9 rounded-xl bg-sky-500/15 flex items-center justify-center shrink-0 text-sky-400 font-black text-base">
+                            {(l.profile?.display_name ?? l.first_name ?? '?')[0]?.toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-sm text-white truncate">
+                              {l.profile?.display_name ?? l.first_name ?? 'Sin nombre'}
+                              {l.profile?.is_admin && <span className="ml-1.5 text-[10px] bg-amber-500/20 text-amber-300 font-bold px-1.5 py-0.5 rounded-md">Admin</span>}
+                              {l.profile?.is_agent && <span className="ml-1.5 text-[10px] bg-blue-500/20 text-blue-300 font-bold px-1.5 py-0.5 rounded-md">Agente</span>}
+                              {l.profile?.is_colider && <span className="ml-1.5 text-[10px] bg-purple-500/20 text-purple-300 font-bold px-1.5 py-0.5 rounded-md">Colider</span>}
+                            </p>
+                            <p className="text-white/35 text-xs truncate">{l.profile?.email ?? l.user_id}</p>
+                            <p className="text-sky-400/70 text-xs mt-0.5">
+                              {l.username ? `@${l.username}` : l.first_name ?? 'Sin usuario'} · vinculado {new Date(l.linked_at).toLocaleDateString('es', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => deleteTelegramLink(l.user_id)}
+                          disabled={telegramDeleting === l.user_id}
+                          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 text-xs font-bold border border-red-500/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                          {telegramDeleting === l.user_id
+                            ? <div className="w-3 h-3 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+                            : <Trash2 className="w-3 h-3" />}
+                          {telegramDeleting === l.user_id ? 'Eliminando...' : 'Desvincular'}
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              )}
             </div>
           )}
 
