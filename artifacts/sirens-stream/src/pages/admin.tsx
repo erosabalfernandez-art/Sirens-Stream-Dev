@@ -98,15 +98,6 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
       .then(d => { if (d?.apps) setCatalogApps(d.apps.map((a: { name: string }) => a.name)) })
       .catch(() => {})
   }, [])
-
-  useEffect(()=>{
-    if(wizardMode==='wizard'){
-      setEarningsES(_parseEarnings(appFormData.earnings_info_es))
-      setEarningsPT(_parseEarnings(appFormData.earnings_info_pt))
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[editingApp?.id,wizardMode])
-
   // Apps catalog management state
   interface ManualField { key: string; label: string; type: 'number' | 'text'; is_usd_base?: boolean; is_commission_base?: boolean; combine_op?: '+' | '-' | '×' }
   interface AppSpec { label: string; value: string }
@@ -209,6 +200,14 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
   function _serializeEarnings(secs:{title:string;subtitle?:string;headers?:string[];rows:string[][]}[]):string{if(!secs.length)return'';return JSON.stringify({sections:secs.map(s=>{const o:any={title:s.title,rows:s.rows};if(s.subtitle)o.subtitle=s.subtitle;if(s.headers?.length)o.headers=s.headers;return o})})}
   function _updEarningsES(s:{title:string;subtitle?:string;headers?:string[];rows:string[][]}[]){setEarningsES(s);setAppFormData(p=>({...p,earnings_info_es:_serializeEarnings(s)||''}))}
   function _updEarningsPT(s:{title:string;subtitle?:string;headers?:string[];rows:string[][]}[]){setEarningsPT(s);setAppFormData(p=>({...p,earnings_info_pt:_serializeEarnings(s)||''}))}
+
+  useEffect(()=>{
+    if(wizardMode==='wizard'){
+      setEarningsES(_parseEarnings(appFormData.earnings_info_es))
+      setEarningsPT(_parseEarnings(appFormData.earnings_info_pt))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[editingApp?.id,wizardMode])
   async function fetchAppsCatalog() {
     setAppsLoading(true); setAppsError(null)
     const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
