@@ -3982,7 +3982,7 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                                             className="w-28 bg-[#0d0d1e] border border-violet-500/30 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-violet-500/60" />
                                           <button type="button" onClick={()=>delHdr(si,hi)} className="text-red-400/50 hover:text-red-400 text-sm px-1 transition-colors">×</button>
                                           </div>
-                                          )}
+                                          ))}
                                           <button type="button" onClick={()=>addHdr(si)} className="px-3 py-1.5 rounded-lg border border-violet-500/25 text-violet-300/60 text-xs hover:bg-violet-500/10 transition-all">+ Col</button>
                                           </div>
                                         </div>
@@ -4000,10 +4000,10 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                                           {row.map((cell,ci)=>(
                                           <input key={ci} type="text" value={cell} placeholder={ci===0?ph.cell:ph.val} onChange={e=>setCell(si,ri,ci,e.target.value)}
                                             className="flex-1 min-w-0 bg-[#0d0d1e] border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-violet-500/50" />
-                                          )}
+                                          ))}
                                           <button type="button" onClick={()=>delRow(si,ri)} title="Borrar fila" className="shrink-0 text-red-400/40 hover:text-red-400 text-sm px-1.5 transition-colors">🗑️</button>
                                           </div>
-                                        )}
+                                        ))}
                                       </div>
                                       <button type="button" onClick={()=>addRow(si)}
                                         className="mt-2 w-full py-2 rounded-lg border border-dashed border-white/10 text-white/25 text-xs hover:border-violet-500/30 hover:text-violet-300/50 transition-all">
@@ -4011,7 +4011,7 @@ GRANT ALL ON payment_method_locks TO service_role;`}</pre>
                                       </button>
                                     </div>
                                   </div>
-                                )})}
+                                ))}
                                 <button type="button" onClick={addSec}
                                   className="w-full py-2.5 rounded-xl border border-dashed border-violet-500/25 text-violet-300/50 text-sm font-semibold hover:bg-violet-500/8 hover:border-violet-500/40 hover:text-violet-300/80 transition-all">
                                   + Nueva sección
