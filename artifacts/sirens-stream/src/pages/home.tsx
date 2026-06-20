@@ -3,6 +3,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
   import { Link } from "wouter";
   import { motion, AnimatePresence } from "framer-motion";
   import { TestimonialsSection } from "@/components/layout/TestimonialsSection";
+  import { ConversacionesSection } from "@/components/layout/ConversacionesSection";
   import {DollarSign, Shield, Smartphone, Users, Clock, TrendingUp, CheckCircle2, Zap, Star, CreditCard, MessageCircle, ArrowRight, Globe, Award, ChevronLeft, ChevronRight, Wifi, Camera, Heart} from "lucide-react";
   import { useGetAgencyStats } from "@/lib/api-client";
   import { useShowAgencia } from "@/hooks/useShowAgencia";
@@ -528,6 +529,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
         {/* ── TESTIMONIOS ── */}
         <TestimonialsSection />
+        <ConversacionesSection />
 
         {/* ── ÚNETE ── */}
         <section className="py-20 bg-[#0a0a16]">
