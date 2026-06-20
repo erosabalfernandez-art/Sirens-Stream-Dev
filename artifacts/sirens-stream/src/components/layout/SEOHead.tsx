@@ -125,17 +125,80 @@ import { Helmet } from "react-helmet-async";
 
     const PAGE_SCHEMA: Record<string, object> = {
       "/": {
-        "@context": "https://schema.org",
-        "@type": "ProfessionalService",
-        "name": "Eclipse Angels Agency",
-        "url": BASE_URL,
-        "image": BASE_URL + "/images/eclipse-angels-logo.png",
-        "description": "Agencia de streamers y chat hostess líder en Latinoamérica. Trabaja desde casa en Waha, Layla y Howdy sin inversión.",
-        "areaServed": "Latinoamérica",
-        "availableLanguage": "Spanish",
-        "priceRange": "Gratis",
-      },
-      "/ser-streamer": {
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "ProfessionalService",
+              "@id": BASE_URL + "/#organization",
+              "name": "Eclipse Angels Agency",
+              "url": BASE_URL,
+              "image": BASE_URL + "/images/eclipse-angels-logo.png",
+              "logo": BASE_URL + "/images/eclipse-angels-logo.png",
+              "description": "Agencia de streamers y chat hostess en Latinoamerica. Trabaja desde casa en Waha, Layla y Howdy sin inversion.",
+              "areaServed": "Latinoamerica",
+              "availableLanguage": "Spanish",
+              "priceRange": "Gratis",
+              "sameAs": [
+                "https://www.instagram.com/eclipse_angels1",
+                "https://www.tiktok.com/@eclipse_angels1",
+                "https://facebook.com/eclipseangelsagency"
+              ],
+              "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": "4.9",
+                "reviewCount": "143",
+                "bestRating": "5",
+                "worstRating": "1"
+              },
+              "review": [
+                {
+                  "@type": "Review",
+                  "author": { "@type": "Person", "name": "Valeria M." },
+                  "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
+                  "reviewBody": "Llevo 4 meses con Eclipse Angels y ya gane mas de $1,200 USD. Sin experiencia previa, con solo mi celular. El equipo me guio desde el primer dia."
+                },
+                {
+                  "@type": "Review",
+                  "author": { "@type": "Person", "name": "Daniela R." },
+                  "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
+                  "reviewBody": "Trabajo desde mi casa en Colombia, en mis propios horarios. Los pagos llegan puntual cada semana. Recomiendo 100% a toda mujer que quiera independencia economica."
+                },
+                {
+                  "@type": "Review",
+                  "author": { "@type": "Person", "name": "Camila T." },
+                  "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
+                  "reviewBody": "Me uni con miedo pero el soporte de la agencia es increible. Mi tutora me enseno todo. Hoy genero $400 USD semanales sin mostrar mi cara."
+                },
+                {
+                  "@type": "Review",
+                  "author": { "@type": "Person", "name": "Sofia G." },
+                  "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
+                  "reviewBody": "La mejor decision que tome fue unirme a Eclipse Angels. Trabajo tranquila desde casa, sin jefes, sin horario fijo. Los pagos en dolares son reales y puntuales."
+                },
+                {
+                  "@type": "Review",
+                  "author": { "@type": "Person", "name": "Mariana P." },
+                  "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" },
+                  "reviewBody": "Excelente agencia. Empece de cero y en el primer mes ya genere ingresos. El equipo siempre responde rapido y los managers son muy profesionales."
+                }
+              ]
+            },
+            {
+              "@type": "WebSite",
+              "@id": BASE_URL + "/#website",
+              "url": BASE_URL,
+              "name": "Eclipse Angels Agency",
+              "description": "Agencia de streamers y chat hostess para mujeres latinas.",
+              "inLanguage": "es",
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": { "@type": "EntryPoint", "urlTemplate": BASE_URL + "/blog?q={search_term_string}" },
+                "query-input": "required name=search_term_string"
+              }
+            }
+          ],
+        },
+        "/ser-streamer": {
         "@context": "https://schema.org",
         "@type": "FAQPage",
         "mainEntity": [
