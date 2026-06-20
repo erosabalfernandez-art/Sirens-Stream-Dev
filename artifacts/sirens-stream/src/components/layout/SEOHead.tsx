@@ -243,7 +243,7 @@ import { Helmet } from "react-helmet-async";
     },
   };
 
-  const BASE_URL = "https://eclipse-angels-webb.onrender.com";
+  const BASE_URL = "https://eclipse-angels.onrender.com";
   const DEFAULT = SEO_DATA["/"];
 
   export function SEOHead() {
