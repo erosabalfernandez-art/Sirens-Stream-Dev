@@ -11,9 +11,9 @@ interface Testimonial {
 }
 
 const testimonials: Testimonial[] = [
-  { name: "Streamer 1", country: "Latinoamérica", flag: "🌟", videoSrc: "/videos/testimonio-1.mp4", tag: "Streamer activa" },
-  { name: "Streamer 2", country: "Latinoamérica", flag: "🌟", videoSrc: "/videos/testimonio-2.mp4", tag: "Streamer activa" },
-  { name: "Streamer 3", country: "Latinoamérica", flag: "🌟", videoSrc: "/videos/testimonio-3.mp4", tag: "Streamer activa" },
+  { name: "Jeniffer", country: "Cuba", flag: "🇨🇺", videoSrc: "/videos/testimonio-1.mp4", tag: "Streamer activa" },
+  { name: "Keren", country: "Cuba", flag: "🇨🇺", videoSrc: "/videos/testimonio-2.mp4", tag: "Streamer activa" },
+  { name: "Madelein", country: "Latinoamérica", flag: "🌟", tag: "Próximamente" },
   { name: "Próximamente", country: "Latinoamérica", flag: "🌟", tag: "Streamer activa" },
   { name: "Próximamente", country: "Latinoamérica", flag: "🌟", tag: "Streamer activa" },
   { name: "Próximamente", country: "Latinoamérica", flag: "🌟", tag: "Streamer activa" },
