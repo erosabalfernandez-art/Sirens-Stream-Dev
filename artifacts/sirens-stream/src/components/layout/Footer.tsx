@@ -114,6 +114,14 @@ export function Footer() {
 
         <div className="mt-10 pt-8 border-t border-purple-500/8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-white/25 text-xs">{T.rights}</p>
+            <div className="flex items-center gap-4">
+              <Link href="/privacidad" className="text-white/25 hover:text-white/50 text-xs transition-colors">
+                {lang === 'pt' ? 'Privacidade' : 'Privacidad'}
+              </Link>
+              <Link href="/terminos" className="text-white/25 hover:text-white/50 text-xs transition-colors">
+                {lang === 'pt' ? 'Termos de Uso' : 'Términos'}
+              </Link>
+            </div>
           <div className="flex items-center gap-3">
             {socials.map((s) => (
               <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
