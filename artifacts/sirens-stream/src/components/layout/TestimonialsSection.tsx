@@ -11,12 +11,12 @@ interface Testimonial {
 }
 
 const testimonials: Testimonial[] = [
-  { name: "Próximamente", country: "Colombia", flag: "🇨🇴", tag: "Streamer activa" },
-  { name: "Próximamente", country: "Venezuela", flag: "🇻🇪", tag: "Streamer activa" },
-  { name: "Próximamente", country: "Cuba", flag: "🇨🇺", tag: "Streamer activa" },
-  { name: "Próximamente", country: "México", flag: "🇲🇽", tag: "Streamer activa" },
-  { name: "Próximamente", country: "Perú", flag: "🇵🇪", tag: "Streamer activa" },
-  { name: "Próximamente", country: "Rep. Dominicana", flag: "🇩🇴", tag: "Streamer activa" },
+  { name: "Streamer 1", country: "Latinoamérica", flag: "🌟", videoSrc: "/videos/testimonio-1.mp4", tag: "Streamer activa" },
+  { name: "Streamer 2", country: "Latinoamérica", flag: "🌟", videoSrc: "/videos/testimonio-2.mp4", tag: "Streamer activa" },
+  { name: "Streamer 3", country: "Latinoamérica", flag: "🌟", videoSrc: "/videos/testimonio-3.mp4", tag: "Streamer activa" },
+  { name: "Próximamente", country: "Latinoamérica", flag: "🌟", tag: "Streamer activa" },
+  { name: "Próximamente", country: "Latinoamérica", flag: "🌟", tag: "Streamer activa" },
+  { name: "Próximamente", country: "Latinoamérica", flag: "🌟", tag: "Streamer activa" },
 ];
 
 function VideoCard({ t }: { t: Testimonial }) {
