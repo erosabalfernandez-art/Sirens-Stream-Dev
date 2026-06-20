@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { ShareButtons } from "@/components/layout/ShareButtons";
   import {CheckCircle2, MessageCircle, Video, Radio, DollarSign, Shield, Smartphone, Users, Clock, ArrowRight, Star, Zap, TrendingUp} from "lucide-react";
 
   const activities_es = [
@@ -273,6 +274,14 @@ import { useLanguage } from "@/contexts/LanguageContext";
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Compartir */}
+        <section className="py-10 bg-[#07070f] border-t border-white/8">
+          <div className="max-w-xl mx-auto px-5 text-center">
+            <p className="text-white/40 text-sm mb-4">¿Conoces a alguien que le pueda interesar? Comparte esta página</p>
+            <ShareButtons title="Cómo ser Streamer en Waha, Layla y Howdy | Eclipse Angels Agency" description="Trabaja desde casa como streamer y gana en dólares sin inversión ni experiencia." className="justify-center" />
           </div>
         </section>
 
