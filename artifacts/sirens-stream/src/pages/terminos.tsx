@@ -42,27 +42,34 @@ import { SEOHead } from "@/components/layout/SEOHead";
               <P className="mt-2">La Agencia retiene una comisión por sus servicios de gestión, capacitación y soporte, tal como se indica en tu acuerdo de incorporación.</P>
             </Section>
 
-            <Section title="6. Restricciones geográficas">
-              <P>Algunos servicios de la Agencia no están disponibles en todos los países. El acceso a determinadas secciones del sitio puede estar restringido según tu ubicación geográfica para cumplir con las leyes locales aplicables.</P>
+            <Section title="6. Condiciones especiales de pago para zonas geográficas restringidas">
+              <P>En determinadas zonas geográficas con restricciones bancarias o de transferencia internacional —como la República de Cuba— Eclipse Angels Agency facilita el pago mediante <strong className="text-white/80">efectivo o transferencia en moneda local</strong>, gestionado a través de nuestra red de operadores autorizados.</P>
+              <P className="mt-3">Debido a los costos operativos inherentes a este proceso —que incluyen tasas de conversión, comisiones de intermediación y la remuneración del personal responsable de la entrega y distribución del pago en el territorio correspondiente— el tipo de cambio aplicado puede resultar <strong className="text-white/80">ligeramente inferior al valor de mercado del dólar estadounidense en la fecha del pago</strong>.</P>
+              <P className="mt-3">Esta diferencia es mínima, necesaria y transparente: responde únicamente a los costos reales que asume la Agencia para garantizar que el dinero llegue de forma segura y puntual al país de destino. Eclipse Angels Agency no obtiene beneficio económico adicional de esta diferencia cambiaria.</P>
+              <P className="mt-3">Al aceptar estos términos, la streamer reconoce y acepta las condiciones de pago aplicables a su región, incluyendo el tipo de cambio vigente comunicado por la Agencia en el momento de cada liquidación semanal.</P>
             </Section>
 
-            <Section title="7. Propiedad intelectual">
+            <Section title="7. Restricciones geográficas de acceso">
+              <P>Algunos servicios o secciones de la plataforma pueden no estar disponibles en todos los países. El acceso a determinados contenidos puede estar restringido según la ubicación geográfica del usuario, en cumplimiento de las leyes y normativas locales aplicables.</P>
+            </Section>
+
+            <Section title="8. Propiedad intelectual">
               <P>Todo el contenido de este sitio web (textos, imágenes, logotipos, diseño) es propiedad de Eclipse Angels Agency o se usa bajo licencia. Está prohibido copiar, reproducir o distribuir este contenido sin autorización expresa por escrito.</P>
             </Section>
 
-            <Section title="8. Limitación de responsabilidad">
+            <Section title="9. Limitación de responsabilidad">
               <P>Eclipse Angels Agency no garantiza un nivel de ingresos específico, ya que este depende del desempeño individual de cada streamer y de las condiciones de las plataformas. La Agencia no se responsabiliza por cambios en las políticas o remuneración de las plataformas de terceros.</P>
             </Section>
 
-            <Section title="9. Suspensión y terminación">
+            <Section title="10. Suspensión y terminación">
               <P>La Agencia se reserva el derecho de suspender o dar de baja la cuenta de cualquier streamer que viole estos términos, las políticas de las plataformas o que muestre conductas perjudiciales para la Agencia o la comunidad.</P>
             </Section>
 
-            <Section title="10. Modificaciones">
+            <Section title="11. Modificaciones">
               <P>Podemos actualizar estos términos en cualquier momento. Las actualizaciones importantes serán comunicadas dentro de la plataforma. El uso continuado del servicio tras los cambios implica la aceptación de los nuevos términos.</P>
             </Section>
 
-            <Section title="11. Contacto">
+            <Section title="12. Contacto">
               <P>¿Tienes preguntas sobre estos términos? Escríbenos a <a href="mailto:eclipse_angels@outlook.com" className="text-purple-400 underline">eclipse_angels@outlook.com</a>.</P>
             </Section>
           </div>
