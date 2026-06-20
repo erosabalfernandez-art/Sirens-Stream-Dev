@@ -145,6 +145,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
   const [telegramDeleting, setTelegramDeleting] = useState<string | null>(null)
 
   async function fetchTelegramLinks() {
+    const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
     setTelegramLoading(true)
     try {
       const r = await fetch(`${apiBase}/api/telegram/admin/links`)
@@ -155,6 +156,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
   }
 
   async function deleteTelegramLink(userId: string) {
+    const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
     setTelegramDeleting(userId)
     try {
       await fetch(`${apiBase}/api/telegram/link/${encodeURIComponent(userId)}`, { method: 'DELETE' })
