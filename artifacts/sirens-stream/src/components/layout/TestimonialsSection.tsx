@@ -43,18 +43,18 @@ function VideoCard({ t }: { t: Testimonial }) {
                 <div className="w-16 h-16 rounded-full border-2 border-white/10 bg-white/5 flex items-center justify-center">
                   <span className="text-3xl">{t.flag}</span>
                 </div>
-                <div className="text-center px-4">
+                {!t.videoSrc && (
                   <p className="text-white/30 text-xs uppercase tracking-widest">Video próximamente</p>
-                </div>
+                )}
               </div>
             )}
-            {/* Play button overlay */}
+            {/* Play button — no overlay circle behind it */}
             {t.videoSrc && (
               <button
                 onClick={() => setPlaying(true)}
-                className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/20 transition-all"
+                className="absolute inset-0 flex items-center justify-center transition-all"
               >
-                <div className="w-14 h-14 rounded-full bg-pink-500/90 flex items-center justify-center shadow-lg shadow-pink-500/40 group-hover:scale-110 transition-transform">
+                <div className="w-14 h-14 rounded-full bg-pink-500 flex items-center justify-center shadow-lg shadow-pink-500/50 group-hover:scale-110 transition-transform">
                   <Play className="w-6 h-6 text-white fill-white ml-0.5" />
                 </div>
               </button>
