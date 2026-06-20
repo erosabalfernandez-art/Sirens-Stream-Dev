@@ -1,6 +1,7 @@
 import { Link } from "wouter";
   import { BookOpen, Clock, ArrowRight, TrendingUp, DollarSign, Smartphone, Shield, Users, Zap } from "lucide-react";
 import { ShareButtons } from "@/components/layout/ShareButtons";
+  import { useShowAgencia } from "@/hooks/useShowAgencia";
 
   const articles = [
     {
