@@ -83,6 +83,11 @@ import { ShareButtons } from "@/components/layout/ShareButtons";
   ];
 
   export default function Blog() {
+    const showAgencia = useShowAgencia();
+    const visibleArticles = showAgencia
+      ? articles
+      : articles.filter(a => a.id !== "como-crear-agencia-streamers-desde-cero");
+
     return (
       <div className="min-h-screen bg-[#07070f] text-white">
         {/* Hero */}
@@ -103,7 +108,7 @@ import { ShareButtons } from "@/components/layout/ShareButtons";
         {/* Articles */}
         <section className="pb-20">
           <div className="max-w-4xl mx-auto px-5 space-y-24">
-            {articles.map((article) => {
+            {visibleArticles.map((article) => {
               const Icon = article.icon;
               return (
                 <article key={article.id} id={article.id} className="scroll-mt-20">
@@ -155,7 +160,7 @@ import { ShareButtons } from "@/components/layout/ShareButtons";
           <div className="max-w-4xl mx-auto px-5">
             <h2 className="text-lg font-bold mb-6 text-white/70">Todos los artículos</h2>
             <div className="grid sm:grid-cols-2 gap-3">
-              {articles.map((a) => {
+              {visibleArticles.map((a) => {
                 const Icon = a.icon;
                 return (
                   <a key={a.id} href={"#" + a.id} className="flex items-start gap-3 bg-white/4 border border-white/10 rounded-xl p-4 hover:bg-white/6 transition-colors group">
