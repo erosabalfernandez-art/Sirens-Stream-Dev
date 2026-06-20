@@ -38,6 +38,8 @@ import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
     const ComisionesAgente = lazy(() => import("@/pages/comisiones-agente"));
     const Ranking         = lazy(() => import("@/pages/ranking"));
     const Blog            = lazy(() => import("@/pages/blog"));
+      const Privacidad      = lazy(() => import("@/pages/privacidad"));
+      const Terminos        = lazy(() => import("@/pages/terminos"));
 
     function ScrollToTop() {
       const [location] = useLocation();
@@ -139,6 +141,8 @@ import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
                 <Route path="/login"           component={Login} />
                 <Route path="/ranking"         component={Ranking} />
                 <Route path="/blog"            component={Blog} />
+                  <Route path="/privacidad"      component={Privacidad} />
+                  <Route path="/terminos"        component={Terminos} />
                 <Route path="/perfil"             component={() => <RedirectTo href="/login" />} />
                 <Route path="/salarios"           component={() => <RedirectTo href="/login" />} />
                 <Route path="/canales"            component={() => <RedirectTo href="/login" />} />
