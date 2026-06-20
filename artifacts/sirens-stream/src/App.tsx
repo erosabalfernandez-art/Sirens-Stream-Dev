@@ -1,5 +1,5 @@
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
-    import { useEffect } from "react";
+    import { useEffect, lazy, Suspense } from "react";
     import { HelmetProvider } from "react-helmet-async";
     import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
     import { Toaster } from "@/components/ui/toaster";
@@ -14,28 +14,29 @@ import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
     import { LanguageProvider } from "@/contexts/LanguageContext";
     import { LangRefreshBanner } from "@/components/layout/LangRefreshBanner";
     import { PushPromptBanner } from "@/components/layout/PushPromptBanner";
-  import { InAppNotificationBanner } from "@/components/layout/InAppNotificationBanner";
+    import { InAppNotificationBanner } from "@/components/layout/InAppNotificationBanner";
     import { SEOHead } from "@/components/layout/SEOHead";
-    import Home from "@/pages/home";
-    import SerStreamer from "@/pages/ser-streamer";
-    import CrearAgencia from "@/pages/crear-agencia";
-    import Apps from "@/pages/apps";
-    import Nosotros from "@/pages/nosotros";
-    import Pagos from "@/pages/pagos";
-    import Contacto from "@/pages/contacto";
-    import ErroresComunes from "@/pages/errores-comunes";
-    import NotFound from "@/pages/not-found";
-    import Login from "@/pages/login";
-    import Perfil from "@/pages/perfil";
-    import Admin from "@/pages/admin";
-    import Nomina from "@/pages/nomina";
-    import Salarios from "@/pages/salarios";
-    import Canales from "@/pages/canales";
-    import AgentePanel from "@/pages/agente";
-    import Rendimiento from "@/pages/rendimiento";
-    import Colider from "@/pages/colider";
-  import ComisionesAgente from "@/pages/comisiones-agente";
-  import Ranking from "@/pages/ranking";
+
+    const Home            = lazy(() => import("@/pages/home"));
+    const SerStreamer      = lazy(() => import("@/pages/ser-streamer"));
+    const CrearAgencia    = lazy(() => import("@/pages/crear-agencia"));
+    const Apps            = lazy(() => import("@/pages/apps"));
+    const Nosotros        = lazy(() => import("@/pages/nosotros"));
+    const Pagos           = lazy(() => import("@/pages/pagos"));
+    const Contacto        = lazy(() => import("@/pages/contacto"));
+    const ErroresComunes  = lazy(() => import("@/pages/errores-comunes"));
+    const NotFound        = lazy(() => import("@/pages/not-found"));
+    const Login           = lazy(() => import("@/pages/login"));
+    const Perfil          = lazy(() => import("@/pages/perfil"));
+    const Admin           = lazy(() => import("@/pages/admin"));
+    const Nomina          = lazy(() => import("@/pages/nomina"));
+    const Salarios        = lazy(() => import("@/pages/salarios"));
+    const Canales         = lazy(() => import("@/pages/canales"));
+    const AgentePanel     = lazy(() => import("@/pages/agente"));
+    const Rendimiento     = lazy(() => import("@/pages/rendimiento"));
+    const Colider         = lazy(() => import("@/pages/colider"));
+    const ComisionesAgente = lazy(() => import("@/pages/comisiones-agente"));
+    const Ranking         = lazy(() => import("@/pages/ranking"));
 
     function ScrollToTop() {
       const [location] = useLocation();
@@ -49,26 +50,35 @@ import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
       return null;
     }
 
+    function PageLoader() {
+      return (
+        <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{
+            width: 36, height: 36,
+            border: "3px solid rgba(59,130,246,0.2)",
+            borderTopColor: "#3b82f6",
+            borderRadius: "50%",
+            animation: "ea_spin 0.8s linear infinite",
+          }} />
+          <style>{"@keyframes ea_spin { to { transform: rotate(360deg); } }"}</style>
+        </div>
+      );
+    }
+
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
     });
 
-    /** Visible loading screen - replaces the old invisible text-white/40 approach */
     function LoadingScreen({ message = "Cargando..." }: { message?: string }) {
       return (
-        <div
-          style={{ minHeight: "100dvh", background: "#07070f", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1rem" }}
-        >
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              border: "3px solid rgba(59,130,246,0.2)",
-              borderTopColor: "#3b82f6",
-              borderRadius: "50%",
-              animation: "ea_spin 0.8s linear infinite",
-            }}
-          />
+        <div style={{ minHeight: "100dvh", background: "#07070f", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1rem" }}>
+          <div style={{
+            width: 40, height: 40,
+            border: "3px solid rgba(59,130,246,0.2)",
+            borderTopColor: "#3b82f6",
+            borderRadius: "50%",
+            animation: "ea_spin 0.8s linear infinite",
+          }} />
           <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 14, fontFamily: "sans-serif", margin: 0 }}>
             {message}
           </p>
@@ -79,38 +89,31 @@ import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 
     function Router() {
       const { user, profile, loading } = useAuth();
+      useEffect(() => { if (!user) queryClient.clear(); }, [user]);
 
-      useEffect(() => {
-        if (!user) queryClient.clear();
-      }, [user]);
-
-      if (loading) {
-        return <LoadingScreen message="Cargando..." />;
-      }
-
+      if (loading) return <LoadingScreen message="Cargando..." />;
       if (user) {
-        if (profile === undefined) {
-          return <LoadingScreen message="Cargando perfil..." />;
-        }
-
+        if (profile === undefined) return <LoadingScreen message="Cargando perfil..." />;
         return (
           <div className="min-h-screen bg-[#07070f] flex flex-col">
             <ScrollToTop />
             <Navbar />
             <main className="flex-grow flex flex-col pt-24 lg:pt-14">
-              <Switch>
-                <Route path="/perfil"    component={Perfil} />
-                <Route path="/salarios"  component={Salarios} />
-                <Route path="/canales"   component={Canales} />
-                {profile?.is_admin && <Route path="/admin"   component={Admin} />}
-                {profile?.is_admin && <Route path="/nomina"  component={Nomina} />}
-                {profile?.is_admin && <Route path="/comisiones-agente" component={ComisionesAgente} />}
-                {(profile?.is_agent || profile?.is_colider) && <Route path="/agente" component={AgentePanel} />}
+              <Suspense fallback={<PageLoader />}>
+                <Switch>
+                  <Route path="/perfil"    component={Perfil} />
+                  <Route path="/salarios"  component={Salarios} />
+                  <Route path="/canales"   component={Canales} />
+                  {profile?.is_admin && <Route path="/admin"             component={Admin} />}
+                  {profile?.is_admin && <Route path="/nomina"            component={Nomina} />}
+                  {profile?.is_admin && <Route path="/comisiones-agente" component={ComisionesAgente} />}
+                  {(profile?.is_agent || profile?.is_colider) && <Route path="/agente"             component={AgentePanel} />}
                   {(profile?.is_agent || profile?.is_colider) && <Route path="/agente/rendimiento" component={Rendimiento} />}
-                {profile?.is_colider && <Route path="/colider" component={Colider} />}
-                <Route path="/ranking" component={Ranking} />
-                <Route component={() => <RedirectTo href={profile?.is_agent && !profile?.is_admin ? "/agente" : profile?.is_colider && !profile?.is_admin ? "/colider" : "/perfil"} />} />
-              </Switch>
+                  {profile?.is_colider && <Route path="/colider" component={Colider} />}
+                  <Route path="/ranking" component={Ranking} />
+                  <Route component={() => <RedirectTo href={profile?.is_agent && !profile?.is_admin ? "/agente" : profile?.is_colider && !profile?.is_admin ? "/colider" : "/perfil"} />} />
+                </Switch>
+              </Suspense>
             </main>
           </div>
         );
@@ -122,29 +125,30 @@ import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
           <ScrollToTop />
           <Navbar />
           <main className="flex-grow flex flex-col pt-24 lg:pt-14">
-            <Switch>
-              <Route path="/"                component={Home} />
-              <Route path="/ser-streamer"    component={SerStreamer} />
-              <Route path="/crear-agencia"   component={CrearAgencia} />
-              <Route path="/apps"            component={Apps} />
-              <Route path="/nosotros"        component={Nosotros} />
-              <Route path="/pagos"           component={Pagos} />
-              <Route path="/contacto"        component={Contacto} />
-              <Route path="/errores-comunes" component={ErroresComunes} />
-              <Route path="/login"           component={Login} />
-              <Route path="/ranking"         component={Ranking} />
-              {/* Protected routes visited while logged-out → redirect to login */}
-              <Route path="/perfil"              component={() => <RedirectTo href="/login" />} />
-              <Route path="/salarios"            component={() => <RedirectTo href="/login" />} />
-              <Route path="/canales"             component={() => <RedirectTo href="/login" />} />
-              <Route path="/admin"               component={() => <RedirectTo href="/login" />} />
-              <Route path="/nomina"              component={() => <RedirectTo href="/login" />} />
-              <Route path="/agente"              component={() => <RedirectTo href="/login" />} />
-              <Route path="/agente/rendimiento"  component={() => <RedirectTo href="/login" />} />
-              <Route path="/colider"             component={() => <RedirectTo href="/login" />} />
-              <Route path="/comisiones-agente"   component={() => <RedirectTo href="/login" />} />
-              <Route component={NotFound} />
-            </Switch>
+            <Suspense fallback={<PageLoader />}>
+              <Switch>
+                <Route path="/"                component={Home} />
+                <Route path="/ser-streamer"    component={SerStreamer} />
+                <Route path="/crear-agencia"   component={CrearAgencia} />
+                <Route path="/apps"            component={Apps} />
+                <Route path="/nosotros"        component={Nosotros} />
+                <Route path="/pagos"           component={Pagos} />
+                <Route path="/contacto"        component={Contacto} />
+                <Route path="/errores-comunes" component={ErroresComunes} />
+                <Route path="/login"           component={Login} />
+                <Route path="/ranking"         component={Ranking} />
+                <Route path="/perfil"             component={() => <RedirectTo href="/login" />} />
+                <Route path="/salarios"           component={() => <RedirectTo href="/login" />} />
+                <Route path="/canales"            component={() => <RedirectTo href="/login" />} />
+                <Route path="/admin"              component={() => <RedirectTo href="/login" />} />
+                <Route path="/nomina"             component={() => <RedirectTo href="/login" />} />
+                <Route path="/agente"             component={() => <RedirectTo href="/login" />} />
+                <Route path="/agente/rendimiento" component={() => <RedirectTo href="/login" />} />
+                <Route path="/colider"            component={() => <RedirectTo href="/login" />} />
+                <Route path="/comisiones-agente"  component={() => <RedirectTo href="/login" />} />
+                <Route component={NotFound} />
+              </Switch>
+            </Suspense>
           </main>
           <Footer />
           <FloatingSocials />
@@ -178,4 +182,4 @@ import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
     }
 
     export default App;
-    
+  
