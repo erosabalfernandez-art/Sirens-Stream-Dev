@@ -296,6 +296,34 @@ import { useLanguage } from "@/contexts/LanguageContext";
             </div>
           </div>
         </section>
+
+          {/* FAQ Section - SEO boost */}
+          <section className="py-16 bg-[#0d0d1a]">
+            <div className="max-w-3xl mx-auto px-5">
+              <h2 className="text-2xl font-extrabold mb-2 text-center">Preguntas Frecuentes sobre ser Streamer</h2>
+              <p className="text-white/50 text-sm text-center mb-10">Todo lo que necesitas saber antes de empezar</p>
+              <div className="space-y-3">
+                {[
+                  { q: "¿Tengo que mostrar mi cara para trabajar en Waha, Layla o Howdy?", a: "No es obligatorio. Puedes trabajar solo con chat y audio. Las videollamadas son completamente opcionales y tú decides si las activas o no." },
+                  { q: "¿Cuánto gana una streamer en Waha, Layla o Howdy por semana?", a: "En promedio, una streamer activa gana entre $10 y $50 USD por día. Con constancia y 4-6 horas diarias, es posible llegar a $300–$500 USD semanales. Las mejores streamers de Eclipse Angels superan los $1,000 USD al mes." },
+                  { q: "¿Puedo trabajar desde mi celular sin computadora?", a: "Sí, todas las apps están disponibles para Android e iOS. Solo necesitas un smartphone con buena cámara y conexión estable. No necesitas computadora ni equipo especial." },
+                  { q: "¿Necesito experiencia previa como streamer?", a: "No. Eclipse Angels Agency te da capacitación completa desde cero. Tendrás una tutora asignada que te guía hasta que empieces a generar ingresos." },
+                  { q: "¿Cuándo y cómo me pagan mis ganancias?", a: "Los pagos son semanales en dólares. Cada app tiene su método de retiro (Binance, transferencias, billeteras digitales). Te explicamos paso a paso cómo retirar desde tu país." },
+                  { q: "¿Es seguro trabajar como streamer en estas apps?", a: "Sí. Tú controlas qué compartes y qué no. Eclipse Angels te da todas las herramientas para trabajar de forma segura y proteger tu privacidad." },
+                  { q: "¿Puedo trabajar en Waha, Layla y Howdy al mismo tiempo?", a: "Sí, muchas de nuestras streamers trabajan en las tres apps al mismo tiempo para maximizar ingresos. Eclipse Angels te ayuda a gestionar las tres plataformas." },
+                  { q: "¿En qué países de Latinoamérica puedo trabajar como streamer?", a: "Desde cualquier país: México, Colombia, Venezuela, Argentina, Chile, Perú, Ecuador, Bolivia, Rep. Dominicana y más. Solo necesitas internet." },
+                ].map((item, i) => (
+                  <details key={i} className="group bg-white/4 border border-white/10 rounded-xl overflow-hidden">
+                    <summary className="flex items-center justify-between gap-4 px-5 py-4 cursor-pointer font-semibold text-sm text-white/90 list-none select-none">
+                      {item.q}
+                      <span className="text-white/40 shrink-0 text-lg group-open:rotate-180 transition-transform duration-200">▾</span>
+                    </summary>
+                    <p className="px-5 pb-5 pt-1 text-sm text-white/60 leading-relaxed">{item.a}</p>
+                  </details>
+                ))}
+              </div>
+            </div>
+          </section>
       {/* SEO keywords */}
       <section aria-hidden="true" className="px-6 pb-6 max-w-5xl mx-auto">
         <p className="text-[9px] text-white/15 leading-relaxed select-none">
