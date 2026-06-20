@@ -86,7 +86,23 @@ import { Helmet } from "react-helmet-async";
           "información streamer","asesoría agencia streaming","quiero ser streamer","quiero crear agencia",
         ].join(", "),
       },
-      "/blog": {
+      "/privacidad": {
+      title: "Política de Privacidad | Eclipse Angels Agency",
+      description: "Conoce cómo Eclipse Angels Agency protege tus datos personales, qué información recopilamos y cómo la usamos.",
+      keywords: "política de privacidad, eclipse angels agency, protección de datos",
+      ogTitle: "Política de Privacidad | Eclipse Angels Agency",
+      ogDescription: "Cómo protegemos tus datos personales en Eclipse Angels Agency.",
+      ogUrl: "https://eclipse-angels.onrender.com/privacidad",
+    },
+    "/terminos": {
+      title: "Términos y Condiciones | Eclipse Angels Agency",
+      description: "Lee los términos y condiciones de uso de Eclipse Angels Agency: requisitos, pagos, compromisos y restricciones del servicio.",
+      keywords: "términos y condiciones, eclipse angels agency, condiciones de uso",
+      ogTitle: "Términos y Condiciones | Eclipse Angels Agency",
+      ogDescription: "Términos de uso, requisitos para streamers y condiciones del servicio de Eclipse Angels Agency.",
+      ogUrl: "https://eclipse-angels.onrender.com/terminos",
+    },
+    "/blog": {
         title: "Blog & Guías para Streamers | Eclipse Angels Agency",
         description: "Artículos sobre cómo ganar dinero siendo streamer en Waha, Layla y Howdy. Consejos reales, comparativas y guías para empezar desde cero en Latinoamérica.",
         keywords: ["blog streamer","guía streamer","cómo ganar dinero streamer","trabajar en Waha 2026","diferencias Waha Layla Howdy","crear agencia streamers","manager streamers","Eclipse Angels blog","guía agencia streaming 2026"].join(", "),
