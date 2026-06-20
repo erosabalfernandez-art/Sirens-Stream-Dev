@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://eclipse-angels-webb.onrender.com/sitemap.xml
+Sitemap: https://eclipse-angels.onrender.com/sitemap.xml
