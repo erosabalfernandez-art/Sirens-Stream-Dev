@@ -14,6 +14,7 @@ import { Link, useLocation } from "wouter";
         { href: "/nosotros", label: "Equipo" },
         { href: "/pagos", label: "Pagos" },
         { href: "/ranking", label: "Ranking" },
+        { href: "/blog", label: "Blog" },
       ],
       pt: [
         { href: "/", label: "Início" },
