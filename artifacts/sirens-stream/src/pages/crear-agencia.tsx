@@ -300,6 +300,34 @@ import { useLanguage } from "@/contexts/LanguageContext";
             </div>
           </div>
         </section>
+
+          {/* FAQ Section - SEO boost */}
+          <section className="py-16 bg-[#0d0d1a]">
+            <div className="max-w-3xl mx-auto px-5">
+              <h2 className="text-2xl font-extrabold mb-2 text-center">Preguntas Frecuentes sobre crear una Agencia de Streamers</h2>
+              <p className="text-white/50 text-sm text-center mb-10">Resuelve tus dudas antes de empezar tu agencia</p>
+              <div className="space-y-3">
+                {[
+                  { q: "¿Qué es un manager o agente de streamers?", a: "Un manager gestiona un equipo de streamers: las ayuda a registrarse, las capacita, les da seguimiento y gana comisiones por sus ganancias. Es un negocio digital desde casa sin inversión." },
+                  { q: "¿Necesito invertir dinero para crear mi agencia de streamers?", a: "No. Crear tu agencia con Eclipse Angels Agency es completamente gratuito. No hay cuota de inscripción, no pagas nada. Tus ingresos vienen directamente de las comisiones de tus streamers." },
+                  { q: "¿Cuánto gana un agente o manager de streamers?", a: "Los agentes ganan entre 10% y 30% de comisión sobre las ganancias de cada streamer que gestionan. Con un equipo de 5–10 streamers activas, es posible generar $500–$2,000 USD mensuales o más." },
+                  { q: "¿Cuántas streamers puedo tener en mi agencia?", a: "No hay límite. Puedes empezar con 1 o 2 y crecer progresivamente. Eclipse Angels te da las herramientas para gestionar equipos grandes de forma organizada." },
+                  { q: "¿Puedo ser streamer y manager al mismo tiempo?", a: "Sí, muchos de nuestros agentes empezaron como streamers y fueron creciendo. Es una ventaja porque ya conoces las apps y puedes guiar mejor a tu equipo." },
+                  { q: "¿Qué hace exactamente un manager de streamers en Waha, Layla o Howdy?", a: "Registra nuevas streamers bajo tu agencia, las capacita en el uso de las apps, les da seguimiento de metas diarias, resuelve sus dudas y las motiva para que sean más productivas." },
+                  { q: "¿Necesito experiencia en streaming para crear una agencia?", a: "No es obligatorio, pero ayuda. Eclipse Angels te da toda la formación necesaria para gestionar tu equipo aunque seas nuevo. Contarás con el respaldo de nuestra estructura de agencia." },
+                  { q: "¿Cómo me pagan las comisiones como agente?", a: "Las comisiones se pagan semanalmente en dólares, directamente a través de las plataformas (Waha, Layla, Howdy). Eclipse Angels también tiene su propio sistema de seguimiento de comisiones." },
+                ].map((item, i) => (
+                  <details key={i} className="group bg-white/4 border border-white/10 rounded-xl overflow-hidden">
+                    <summary className="flex items-center justify-between gap-4 px-5 py-4 cursor-pointer font-semibold text-sm text-white/90 list-none select-none">
+                      {item.q}
+                      <span className="text-white/40 shrink-0 text-lg group-open:rotate-180 transition-transform duration-200">▾</span>
+                    </summary>
+                    <p className="px-5 pb-5 pt-1 text-sm text-white/60 leading-relaxed">{item.a}</p>
+                  </details>
+                ))}
+              </div>
+            </div>
+          </section>
       {/* SEO keywords */}
       <section aria-hidden="true" className="px-6 pb-6 max-w-5xl mx-auto">
         <p className="text-[9px] text-white/15 leading-relaxed select-none">
