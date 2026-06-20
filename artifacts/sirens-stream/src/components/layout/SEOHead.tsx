@@ -86,6 +86,11 @@ import { Helmet } from "react-helmet-async";
           "información streamer","asesoría agencia streaming","quiero ser streamer","quiero crear agencia",
         ].join(", "),
       },
+      "/blog": {
+        title: "Blog & Guías para Streamers | Eclipse Angels Agency",
+        description: "Artículos sobre cómo ganar dinero siendo streamer en Waha, Layla y Howdy. Consejos reales, comparativas y guías para empezar desde cero en Latinoamérica.",
+        keywords: ["blog streamer","guía streamer","cómo ganar dinero streamer","trabajar en Waha 2026","diferencias Waha Layla Howdy","crear agencia streamers","manager streamers","Eclipse Angels blog","guía agencia streaming 2026"].join(", "),
+      },
       "/errores-comunes": {
         title: "Errores Comunes al Trabajar en Waha, Howdy y Layla | Eclipse Angels",
         description:
@@ -116,31 +121,24 @@ import { Helmet } from "react-helmet-async";
       },
       "/ser-streamer": {
         "@context": "https://schema.org",
-        "@type": "JobPosting",
-        "title": "Streamer / Chat Hostess",
-        "description": "Trabaja como streamer en Waha, Layla y Howdy desde casa. Sin inversión ni experiencia. Pagos semanales en dólares.",
-        "hiringOrganization": {
-          "@type": "Organization",
-          "name": "Eclipse Angels Agency",
-          "sameAs": BASE_URL,
-        },
-        "jobLocationType": "TELECOMMUTE",
-        "applicantLocationRequirements": { "@type": "Country", "name": "Latinoamérica" },
-        "employmentType": "CONTRACTOR",
-        "datePosted": "2026-06-20",
+        "@type": "FAQPage",
+        "mainEntity": [
+          { "@type": "Question", "name": "¿Tengo que mostrar mi cara para trabajar en Waha, Layla o Howdy?", "acceptedAnswer": { "@type": "Answer", "text": "No es obligatorio. Puedes trabajar solo con chat y audio. Las videollamadas son completamente opcionales." } },
+          { "@type": "Question", "name": "¿Cuánto gana una streamer en Waha, Layla o Howdy por semana?", "acceptedAnswer": { "@type": "Answer", "text": "Con 4–6 horas diarias se pueden ganar $300–$500 USD semanales. Las mejores streamers de Eclipse Angels superan $1,000 USD al mes." } },
+          { "@type": "Question", "name": "¿Necesito experiencia previa para ser streamer?", "acceptedAnswer": { "@type": "Answer", "text": "No. Eclipse Angels Agency te da capacitación completa desde cero con tutora asignada." } },
+          { "@type": "Question", "name": "¿Puedo trabajar desde el celular sin computadora?", "acceptedAnswer": { "@type": "Answer", "text": "Sí, Waha, Layla y Howdy están disponibles para Android e iOS. Solo necesitas smartphone y conexión estable." } },
+          { "@type": "Question", "name": "¿En qué países de Latinoamérica puedo trabajar?", "acceptedAnswer": { "@type": "Answer", "text": "Desde México, Colombia, Venezuela, Argentina, Chile, Perú, Ecuador, Bolivia, Rep. Dominicana y más." } },
+        ],
       },
       "/crear-agencia": {
         "@context": "https://schema.org",
-        "@type": "Course",
-        "name": "Cómo crear una agencia de streamers en Waha, Layla y Howdy",
-        "description": "Aprende a crear y gestionar tu propia agencia de streamers desde cero. Sin inversión. Gana comisiones en dólares.",
-        "provider": {
-          "@type": "Organization",
-          "name": "Eclipse Angels Agency",
-          "sameAs": BASE_URL,
-        },
-        "inLanguage": "es",
-        "isAccessibleForFree": true,
+        "@type": "FAQPage",
+        "mainEntity": [
+          { "@type": "Question", "name": "¿Necesito inversión para crear una agencia de streamers?", "acceptedAnswer": { "@type": "Answer", "text": "No. Crear tu agencia con Eclipse Angels es completamente gratuito. Tus ingresos vienen de comisiones automáticas semanales." } },
+          { "@type": "Question", "name": "¿Cuánto gana un manager de streamers?", "acceptedAnswer": { "@type": "Answer", "text": "Entre 10% y 30% de comisión. Con 5 streamers activas ganando $200 USD cada una, puedes cobrar $100–$300 USD semanales." } },
+          { "@type": "Question", "name": "¿Puedo ser streamer y manager al mismo tiempo?", "acceptedAnswer": { "@type": "Answer", "text": "Sí, es la combinación ideal. Muchos agentes de Eclipse Angels empezaron como streamers y escalaron a manager." } },
+          { "@type": "Question", "name": "¿Qué hace exactamente un manager de streamers?", "acceptedAnswer": { "@type": "Answer", "text": "Registra streamers bajo su agencia, las capacita, da seguimiento de metas y recibe comisiones semanales automáticas." } },
+        ],
       },
       "/apps": {
         "@context": "https://schema.org",
@@ -152,6 +150,15 @@ import { Helmet } from "react-helmet-async";
           { "@type": "ListItem", "position": 2, "name": "Layla", "url": BASE_URL + "/apps" },
           { "@type": "ListItem", "position": 3, "name": "Howdy", "url": BASE_URL + "/apps" },
         ],
+      },
+      "/blog": {
+        "@context": "https://schema.org",
+        "@type": "Blog",
+        "name": "Blog Eclipse Angels Agency",
+        "description": "Guías completas sobre cómo ganar dinero siendo streamer en Waha, Layla y Howdy.",
+        "url": "https://eclipse-angels.onrender.com/blog",
+        "publisher": { "@type": "Organization", "name": "Eclipse Angels Agency", "url": "https://eclipse-angels.onrender.com" },
+        "inLanguage": "es",
       },
       "/pagos": {
         "@context": "https://schema.org",
