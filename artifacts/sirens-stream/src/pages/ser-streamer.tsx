@@ -84,7 +84,7 @@ import { ShareButtons } from "@/components/layout/ShareButtons";
     const T = {
       badge: lang === 'pt' ? "Trabalhe de Casa em Dólares" : "Trabaja desde Casa en Dólares",
       h1Hero: lang === 'pt' ? "Seu Celular é sua" : "Tu Celular es tu",
-      h1HeroHighlight: lang === 'pt' ? "Ferramenta de Trabalho" : "Herramienta de Trabalho",
+      h1HeroHighlight: lang === 'pt' ? "Ferramenta de Trabalho" : "Herramienta de Trabajo",
       heroDesc: lang === 'pt' ? "Na Eclipse Angels Agency você pode gerar renda real em dólares no conforto da sua casa usando apenas seu smartphone. Sem investimento, sem experiência prévia, com total acompanhamento." : "En Eclipse Angels Agency puedes generar ingresos reales en dólares desde la comodidad de tu hogar usando únicamente tu smartphone. Sin inversión, sin experiencia previa, con total acompañamiento.",
       ctaJoin: lang === 'pt' ? "Quero participar" : "Quiero unirme",
       ctaApps: lang === 'pt' ? "Apps Disponíveis" : "Apps Disponibles",
