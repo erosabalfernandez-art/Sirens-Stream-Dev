@@ -50,8 +50,8 @@ function MessageText({ text }: { text: string }) {
         if (URL_REGEX.test(part)) {
           const display = part
             .replace("https://wa.me/5595984381686", "WhatsApp")
-            .replace("https://www.instagram.com/eclipse_angels1", "Instagram @eclipse_angels1")
-            .replace("https://www.tiktok.com/@eclipse_angels1", "TikTok @eclipse_angels1")
+            .replace("https://www.instagram.com/eclipse_angels.girls", "Instagram @eclipse_angels.girls")
+            .replace("https://www.tiktok.com/@eclipse_angels.girls", "TikTok @eclipse_angels.girls")
             .replace("https://facebook.com/eclipseangelsagency", "Facebook")
             .replace("https://t.me/ingresos_waha", "Telegram Waha 📣")
             .replace("https://t.me/ingresos_layla", "Telegram Layla 📣")
