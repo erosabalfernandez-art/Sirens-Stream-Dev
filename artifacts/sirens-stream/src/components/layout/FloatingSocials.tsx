@@ -12,14 +12,14 @@ const socials = [
     shadow: "rgba(37,211,102,0.5)",
   },
   {
-    href: "https://www.instagram.com/eclipse_angels1?igsh=MTY0bGpqd294NjBwYg==",
+    href: "https://www.instagram.com/eclipse_angels.girls?igsh=MTY0bGpqd294NjBwYg==",
     icon: FaInstagram,
     label: "Instagram",
     bg: "bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400",
     shadow: "rgba(225,48,108,0.5)",
   },
   {
-    href: "https://www.tiktok.com/@eclipse_angels1?_r=1&_t=ZS-96vSGdq3JZ4",
+    href: "https://www.tiktok.com/@eclipse_angels.girls?_r=1&_t=ZS-96vSGdq3JZ4",
     icon: FaTiktok,
     label: "TikTok",
     bg: "bg-[#010101]",
