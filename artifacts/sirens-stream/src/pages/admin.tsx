@@ -1249,7 +1249,8 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
           groups[val].push(w)
         }
         for (const [, rows] of Object.entries(groups)) {
-          if (rows.length > 1) duplicates.push({ field: label, value: rows[0][key] as string, rows })
+          const uniqueUsers = new Set(rows.map(r => r.user_id))
+          if (uniqueUsers.size > 1) duplicates.push({ field: label, value: rows[0][key] as string, rows })
         }
       }
 
