@@ -1672,71 +1672,106 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                   <div className="bg-[#0d0d1e] border border-purple-500/10 rounded-2xl p-10 text-center">
                     <p className="text-white/30 text-sm">No hay registros que coincidan.</p>
                   </div>
-                ) : (
+                ) : (() => {
+                  // Group filtered rows by user_id → one card per person
+                  const personMap: Record<string, WorkerRow[]> = {}
+                  for (const w of filtered) {
+                    if (!personMap[w.user_id]) personMap[w.user_id] = []
+                    personMap[w.user_id].push(w)
+                  }
+                  const personGroups = Object.values(personMap).sort((a, b) =>
+                    (a[0].nombre_real || '').localeCompare(b[0].nombre_real || '')
+                  )
+                  return (
                   <div className="space-y-3">
-                    {filtered.map(w => (
-                      <div key={w.id} className="bg-[#0d0d1e] border border-purple-500/10 rounded-2xl overflow-hidden">
-                        <button onClick={() => setExpanded(expanded === w.id ? null : w.id)}
+                    {personGroups.map(group => {
+                      const first = group[0]
+                      const groupKey = first.user_id
+                      const isOpen = expanded === groupKey
+                      const allApps = group.map(w => w.app_name)
+                      return (
+                      <div key={groupKey} className="bg-[#0d0d1e] border border-purple-500/10 rounded-2xl overflow-hidden">
+                        <button onClick={() => setExpanded(isOpen ? null : groupKey)}
                           className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/2 transition-colors text-left">
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="w-8 h-8 rounded-lg bg-purple-500/15 border border-purple-500/25 flex items-center justify-center text-purple-400 font-bold text-xs shrink-0">
-                              {(w.nombre_real || w.app_name)[0].toUpperCase()}
+                              {(first.nombre_real || first.app_name)[0].toUpperCase()}
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-bold text-sm">{w.nombre_real || w.app_name}</span>
-                                {w.nombre_real && <span className="text-xs bg-purple-500/10 border border-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">{w.app_name}</span>}
-                                {w.pais && <span className="text-xs bg-purple-500/10 border border-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">{w.pais}</span>}
-                                {w.metodo_pago && <span className="text-xs bg-blue-500/10 border border-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">{w.metodo_pago}</span>}
-                    {w.agente && (() => { const aName = agentNameMap[w.agente] ?? w.agente; const aPhone = agentPhoneMap[w.agente]; const _cp = cleanNum(aPhone); return aPhone ? (<a href={`https://wa.me/${_cp}`} target="_blank" rel="noreferrer" className="text-xs bg-green-500/10 border border-green-500/20 text-green-300 px-2 py-0.5 rounded-full hover:bg-green-500/20 transition-colors">{aName} 📱</a>) : (<span className="text-xs bg-green-500/10 border border-green-500/20 text-green-300 px-2 py-0.5 rounded-full">{aName}</span>); })()}
-                                {w.telefono && (
+                                <span className="font-bold text-sm">{first.nombre_real || first.app_name}</span>
+                                {allApps.map(a => (
+                                  <span key={a} className="text-xs bg-purple-500/10 border border-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">{a}</span>
+                                ))}
+                                {first.pais && <span className="text-xs bg-purple-500/10 border border-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">{first.pais}</span>}
+                                {first.metodo_pago && <span className="text-xs bg-blue-500/10 border border-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">{first.metodo_pago}</span>}
+                                {first.agente && (() => { const aName = agentNameMap[first.agente] ?? first.agente; const aPhone = agentPhoneMap[first.agente]; const _cp = cleanNum(aPhone); return aPhone ? (<a href={`https://wa.me/${_cp}`} target="_blank" rel="noreferrer" className="text-xs bg-green-500/10 border border-green-500/20 text-green-300 px-2 py-0.5 rounded-full hover:bg-green-500/20 transition-colors">{aName} 📱</a>) : (<span className="text-xs bg-green-500/10 border border-green-500/20 text-green-300 px-2 py-0.5 rounded-full">{aName}</span>); })()}
+                                {first.telefono && (
                                   <a
-                                    href={`https://wa.me/${cleanFullPhone(w.codigo_pais, w.telefono)}`}
+                                    href={`https://wa.me/${cleanFullPhone(first.codigo_pais, first.telefono)}`}
                                     target="_blank" rel="noopener noreferrer"
                                     onClick={e => e.stopPropagation()}
                                     className="text-xs bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-full hover:bg-emerald-500/25 transition-colors font-medium">
-                                    📱 {w.codigo_pais ? `${w.codigo_pais} ${w.telefono}` : w.telefono}
+                                    📱 {first.codigo_pais ? `${first.codigo_pais} ${first.telefono}` : first.telefono}
                                   </a>
                                 )}
                               </div>
-                              <p className="text-white/35 text-xs truncate mt-0.5">{w.profile_email}</p>
+                              <p className="text-white/35 text-xs truncate mt-0.5">{first.profile_email}</p>
                             </div>
                           </div>
-                          {expanded === w.id ? <ChevronUp className="w-4 h-4 text-white/30 shrink-0" /> : <ChevronDown className="w-4 h-4 text-white/30 shrink-0" />}
+                          {isOpen ? <ChevronUp className="w-4 h-4 text-white/30 shrink-0" /> : <ChevronDown className="w-4 h-4 text-white/30 shrink-0" />}
                         </button>
-                        {expanded === w.id && (
+                        {isOpen && (
                           <div className="px-5 pb-5 border-t border-purple-500/8">
+                            {/* Datos personales compartidos */}
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
                               {([
-                                ['Email', w.profile_email],
-                                ['App', w.app_name],
-                                ['Nombre real', w.nombre_real],
-                                ['Nombre en app', w.nombre_en_app],
-                                ['ID en la app', w.id_aplicacion],
-                                ['Teléfono', w.codigo_pais && w.telefono ? `${w.codigo_pais} ${w.telefono}` : w.telefono, w.telefono ? `https://wa.me/${cleanFullPhone(w.codigo_pais, w.telefono)}` : undefined],
-                                ['País', w.pais],
-                                ['Método de pago', w.metodo_pago],
-                                ['Billetera', w.billetera],
-                                ['Agente', agentNameMap[w.agente ?? ''] ?? w.agente],
+                                ['Email', first.profile_email],
+                                ['Nombre real', first.nombre_real],
+                                ['Teléfono', first.codigo_pais && first.telefono ? `${first.codigo_pais} ${first.telefono}` : first.telefono, first.telefono ? `https://wa.me/${cleanFullPhone(first.codigo_pais, first.telefono)}` : undefined],
+                                ['País', first.pais],
+                                ['Agente', agentNameMap[first.agente ?? ''] ?? first.agente],
                               ] as [string, string | null, string?][]).map(([label, value, href]) => (
-                                <CopyCell key={label} label={label} value={value} uid={w.id + label} href={href} />
+                                <CopyCell key={label} label={label} value={value} uid={groupKey + label} href={href} />
+                              ))}
+                            </div>
+                            {/* Por app */}
+                            <div className="mt-4 space-y-3">
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400/50">Apps registradas ({group.length})</p>
+                              {group.map(w => (
+                                <div key={w.id} className="bg-[#07070f] border border-blue-500/10 rounded-xl p-3">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-5 h-5 rounded-md bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-[10px] shrink-0">{w.app_name[0]}</div>
+                                    <span className="text-blue-300 text-xs font-bold tracking-wide">{w.app_name}</span>
+                                  </div>
+                                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                    {([
+                                      ['Nombre en app', w.nombre_en_app],
+                                      ['ID en la app', w.id_aplicacion],
+                                      ['Método de pago', w.metodo_pago],
+                                      ['Billetera', w.billetera],
+                                    ] as [string, string | null][]).map(([label, value]) => (
+                                      <CopyCell key={label} label={label} value={value} uid={w.id + label} />
+                                    ))}
+                                  </div>
+                                </div>
                               ))}
                             </div>
                             <div className="mt-4 pt-3 border-t border-purple-500/8 flex items-center gap-3 flex-wrap">
                               <button
-                                onClick={(e) => { e.stopPropagation(); sendTestPushToWorker(w); }}
-                                disabled={testPushSending[w.id]}
+                                onClick={(e) => { e.stopPropagation(); sendTestPushToWorker(first); }}
+                                disabled={testPushSending[first.id]}
                                 className="flex items-center gap-2 bg-purple-600/80 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all"
                               >
-                                {testPushSending[w.id] ? (
+                                {testPushSending[first.id] ? (
                                   <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                ) : testPushOk[w.id] ? (
+                                ) : testPushOk[first.id] ? (
                                   <Check className="w-3.5 h-3.5 text-green-400" />
                                 ) : (
                                   <Bell className="w-3.5 h-3.5" />
                                 )}
                                 <span>
-                                  {testPushOk[w.id] ? '✓ Notificación enviada' : testPushSending[w.id] ? 'Enviando...' : 'Notificación de prueba'}
+                                  {testPushOk[first.id] ? '✓ Notificación enviada' : testPushSending[first.id] ? 'Enviando...' : 'Notificación de prueba'}
                                 </span>
                               </button>
                               <span className="text-xs text-white/25">Solo le llega a ella</span>
@@ -1744,9 +1779,11 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                           </div>
                         )}
                       </div>
-                    ))}
+                      )
+                    })}
                   </div>
-                )}
+                  )
+                })()}
               </>
             )}
 
