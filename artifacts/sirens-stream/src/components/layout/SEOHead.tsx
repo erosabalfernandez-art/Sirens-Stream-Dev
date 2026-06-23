@@ -139,8 +139,8 @@ import { Helmet } from "react-helmet-async";
               "availableLanguage": "Spanish",
               "priceRange": "Gratis",
               "sameAs": [
-                "https://www.instagram.com/eclipse_angels1",
-                "https://www.tiktok.com/@eclipse_angels1",
+                "https://www.instagram.com/eclipse_angels.girls",
+                "https://www.tiktok.com/@eclipse_angels.girls",
                 "https://facebook.com/eclipseangelsagency"
               ],
               "aggregateRating": {
