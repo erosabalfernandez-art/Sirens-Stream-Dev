@@ -25,6 +25,7 @@ export function TelegramLinkCard({ userId, lang = 'es' }: Props) {
   const [verifying, setVerifying] = useState(false)
   const [verifyResult, setVerifyResult] = useState<'ok' | 'error' | null>(null)
   const [verifyError, setVerifyError] = useState<string | null>(null)
+  const [tgUrl, setTgUrl] = useState<string | null>(null)
 
   const fetchStatus = useCallback(async () => {
     setLoading(true)
@@ -53,16 +54,25 @@ export function TelegramLinkCard({ userId, lang = 'es' }: Props) {
 
   async function handleConnect() {
     setConnecting(true)
+    // Open a blank window SYNCHRONOUSLY (before any await) so iOS Safari doesn't block it as a popup
+    const tgWin = window.open('', '_blank')
     try {
       const res = await fetch(`${API}/api/telegram/link/init`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId }),
       })
-      if (!res.ok) { setConnecting(false); return }
+      if (!res.ok) { tgWin?.close(); setConnecting(false); return }
       const { code, botUsername } = await res.json() as { code: string; botUsername: string }
-      window.open(`https://t.me/${botUsername}?start=${code}`, '_blank')
+      const url = `https://t.me/${botUsername}?start=${code}`
+      setTgUrl(url)
+      if (tgWin) {
+        tgWin.location.href = url
+      } else {
+        // Fallback if popup was still blocked (user can tap the manual link shown below)
+        window.location.href = url
+      }
       setWaitingLink(true)
-    } catch { /* ignore */ }
+    } catch { tgWin?.close() }
     setConnecting(false)
   }
 
@@ -197,10 +207,23 @@ export function TelegramLinkCard({ userId, lang = 'es' }: Props) {
       )}
 
       {waitingLink && (
-        <div className="mt-3 pt-3 border-t border-white/5 text-xs text-white/35 leading-relaxed">
-          {pt
-            ? 'Abrimos o Telegram. Clique em "Iniciar" para vincular sua conta. Esta janela se atualizará automaticamente.'
-            : 'Abrimos Telegram. Haz clic en "Iniciar" para vincular tu cuenta. Esta ventana se actualizará automáticamente.'}
+        <div className="mt-3 pt-3 border-t border-white/5 space-y-2">
+          <p className="text-xs text-white/35 leading-relaxed">
+            {pt
+              ? 'Abrimos o Telegram. Clique em "Iniciar" para vincular sua conta. Esta janela se atualizará automaticamente.'
+              : 'Abrimos Telegram. Haz clic en "Iniciar" para vincular tu cuenta. Esta ventana se actualizará automáticamente.'}
+          </p>
+          {tgUrl && (
+            <a
+              href={tgUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-blue-400 underline underline-offset-2 font-semibold"
+            >
+              <ExternalLink className="w-3 h-3" />
+              {pt ? 'Toque aqui se o Telegram não abriu' : 'Toca aquí si Telegram no se abrió'}
+            </a>
+          )}
         </div>
       )}
     </div>
