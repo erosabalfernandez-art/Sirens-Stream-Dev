@@ -31,7 +31,6 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
     const DUPE_FIELDS: { key: keyof WorkerRow; label: string }[] = [
       { key: 'id_aplicacion', label: 'ID en la app' },
       { key: 'billetera', label: 'Billetera' },
-      { key: 'nombre_en_app', label: 'Nombre en app' },
       { key: 'telefono', label: 'Teléfono' },
     ]
 
