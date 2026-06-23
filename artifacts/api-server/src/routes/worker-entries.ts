@@ -100,6 +100,19 @@ import { Router } from 'express';
         payload.agente = lockedAgente;
       }
 
+      // Enforce shared payment method: all apps of a user must use the same metodo_pago/billetera
+      const existingMethodR = await fetch(
+        sbUrl(`worker_entries?user_id=eq.${encodeURIComponent(userId)}&metodo_pago=not.is.null&select=metodo_pago,billetera&limit=1`),
+        { headers: sbH() }
+      );
+      if (existingMethodR.ok) {
+        const existingMethods = await existingMethodR.json() as { metodo_pago: string; billetera: string | null }[];
+        if (existingMethods.length > 0) {
+          payload.metodo_pago = existingMethods[0].metodo_pago;
+          payload.billetera = existingMethods[0].billetera;
+        }
+      }
+
       const insertR = await fetch(sbUrl('worker_entries'), {
         method: 'POST',
         headers: { ...sbH(), Prefer: 'return=representation' },
