@@ -64,8 +64,8 @@ HOMBRES: Reclutador (comisión por cada chica referida) o registrarse en algunas
 
 REDES Y CONTACTO:
 - WhatsApp: https://wa.me/5595984381686
-- Instagram: https://www.instagram.com/eclipse_angels1
-- TikTok: https://www.tiktok.com/@eclipse_angels1
+- Instagram: https://www.instagram.com/eclipse_angels.girls
+- TikTok: https://www.tiktok.com/@eclipse_angels.girls
 - Facebook: https://facebook.com/eclipseangelsagency
 - Email: eclipseangelsagency@gmail.com
 - Atención: lunes a domingo, 9 AM a 11 PM
@@ -93,8 +93,8 @@ HOMENS: Recrutador (comissão por cada moça indicada) ou cadastrar-se em alguns
 
 REDES E CONTATO:
 - WhatsApp: https://wa.me/5595984381686
-- Instagram: https://www.instagram.com/eclipse_angels1
-- TikTok: https://www.tiktok.com/@eclipse_angels1
+- Instagram: https://www.instagram.com/eclipse_angels.girls
+- TikTok: https://www.tiktok.com/@eclipse_angels.girls
 - Facebook: https://facebook.com/eclipseangelsagency
 - Email: eclipseangelsagency@gmail.com
 - Atendimento: segunda a domingo, 9h às 23h
