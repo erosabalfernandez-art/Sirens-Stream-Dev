@@ -161,11 +161,9 @@ import { TelegramLinkCard } from '@/components/layout/TelegramLinkCard'
             const draft = loadDraft()
             const _initAgente = lockedAgente ?? draft.agente
             let initForm = { ...draft, agente: _initAgente }
-            // If locked and no method in draft, inherit from existing entry so new apps share method
-            if (payMethodLocked && !initForm.metodo_pago) {
-              const existing = entries.find(e => e.metodo_pago)
-              if (existing) { initForm = { ...initForm, metodo_pago: existing.metodo_pago ?? '', billetera: existing.billetera ?? '' } }
-            }
+            // Always inherit method from existing entries when adding a new app (regardless of weekly lock)
+            const existingWithMethod = entries.find(e => e.metodo_pago)
+            if (existingWithMethod) { initForm = { ...initForm, metodo_pago: existingWithMethod.metodo_pago ?? '', billetera: existingWithMethod.billetera ?? '' } }
             setForm(initForm)
             if (_initAgente) setTimeout(() => checkAgentCode(_initAgente), 100)
           }
@@ -289,6 +287,8 @@ import { TelegramLinkCard } from '@/components/layout/TelegramLinkCard'
 
       const lockedAgente = entries.find(e => e.agente)?.agente ?? null
         const lockedIdApp = !!(editingId && entries.find(e => e.id === editingId)?.id_aplicacion)
+        // True when adding a new app and the user already has a payment method set on another app
+        const isMethodFrozenForNewApp = !editingId && !!entries.find(e => e.metodo_pago)
 
         return (
         <div className="min-h-screen bg-[#07070f] text-white pt-20 pb-16">
@@ -453,7 +453,10 @@ import { TelegramLinkCard } from '@/components/layout/TelegramLinkCard'
                     )}
                   </Field>
                   <Field label="País *">
-                    <select value={form.pais} onChange={e => setForm(f => ({ ...f, pais: e.target.value, metodo_pago: '', billetera: '' }))}
+                    <select value={form.pais} onChange={e => setForm(f => ({
+                      ...f, pais: e.target.value,
+                      ...(!isMethodFrozenForNewApp ? { metodo_pago: '', billetera: '' } : {})
+                    }))}
                       className="w-full bg-[#07070f] border border-purple-500/20 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500/50">
                       <option value="">Seleccionar...</option>
                       {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -467,12 +470,19 @@ import { TelegramLinkCard } from '@/components/layout/TelegramLinkCard'
                   </Field>
                   {!(profile as any)?.agent_code && !profile?.is_agent && !profile?.is_colider && (
                     <>
-                    {payMethodLocked && form.metodo_pago ? (
+                    {(payMethodLocked || isMethodFrozenForNewApp) && form.metodo_pago ? (
                       <div className="bg-amber-500/8 border border-amber-500/20 rounded-xl px-3 py-3 flex items-center gap-2.5">
                         <span className="text-base shrink-0">🔒</span>
                         <div>
-                          <p className="text-amber-300 text-xs font-bold">Método de pago bloqueado esta semana</p>
+                          <p className="text-amber-300 text-xs font-bold">
+                            {isMethodFrozenForNewApp
+                              ? 'Método de pago igual al de tus otras apps'
+                              : 'Método de pago bloqueado esta semana'}
+                          </p>
                           <p className="text-white/40 text-xs mt-0.5">{form.metodo_pago}{form.billetera ? ` · ${form.billetera}` : ''}</p>
+                          {isMethodFrozenForNewApp && (
+                            <p className="text-white/25 text-xs mt-1">Todas tus apps comparten el mismo método de pago</p>
+                          )}
                         </div>
                       </div>
                     ) : (
