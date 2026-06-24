@@ -499,7 +499,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
               nombre_real: w.nombre_real ?? null, nombre_en_app: w.nombre_en_app ?? null,
               email: profileMap[s.user_id] ?? '—',
               metodo_pago: w.metodo_pago ?? null, billetera: w.billetera ?? null,
-              agente: w.agente ?? null,
+              agente: w.agente?.trim() ?? null,
               confirmed: !!confAt, confirmed_at: confAt ?? null,
               id_aplicacion: w.id_aplicacion ?? null,
             }
@@ -590,7 +590,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                 apodo: (s.extras?.Apodo ?? s.extras?.apodo ?? s.extras?.Nick ?? w.nombre_en_app ?? '—') as string,
                 nombre_real: w.nombre_real ?? null, nombre_en_app: w.nombre_en_app ?? null,
                 email: profileMap[s.user_id] ?? '—',
-                metodo_pago: w.metodo_pago ?? null, billetera: w.billetera ?? null, agente: w.agente ?? null,
+                metodo_pago: w.metodo_pago ?? null, billetera: w.billetera ?? null, agente: w.agente?.trim() ?? null,
                 confirmed: !!confAt, confirmed_at: confAt ?? null,
                 id_aplicacion: w.id_aplicacion ?? null,
                 colider_paid: null as boolean | null, cup_amount,
@@ -743,7 +743,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
               email: eMap[n.user_id] ?? '—',
               metodo_pago: wMap[n.user_id]?.metodo_pago ?? null,
               billetera: wMap[n.user_id]?.billetera ?? null,
-              agente: wMap[n.user_id]?.agente ?? null,
+              agente: wMap[n.user_id]?.agente?.trim() ?? null,
             }))
             setLaylaDirectNotifs(merged)
             setLaylaDirectLoading(false)
@@ -1159,7 +1159,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
               email: eMap[n.user_id] ?? '—',
               metodo_pago: wMap[n.user_id]?.metodo_pago ?? null,
               billetera: wMap[n.user_id]?.billetera ?? null,
-              agente: wMap[n.user_id]?.agente ?? null,
+              agente: wMap[n.user_id]?.agente?.trim() ?? null,
             }))
             setLaylaDirectNotifs(merged)
             setLaylaDirectLoading(false)
