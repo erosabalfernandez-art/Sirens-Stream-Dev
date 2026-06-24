@@ -1373,7 +1373,7 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
           const extras: Record<string, string | number> = {}
           headers.forEach((h, i) => { if (!mainCols.has(i) && h && r[i] !== undefined && r[i] !== null && r[i] !== '') extras[h] = r[i] as string | number })
           const usd = parseFloat(String(usdCol >= 0 ? (r[usdCol] ?? 0) : 0)) || 0
-          const commBase = commissionCol >= 0 ? parseFloat(String(r[commissionCol] ?? 0)) || 0 : usd
+          const commBase = usd // Siempre se usa el salario total USD como base de comisión
           return {
             uid: normalizeUID(uidCol >= 0 ? r[uidCol] : ''),
             apodo: String(apodoCol >= 0 ? (r[apodoCol] ?? '') : ''),
