@@ -1766,19 +1766,7 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
                       </div>
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
-                          <span className="text-white text-sm font-semibold">5. 🟡 Base de Comisión Admin <span className="text-amber-400/60 text-xs font-normal">(opcional)</span></span>
-                          <button onClick={() => setWizardCfg(c => ({ ...c, commission: -1 }))} className="text-white/30 text-xs hover:text-white/60 transition-colors">Saltar →</button>
-                        </div>
-                        <p className="text-white/40 text-xs">Columna sobre la que se calcula TU comisión de Admin. Si la saltas, usa la columna de salario.</p>
-                        <select value={wizardCfg.commission} onChange={e => setWizardCfg(c => ({ ...c, commission: parseInt(e.target.value) }))}
-                          className="w-full bg-[#0a0a18] border border-amber-500/20 text-white text-sm rounded-xl px-3 py-2.5 outline-none focus:border-amber-400">
-                          <option value={-1}>No aplica / Usar columna de salario</option>
-                          {pendingHeaders.map((h, i) => <option key={i} value={i}>[col {i}] {h}</option>)}
-                        </select>
-                      </div>
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-white text-sm font-semibold">6. Puntos / Métrica adicional</span>
+                          <span className="text-white text-sm font-semibold">5. Puntos / Métrica adicional</span>
                           <button onClick={() => setWizardCfg(c => ({ ...c, metric: -1 }))} className="text-white/30 text-xs hover:text-white/60 transition-colors">Saltar →</button>
                         </div>
                         <p className="text-white/40 text-xs">Diamantes, monedas, coins u otra métrica de la app (opcional)</p>
