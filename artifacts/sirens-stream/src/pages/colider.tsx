@@ -144,22 +144,24 @@ function cleanNum(s: string | null | undefined): string { return (s ?? '').repla
         }
         entries.push(...workerMap.values())
 
-          // Pre-pass: an agent with $0 commission who has a published worker salary
-          // must still appear as a worker so the colider can pay them in cash.
+          // Build salary lookup so agent loop can check if someone also earned as worker
+          const salaryByUid = new Map<string, number>()
+          for (const s of (listR.workers ?? [])) {
+            const wUsd = Number(s.usd) || 0
+            if (wUsd > 0) salaryByUid.set(s.user_id, (salaryByUid.get(s.user_id) ?? 0) + wUsd)
+          }
+
+          // For agents with $0 commission who ALSO have a worker salary:
+          // add them as workers too so dualUids picks them up → shows in Agente+Trabajadora tab
           {
-            const salaryByUid = new Map<string, number>()
-            for (const s of (listR.workers ?? [])) {
-              const wUsd = Number(s.usd) || 0
-              if (wUsd > 0) salaryByUid.set(s.user_id, (salaryByUid.get(s.user_id) ?? 0) + wUsd)
-            }
             const wRate = rm['efectivo_worker'] ?? 0
             for (const ag of (agentPub.agents ?? [])) {
               const agUsd = Number(ag.total_usd) || 0
-              if (agUsd > 0) continue // will be added in the main agent loop below
+              if (agUsd > 0) continue // commission > $0 handled in agent loop below
               const agUid = ag.agent_user_id ?? ag.agent_name
-              if (workerMap.has(agUid)) continue // already in Trabajadoras as efectivo worker
+              if (workerMap.has(agUid)) continue // already in workerMap as efectivo worker
               const workerUsd = salaryByUid.get(agUid) ?? 0
-              if (workerUsd <= 0) continue // truly nothing to show
+              if (workerUsd <= 0) continue // nothing to show for this person
               entries.push({
                 key: agUid,
                 person_uid: agUid,
@@ -178,30 +180,30 @@ function cleanNum(s: string | null | undefined): string { return (s ?? '').repla
             }
           }
 
-        // Agents: from published_agent_commissions (admin must publish to colider first)
-        const efRate = (agentPub.exchange_rates?.['efectivo_agent'] ?? rm['efectivo_agent']) ?? 0
-        for (const ag of (agentPub.agents ?? [])) {
-          const usd = Number(ag.total_usd) || 0
-          if (usd <= 0) continue // skip agents who earned $0 this week
-          // Use agent_user_id as person_uid so admin colider-marks lookup works correctly
-          const agUid = ag.agent_user_id ?? ag.agent_name
-          entries.push({
-            key: `${agUid}__`,
-            person_uid: agUid,
-            person_type: 'agent',
-            display_name: ag.agent_name,
-            real_name: ag.agent_name,
-            phone: null,
-            app: '',
-            apps: [],
-            appNameMap: {},
-            idMap: {},
-            salary_usd: usd,
-            salary_cuba: efRate > 0 ? usd * efRate : 0,
-            metodo_pago: 'Efectivo (Cuba)',
-          })
-        }
-
+          // Agents: from published_agent_commissions (admin must publish to colider first)
+          const efRate = (agentPub.exchange_rates?.['efectivo_agent'] ?? rm['efectivo_agent']) ?? 0
+          for (const ag of (agentPub.agents ?? [])) {
+            const usd = Number(ag.total_usd) || 0
+            const agUid = ag.agent_user_id ?? ag.agent_name
+            // Skip only if $0 commission AND no worker salary — otherwise keep as agent for dual tab
+            if (usd <= 0 && (salaryByUid.get(agUid) ?? 0) <= 0) continue
+            entries.push({
+              key: `${agUid}__`,
+              person_uid: agUid,
+              person_type: 'agent',
+              display_name: ag.agent_name,
+              real_name: ag.agent_name,
+              phone: null,
+              app: '',
+              apps: [],
+              appNameMap: {},
+              idMap: {},
+              salary_usd: usd,
+              salary_cuba: efRate > 0 ? usd * efRate : 0,
+              metodo_pago: 'Efectivo (Cuba)',
+            })
+          }
+  
         setPersons(entries)
 
         const mMap: Record<string, boolean> = {}
