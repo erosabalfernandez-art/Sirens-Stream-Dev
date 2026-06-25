@@ -148,6 +148,7 @@ function cleanNum(s: string | null | undefined): string { return (s ?? '').repla
         const efRate = (agentPub.exchange_rates?.['efectivo_agent'] ?? rm['efectivo_agent']) ?? 0
         for (const ag of (agentPub.agents ?? [])) {
           const usd = Number(ag.total_usd) || 0
+          if (usd <= 0) continue // skip agents who earned $0 this week
           // Use agent_user_id as person_uid so admin colider-marks lookup works correctly
           const agUid = ag.agent_user_id ?? ag.agent_name
           entries.push({
