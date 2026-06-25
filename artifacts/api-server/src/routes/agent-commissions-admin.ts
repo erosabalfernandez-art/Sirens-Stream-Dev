@@ -468,19 +468,20 @@ const agents = Object.values(agentMap).map(a => ({ agent_name: a.agent_name, age
 
       const agentIds = [...new Set((comms as any[]).map((c: any) => c.agent_user_id as string).filter(Boolean))]
       const agentPayMethods: Record<string, string> = {}
+      const agentHasWERow = new Set<string>()
       if (agentIds.length > 0) {
         try {
           const wData = await sbGet(`worker_entries?user_id=in.(${agentIds.map((id: string) => '"' + id + '"').join(',')})&select=user_id,metodo_pago&limit=200`)
-          for (const w of wData) if (w.metodo_pago) agentPayMethods[w.user_id] = w.metodo_pago
+          for (const w of wData) { agentHasWERow.add(w.user_id as string); if (w.metodo_pago) agentPayMethods[w.user_id] = w.metodo_pago }
         } catch {}
       }
       const agentMap: Record<string, { agent_user_id: string; agent_name: string; total_usd: number; workers: any[] }> = {}
       for (const c of (comms as any[])) {
+        const hasRow = c.agent_user_id ? agentHasWERow.has(c.agent_user_id as string) : false
         const payMethod = c.agent_user_id ? (agentPayMethods[c.agent_user_id] ?? null) : null
-        // Show agent if their metodo_pago is 'Efectivo (Cuba)' OR if it is unknown (no worker_entries row).
-        // Agents who are pure recruiters (no app) won't have a worker_entries row; we trust the admin
-        // to only publish efectivo-cuba agents to the colider in the first place.
-        if (payMethod !== null && payMethod !== 'Efectivo (Cuba)') continue
+        // Show agent ONLY if they have no worker_entries row (pure recruiter) OR metodo_pago is 'Efectivo (Cuba)'
+        // A row with null metodo_pago is treated as non-efectivo → hidden from colider.
+        if (hasRow && payMethod !== 'Efectivo (Cuba)') continue
         const key = c.agent_user_id ?? c.agent_name
         if (!agentMap[key]) agentMap[key] = { agent_user_id: c.agent_user_id, agent_name: c.agent_name, total_usd: 0, workers: [] }
         agentMap[key].total_usd = parseFloat((agentMap[key].total_usd + (Number(c.commission_usd) || 0)).toFixed(2))
