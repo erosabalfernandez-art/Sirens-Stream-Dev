@@ -8,7 +8,7 @@ const socials = [
   { href: "https://www.instagram.com/eclipse_angels.girls?igsh=MTY0bGpqd294NjBwYg==", icon: <FaInstagram />, label: "Instagram", color: "text-[#E1306C] hover:opacity-80" },
   { href: "https://wa.me/5595984381686?text=Hola%2C%20quiero%20unirme%20a%20Eclipse%20Angels%20Agency", icon: <FaWhatsapp />, label: "WhatsApp", color: "text-[#25D366] hover:opacity-80" },
   { href: "https://www.tiktok.com/@eclipse_team.stre?_r=1&_t=ZS-97VSKPpM7u9", icon: <FaTiktok />, label: "TikTok", color: "text-white hover:opacity-80" },
-  { href: "https://facebook.com/eclipseangelsagency", icon: <FaFacebook />, label: "Facebook", color: "text-[#1877F2] hover:opacity-80" },
+  { href: "https://www.facebook.com/share/1DJa2dTxiF/", icon: <FaFacebook />, label: "Facebook", color: "text-[#1877F2] hover:opacity-80" },
 ];
 
 export function Footer() {
