@@ -26,7 +26,7 @@ const socials = [
     shadow: "rgba(255,255,255,0.2)",
   },
   {
-    href: "https://facebook.com/eclipseangelsagency",
+    href: "https://www.facebook.com/share/1DJa2dTxiF/",
     icon: FaFacebook,
     label: "Facebook",
     bg: "bg-[#1877F2]",
