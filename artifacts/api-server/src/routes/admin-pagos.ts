@@ -38,7 +38,7 @@ import { Router } from 'express'
       const [salaryBatches, marksBatches, coliderRes] = await Promise.all([
         Promise.all(
           appSemanas.map(({ app, semana }) =>
-            fetch(`${SB}/rest/v1/published_salaries?app_name=eq.${encodeURIComponent(app)}&semana=eq.${encodeURIComponent(semana)}&select=*`, { headers: h() })
+            fetch(`${SB}/rest/v1/published_salaries?app_name=eq.${encodeURIComponent(app)}&semana=eq.${encodeURIComponent(semana)}&usd=gt.0&select=*`, { headers: h() })
               .then(r => r.ok ? r.json() : [])
               .then((rows: any[]) => rows.map((r: any) => ({ ...r, _app: app, _semana: semana })))
           )
@@ -89,7 +89,7 @@ import { Router } from 'express'
 
       // Salaries + admin_paid_marks + colider_marks in parallel
       const [salRes, marksRes, coliderRes] = await Promise.all([
-        fetch(`${SB}/rest/v1/published_salaries?app_name=eq.${encodeURIComponent(app)}&semana=eq.${encodeURIComponent(semana)}&select=*`, { headers: h() }),
+        fetch(`${SB}/rest/v1/published_salaries?app_name=eq.${encodeURIComponent(app)}&semana=eq.${encodeURIComponent(semana)}&usd=gt.0&select=*`, { headers: h() }),
         fetch(`${SB}/rest/v1/admin_paid_marks?app_name=eq.${encodeURIComponent(app)}&semana=eq.${encodeURIComponent(semana)}&select=uid`, { headers: h() }),
         fetch(`${SB}/rest/v1/colider_marks?person_type=eq.worker&person_app=eq.${encodeURIComponent(app)}&semana=eq.${encodeURIComponent(semana)}&select=person_uid,paid`, { headers: h() }),
       ])
