@@ -1,5 +1,5 @@
 import { Clock, MessageCircle } from "lucide-react";
-  import { FaWhatsapp, FaInstagram, FaTiktok } from "react-icons/fa";
+  import { FaWhatsapp, FaInstagram, FaTiktok, FaFacebook } from "react-icons/fa";
   import { useLanguage } from "@/contexts/LanguageContext";
 
   function getChannels(lang: 'es' | 'pt') {
@@ -25,6 +25,14 @@ import { Clock, MessageCircle } from "lucide-react";
         href: "https://www.tiktok.com/@eclipse_team.stre?_r=1&_t=ZS-97VSKPpM7u9",
         cta: "Ver TikTok",
       },
+    {
+          icon: FaFacebook, name: "Facebook", handle: "Eclipse Angels Agency",
+          bg: "bg-[#1877F2]/10",
+          border: "border-[#1877F2]/30",
+          iconColor: "text-[#1877F2]",
+          href: "https://www.facebook.com/share/1DJa2dTxiF/",
+          cta: "Ir ao Facebook",
+        },
     ] : [
       {
         icon: FaWhatsapp, name: "WhatsApp", handle: "+55 95 98438-1686",
@@ -47,6 +55,14 @@ import { Clock, MessageCircle } from "lucide-react";
         href: "https://www.tiktok.com/@eclipse_team.stre?_r=1&_t=ZS-97VSKPpM7u9",
         cta: "Ver TikTok",
       },
+    {
+          icon: FaFacebook, name: "Facebook", handle: "Eclipse Angels Agency",
+          bg: "bg-[#1877F2]/10",
+          border: "border-[#1877F2]/30",
+          iconColor: "text-[#1877F2]",
+          href: "https://www.facebook.com/share/1DJa2dTxiF/",
+          cta: "Ir a Facebook",
+        },
     ];
   }
 
