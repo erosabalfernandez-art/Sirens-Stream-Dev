@@ -2135,7 +2135,9 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                       const agentUserIdSet = new Set(allAgents.filter((a:any) => a.agent_user_id).map((a:any) => a.agent_user_id as string))
                       const dualUserIds = new Set((pagosData as any[]).filter((r:any) => agentUserIdSet.has(r.user_id) || agentUserIds.has(r.user_id)).map((r:any) => r.user_id as string))
                       const dualAgents = allAgents.filter((a:any) => dualUserIds.has(a.agent_user_id))
-                      const normalAgents = allAgents.filter((a:any) => !dualUserIds.has(a.agent_user_id))
+                      const agentAlsoWorkerIds = new Set(Object.keys(agentMetodoMap))
+                        const normalAgents = allAgents.filter((a:any) => !dualUserIds.has(a.agent_user_id) && !agentAlsoWorkerIds.has(a.agent_user_id))
+                        const agentDualNoSalary = allAgents.filter((a:any) => !dualUserIds.has(a.agent_user_id) && agentAlsoWorkerIds.has(a.agent_user_id))
                       const normalWorkerRows = (pagosData as any[]).filter((r:any) => !dualUserIds.has(r.user_id))
                       const dualWorkerRowsAll = (pagosData as any[]).filter((r:any) => dualUserIds.has(r.user_id))
                       const efectivoRows = normalWorkerRows.filter((r: any) => (r.metodo_pago ?? '').toLowerCase().includes('efectivo'))
@@ -2145,6 +2147,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                       const dualCardsMap: Record<string,{agentRow:any;workerRows:any[];isEfectivo:boolean}> = {}
                       for (const ag of dualAgents) { const uid = ag.agent_user_id as string; const metodo = (agentMetodoMap[uid] ?? dualWorkerRowsAll.find((r:any)=>r.user_id===uid)?.metodo_pago ?? '').toLowerCase(); if (!dualCardsMap[uid]) dualCardsMap[uid] = { agentRow: ag, workerRows: [], isEfectivo: !metodo || metodo.includes('efectivo') } }
                       for (const r of dualWorkerRowsAll) { if (!dualCardsMap[r.user_id as string]) { const metodo = (agentMetodoMap[r.user_id as string] ?? r.metodo_pago ?? '').toLowerCase(); dualCardsMap[r.user_id as string] = { agentRow: { agent_user_id: r.user_id, agent_name: r.nombre_real || r.nombre_en_app || r.apodo || null, total_commission_usd: 0, id: '_synth_' + r.user_id, colider_paid: r.colider_paid }, workerRows: [], isEfectivo: !metodo || metodo.includes('efectivo') } } dualCardsMap[r.user_id as string].workerRows.push(r) }
+                        for (const ag of agentDualNoSalary) { const uid = ag.agent_user_id as string; if (!dualCardsMap[uid]) { const metodo = (agentMetodoMap[uid] ?? '').toLowerCase(); dualCardsMap[uid] = { agentRow: ag, workerRows: [], isEfectivo: !metodo || metodo.includes('efectivo') } } }
                       const dualCards = Object.values(dualCardsMap)
                       const dualEfectivo = dualCards.filter(d => d.isEfectivo)
                       const dualAgencia = dualCards.filter(d => !d.isEfectivo)
