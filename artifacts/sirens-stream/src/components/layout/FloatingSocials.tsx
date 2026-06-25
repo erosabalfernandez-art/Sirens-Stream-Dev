@@ -19,7 +19,7 @@ const socials = [
     shadow: "rgba(225,48,108,0.5)",
   },
   {
-    href: "https://www.tiktok.com/@eclipse_angels.girls?_r=1&_t=ZS-96vSGdq3JZ4",
+    href: "https://www.tiktok.com/@eclipse_team.stre?_r=1&_t=ZS-97VSKPpM7u9",
     icon: FaTiktok,
     label: "TikTok",
     bg: "bg-[#010101]",
