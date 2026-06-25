@@ -144,6 +144,40 @@ function cleanNum(s: string | null | undefined): string { return (s ?? '').repla
         }
         entries.push(...workerMap.values())
 
+          // Pre-pass: an agent with $0 commission who has a published worker salary
+          // must still appear as a worker so the colider can pay them in cash.
+          {
+            const salaryByUid = new Map<string, number>()
+            for (const s of (listR.workers ?? [])) {
+              const wUsd = Number(s.usd) || 0
+              if (wUsd > 0) salaryByUid.set(s.user_id, (salaryByUid.get(s.user_id) ?? 0) + wUsd)
+            }
+            const wRate = rm['efectivo_worker'] ?? 0
+            for (const ag of (agentPub.agents ?? [])) {
+              const agUsd = Number(ag.total_usd) || 0
+              if (agUsd > 0) continue // will be added in the main agent loop below
+              const agUid = ag.agent_user_id ?? ag.agent_name
+              if (workerMap.has(agUid)) continue // already in Trabajadoras as efectivo worker
+              const workerUsd = salaryByUid.get(agUid) ?? 0
+              if (workerUsd <= 0) continue // truly nothing to show
+              entries.push({
+                key: agUid,
+                person_uid: agUid,
+                person_type: 'worker',
+                display_name: ag.agent_name,
+                real_name: ag.agent_name,
+                phone: null,
+                app: '',
+                apps: [],
+                appNameMap: {},
+                idMap: {},
+                salary_usd: workerUsd,
+                salary_cuba: wRate > 0 ? workerUsd * wRate : 0,
+                metodo_pago: 'Efectivo (Cuba)',
+              })
+            }
+          }
+
         // Agents: from published_agent_commissions (admin must publish to colider first)
         const efRate = (agentPub.exchange_rates?.['efectivo_agent'] ?? rm['efectivo_agent']) ?? 0
         for (const ag of (agentPub.agents ?? [])) {
