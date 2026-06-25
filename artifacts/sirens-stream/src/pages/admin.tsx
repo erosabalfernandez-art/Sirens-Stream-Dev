@@ -2133,7 +2133,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                       const allAgents = [...agentPayData.confirmed, ...agentPayData.pending]
                       const agentConfirmedIds = new Set(agentPayData.confirmed.map((r: any) => r.id))
                       const agentUserIdSet = new Set(allAgents.filter((a:any) => a.agent_user_id).map((a:any) => a.agent_user_id as string))
-                      const dualUserIds = new Set((pagosData as any[]).filter((r:any) => agentUserIdSet.has(r.user_id)).map((r:any) => r.user_id as string))
+                      const dualUserIds = new Set((pagosData as any[]).filter((r:any) => agentUserIdSet.has(r.user_id) || agentUserIds.has(r.user_id)).map((r:any) => r.user_id as string))
                       const dualAgents = allAgents.filter((a:any) => dualUserIds.has(a.agent_user_id))
                       const normalAgents = allAgents.filter((a:any) => !dualUserIds.has(a.agent_user_id))
                       const normalWorkerRows = (pagosData as any[]).filter((r:any) => !dualUserIds.has(r.user_id))
@@ -2144,7 +2144,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                       const agentAgencia = normalAgents.filter((a: any) => agentMetodoMap[a.agent_user_id] && !(agentMetodoMap[a.agent_user_id] ?? '').toLowerCase().includes('efectivo'))
                       const dualCardsMap: Record<string,{agentRow:any;workerRows:any[];isEfectivo:boolean}> = {}
                       for (const ag of dualAgents) { const uid = ag.agent_user_id as string; const metodo = (agentMetodoMap[uid] ?? dualWorkerRowsAll.find((r:any)=>r.user_id===uid)?.metodo_pago ?? '').toLowerCase(); if (!dualCardsMap[uid]) dualCardsMap[uid] = { agentRow: ag, workerRows: [], isEfectivo: !metodo || metodo.includes('efectivo') } }
-                      for (const r of dualWorkerRowsAll) { if (dualCardsMap[r.user_id as string]) dualCardsMap[r.user_id as string].workerRows.push(r) }
+                      for (const r of dualWorkerRowsAll) { if (!dualCardsMap[r.user_id as string]) { const metodo = (agentMetodoMap[r.user_id as string] ?? r.metodo_pago ?? '').toLowerCase(); dualCardsMap[r.user_id as string] = { agentRow: { agent_user_id: r.user_id, agent_name: r.nombre_real || r.nombre_en_app || r.apodo || null, total_commission_usd: 0, id: '_synth_' + r.user_id, colider_paid: r.colider_paid }, workerRows: [], isEfectivo: !metodo || metodo.includes('efectivo') } } dualCardsMap[r.user_id as string].workerRows.push(r) }
                       const dualCards = Object.values(dualCardsMap)
                       const dualEfectivo = dualCards.filter(d => d.isEfectivo)
                       const dualAgencia = dualCards.filter(d => !d.isEfectivo)
@@ -2155,7 +2155,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                         const coliderAgentPaid = agentEfectivo.filter((a: any) => a.colider_paid === true).length
                         const coliderAgentConf = agentEfectivo.filter((a: any) => agentConfirmedIds.has(a.id)).length
                         const dualEfectivoPaid = dualEfectivo.filter((d: any) => d.agentRow.colider_paid === true).length
-                        const dualEfectivoConf = dualEfectivo.filter((d: any) => agentConfirmedIds.has(d.agentRow.id)).length
+                        const dualEfectivoConf = dualEfectivo.filter((d: any) => agentConfirmedIds.has(d.agentRow.id) || (String(d.agentRow.id).startsWith('_synth_') && d.workerRows.some((r:any) => r.confirmed === true))).length
                         const coliderDone = coliderWorkerPaid + coliderWorkerConf + coliderAgentPaid + coliderAgentConf + dualEfectivoPaid + dualEfectivoConf
                         const coliderTotal = (efectivoRows.length + agentEfectivo.length + dualEfectivo.length) * 2
                         const coliderPct = coliderTotal > 0 ? Math.round(coliderDone / coliderTotal * 100) : 0
@@ -2337,7 +2337,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                                             const agentTotalD = Number(d.agentRow.total_commission_usd||0)
                                             const totalD = workerTotalD + agentTotalD
                                             const coliderPaidD = d.agentRow.colider_paid === true
-                                            const agentConfirmedD = agentConfirmedIds.has(d.agentRow.id)
+                                            const agentConfirmedD = agentConfirmedIds.has(d.agentRow.id) || (String(d.agentRow.id).startsWith('_synth_') && d.workerRows.some((r:any) => r.confirmed === true))
                                             const metodoD = agentMetodoMap[d.agent_user_id] ?? d.workerRows[0]?.metodo_pago ?? ''
                                             const billeteraD = agentBilleteraMap[d.agent_user_id] ?? d.workerRows[0]?.billetera ?? ''
 
