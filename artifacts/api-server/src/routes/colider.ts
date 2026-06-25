@@ -208,13 +208,7 @@ import { Router } from 'express'
 
       // Always show ALL published salaries — the colider pays all cash workers,
         // not only those linked to their agent code. Agent code is for commission tracking only.
-        const salaries: any[] = await sbGet(`published_salaries?semana=eq.${encodeURIComponent(semana)}&select=*`) else if (agentCode && workerUids.length > 0) {
-        salaries = await sbGet(
-          `published_salaries?semana=eq.${encodeURIComponent(semana)}&user_id=in.(${workerUids.map(id => '"' + id + '"').join(',')})&select=*`
-        )
-      } else {
-        salaries = await sbGet(`published_salaries?semana=eq.${encodeURIComponent(semana)}&select=*`)
-      }
+      const salaries: any[] = await sbGet(`published_salaries?semana=eq.${encodeURIComponent(semana)}&select=*`)
 
       const uids = [...new Set<string>(salaries.map((s: any) => s.user_id as string))]
       let workers: any[] = []
