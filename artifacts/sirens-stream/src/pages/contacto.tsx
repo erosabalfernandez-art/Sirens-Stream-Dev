@@ -12,17 +12,17 @@ import { Clock, MessageCircle } from "lucide-react";
         cta: "Escrever pelo WhatsApp",
       },
       {
-        icon: FaInstagram, name: "Instagram", handle: "@eclipse_angels.girls",
+        icon: FaInstagram, name: "Instagram", handle: "@eclipse_team.stre",
         desc: "Siga-nos para ver depoimentos, novidades e conteúdo da agência. Você pode nos enviar um DM.",
         color: "#E1306C", bg: "rgba(225,48,108,0.1)", border: "rgba(225,48,108,0.2)",
         href: "https://www.instagram.com/eclipse_angels.girls?igsh=MTY0bGpqd294NjBwYg==",
         cta: "Ir para o Instagram",
       },
       {
-        icon: FaTiktok, name: "TikTok", handle: "@eclipse_angels.girls",
+        icon: FaTiktok, name: "TikTok", handle: "@eclipse_team.stre",
         desc: "Assista vídeos sobre como trabalhamos, depoimentos reais e dicas para streamers.",
         color: "#ffffff", bg: "rgba(255,255,255,0.06)", border: "rgba(255,255,255,0.12)",
-        href: "https://www.tiktok.com/@eclipse_angels.girls?_r=1&_t=ZS-96vSGdq3JZ4",
+        href: "https://www.tiktok.com/@eclipse_team.stre?_r=1&_t=ZS-97VSKPpM7u9",
         cta: "Ver TikTok",
       },
     ] : [
@@ -34,17 +34,17 @@ import { Clock, MessageCircle } from "lucide-react";
         cta: "Escribir por WhatsApp",
       },
       {
-        icon: FaInstagram, name: "Instagram", handle: "@eclipse_angels.girls",
+        icon: FaInstagram, name: "Instagram", handle: "@eclipse_team.stre",
         desc: "Síguenos para ver testimonios, novedades y contenido de la agencia. Puedes enviarnos un DM.",
         color: "#E1306C", bg: "rgba(225,48,108,0.1)", border: "rgba(225,48,108,0.2)",
         href: "https://www.instagram.com/eclipse_angels.girls?igsh=MTY0bGpqd294NjBwYg==",
         cta: "Ir a Instagram",
       },
       {
-        icon: FaTiktok, name: "TikTok", handle: "@eclipse_angels.girls",
+        icon: FaTiktok, name: "TikTok", handle: "@eclipse_team.stre",
         desc: "Mira videos sobre cómo trabajamos, testimonios reales y consejos para streamers.",
         color: "#ffffff", bg: "rgba(255,255,255,0.06)", border: "rgba(255,255,255,0.12)",
-        href: "https://www.tiktok.com/@eclipse_angels.girls?_r=1&_t=ZS-96vSGdq3JZ4",
+        href: "https://www.tiktok.com/@eclipse_team.stre?_r=1&_t=ZS-97VSKPpM7u9",
         cta: "Ver TikTok",
       },
     ];
