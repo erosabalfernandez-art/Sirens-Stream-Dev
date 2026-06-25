@@ -206,23 +206,9 @@ import { Router } from 'express'
       let agentCode: string | null = null
       if (colider_user_id) agentCode = await getColiderAgentCode(colider_user_id)
 
-      // Get worker user_ids linked to this colider's agent_code
-      let workerUids: string[] = []
-      if (agentCode) {
-        const workerRes = await fetch(
-          `${SB}/rest/v1/worker_entries?agente=eq.${encodeURIComponent(agentCode)}&select=user_id&limit=500`,
-          { headers: h() }
-        )
-        const workerRows = workerRes.ok ? await workerRes.json() as { user_id: string }[] : []
-        workerUids = [...new Set(workerRows.map(w => w.user_id))]
-      }
-
-      // Fetch salaries filtered by this colider's workers
-      let salaries: any[]
-      if (agentCode && workerUids.length === 0) {
-        // No workers directly linked to colider code — show ALL published salaries for this week
-        salaries = await sbGet(`published_salaries?semana=eq.${encodeURIComponent(semana)}&select=*`)
-      } else if (agentCode && workerUids.length > 0) {
+      // Always show ALL published salaries — the colider pays all cash workers,
+        // not only those linked to their agent code. Agent code is for commission tracking only.
+        const salaries: any[] = await sbGet(`published_salaries?semana=eq.${encodeURIComponent(semana)}&select=*`) else if (agentCode && workerUids.length > 0) {
         salaries = await sbGet(
           `published_salaries?semana=eq.${encodeURIComponent(semana)}&user_id=in.(${workerUids.map(id => '"' + id + '"').join(',')})&select=*`
         )
