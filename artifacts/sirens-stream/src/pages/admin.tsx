@@ -2151,26 +2151,32 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                       const dualCards = Object.values(dualCardsMap)
                       const dualEfectivo = dualCards.filter(d => d.isEfectivo)
                       const dualAgencia = dualCards.filter(d => !d.isEfectivo)
-                      // Progress: 2 pasos por persona — (1) marcado pagado + (2) trabajadora/agente confirma recepcion
+                      const _agentEfGroup: Record<string,any[]> = {}
+                        for (const row of agentEfectivo) { const uid = row.agent_user_id as string; if (!_agentEfGroup[uid]) _agentEfGroup[uid] = []; _agentEfGroup[uid].push(row) }
+                        const agentEfectivoCards = Object.values(_agentEfGroup)
+                        const _agentAgGroup: Record<string,any[]> = {}
+                        for (const row of agentAgencia) { const uid = row.agent_user_id as string; if (!_agentAgGroup[uid]) _agentAgGroup[uid] = []; _agentAgGroup[uid].push(row) }
+                        const agentAgenciaCards = Object.values(_agentAgGroup)
+                        // Progress: 2 pasos por persona — (1) marcado pagado + (2) trabajadora/agente confirma recepcion
                         // Barra Efectivo (colider)
                         const coliderWorkerPaid = efectivoRows.filter((r: any) => r.colider_paid === true).length
                         const coliderWorkerConf = efectivoRows.filter((r: any) => r.confirmed === true).length
-                        const coliderAgentPaid = agentEfectivo.filter((a: any) => a.colider_paid === true).length
-                        const coliderAgentConf = agentEfectivo.filter((a: any) => agentConfirmedIds.has(a.id)).length
+                        const coliderAgentPaid = agentEfectivoCards.filter((rows: any[]) => rows[0].colider_paid === true).length
+                        const coliderAgentConf = agentEfectivoCards.filter((rows: any[]) => rows.every((r:any) => agentConfirmedIds.has(r.id))).length
                         const dualEfectivoPaid = dualEfectivo.filter((d: any) => d.agentRow.colider_paid === true).length
                         const dualEfectivoConf = dualEfectivo.filter((d: any) => agentConfirmedIds.has(d.agentRow.id) || (String(d.agentRow.id).startsWith('_synth_') && d.workerRows.some((r:any) => r.confirmed === true))).length
                         const coliderDone = coliderWorkerPaid + coliderWorkerConf + coliderAgentPaid + coliderAgentConf + dualEfectivoPaid + dualEfectivoConf
-                        const coliderTotal = (efectivoRows.length + agentEfectivo.length + dualEfectivo.length) * 2
+                        const coliderTotal = (efectivoRows.length + agentEfectivoCards.length + dualEfectivo.length) * 2
                         const coliderPct = coliderTotal > 0 ? Math.round(coliderDone / coliderTotal * 100) : 0
                         // Barra Agencia (admin)
                         const agenciaWorkerPaid = agenciaRows.filter((r: any) => r.admin_paid === true).length
                         const agenciaWorkerConf = agenciaRows.filter((r: any) => r.confirmed === true).length
-                        const agenciaAgentPaid = agentAgencia.filter((a: any) => agentAdminPaidIds.has(a.agent_user_id)).length
-                        const agenciaAgentConf = agentAgencia.filter((a: any) => agentConfirmedIds.has(a.id)).length
+                        const agenciaAgentPaid = agentAgenciaCards.filter((rows: any[]) => agentAdminPaidIds.has(rows[0].agent_user_id)).length
+                        const agenciaAgentConf = agentAgenciaCards.filter((rows: any[]) => rows.every((r:any) => agentConfirmedIds.has(r.id))).length
                         const dualAgenciaPaid = dualAgencia.filter((d: any) => agentAdminPaidIds.has(d.agentRow.agent_user_id)).length
                         const dualAgenciaConf = dualAgencia.filter((d: any) => agentConfirmedIds.has(d.agentRow.id)).length
                         const agenciaDone = agenciaWorkerPaid + agenciaWorkerConf + agenciaAgentPaid + agenciaAgentConf + dualAgenciaPaid + dualAgenciaConf
-                        const agenciaTotal = (agenciaRows.length + agentAgencia.length + dualAgencia.length) * 2
+                        const agenciaTotal = (agenciaRows.length + agentAgenciaCards.length + dualAgencia.length) * 2
                         const agenciaPct = agenciaTotal > 0 ? Math.round(agenciaDone / agenciaTotal * 100) : 0
                       // Total
                       const totalDone = coliderDone + agenciaDone
@@ -2272,65 +2278,66 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                                       )
                                     })}
                                     {/* Efectivo agents */}
-                                    {agentEfectivo.length > 0 && (
-                                      <div>
-                                        <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400/50 mb-2 px-1">👑 Agente</p>
-                                        <div className="space-y-2">
-                                          {agentEfectivo.map((row: any, idx: number) => {
-                                            const agentDisplayName = (agentNameMap[row.agent_name] ?? row.agent_name) || '—'
-                                            const agentInitial = agentDisplayName[0]?.toUpperCase() ?? '?'
-                                            const isConfirmed = agentConfirmedIds.has(row.id)
-                                            const fullyDone = row.colider_paid && isConfirmed
-                                            const usd = Number(row.total_commission_usd || 0)
-                                            const cupAmt = (rates['efectivo_agent'] ?? 0) > 0 ? Math.round(usd * rates['efectivo_agent']) : null
-                                            const billetera = agentBilleteraMap[row.agent_user_id]
-                                            const metodo = agentMetodoMap[row.agent_user_id]
-                                            return (
-                                            <div key={row.id ?? idx} className={`rounded-2xl overflow-hidden border transition-all ${fullyDone ? 'border-amber-500/30 bg-gradient-to-br from-amber-950/40 to-black/50' : 'border-white/8 bg-gradient-to-br from-white/3 to-black/40'}`}>
-                                              <div className="px-4 pt-3 pb-2 flex items-start gap-3">
-                                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-bold text-sm ${fullyDone ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-white/6 text-white/50 border border-white/10'}`}>
-                                                  {agentInitial}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                  <p className="text-sm font-bold text-white leading-tight">{agentDisplayName}</p>
-                                                  <div className="flex flex-wrap gap-1 mt-1.5">
-                                                    <span className="inline-flex items-center gap-1 bg-amber-500/8 border border-amber-500/15 rounded-lg px-2 py-0.5">
-                                                      <span className="text-[10px] text-amber-400/80 font-semibold">{row.app_name}</span>
-                                                    </span>
+                                    {agentEfectivoCards.length > 0 && (
+                                        <div>
+                                          <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400/50 mb-2 px-1">👑 Agente</p>
+                                          <div className="space-y-2">
+                                            {agentEfectivoCards.map((rows: any[], idx: number) => {
+                                              const row = rows[0]
+                                              const agentDisplayName = (agentNameMap[row.agent_name] ?? row.agent_name) || '—'
+                                              const agentInitial = agentDisplayName[0]?.toUpperCase() ?? '?'
+                                              const isConfirmed = rows.every((r:any) => agentConfirmedIds.has(r.id))
+                                              const fullyDone = row.colider_paid && isConfirmed
+                                              const usd = rows.reduce((s:number,r:any) => s + Number(r.total_commission_usd||0), 0)
+                                              const cupAmt = (rates['efectivo_agent'] ?? 0) > 0 ? Math.round(usd * rates['efectivo_agent']) : null
+                                              const billetera = agentBilleteraMap[row.agent_user_id]
+                                              const metodo = agentMetodoMap[row.agent_user_id]
+                                              return (
+                                              <div key={row.agent_user_id ?? idx} className={`rounded-2xl overflow-hidden border transition-all ${fullyDone ? 'border-amber-500/30 bg-gradient-to-br from-amber-950/40 to-black/50' : 'border-white/8 bg-gradient-to-br from-white/3 to-black/40'}`}>
+                                                <div className="px-4 pt-3 pb-2 flex items-start gap-3">
+                                                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-bold text-sm ${fullyDone ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-white/6 text-white/50 border border-white/10'}`}>
+                                                    {agentInitial}
+                                                  </div>
+                                                  <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-bold text-white leading-tight">{agentDisplayName}</p>
+                                                    <div className="flex flex-wrap gap-1 mt-1.5">
+                                                      {rows.map((r:any) => (
+                                                        <span key={r.id} className="inline-flex items-center gap-1 bg-amber-500/8 border border-amber-500/15 rounded-lg px-2 py-0.5">
+                                                          <span className="text-[10px] text-amber-400/80 font-semibold">{r.app_name}</span>
+                                                          <span className="text-[10px] text-amber-300/50">${Number(r.total_commission_usd||0).toFixed(2)}</span>
+                                                        </span>
+                                                      ))}
+                                                    </div>
+                                                  </div>
+                                                  <div className="text-right shrink-0">
+                                                    <p className="text-base font-bold text-amber-300 leading-tight">${usd.toFixed(2)}</p>
+                                                    {cupAmt ? <p className="text-xs text-amber-300/75 font-semibold mt-0.5">{cupAmt.toLocaleString('es-ES')} <span className="text-amber-300/40 font-normal text-[10px]">CUP</span></p> : null}
                                                   </div>
                                                 </div>
-                                                <div className="text-right shrink-0">
-                                                  <p className="text-base font-bold text-amber-300 leading-tight">${usd.toFixed(2)}</p>
-                                                  {cupAmt ? <p className="text-xs text-amber-300/75 font-semibold mt-0.5">{cupAmt.toLocaleString('es-ES')} <span className="text-amber-300/40 font-normal text-[10px]">CUP</span></p> : null}
+                                                <div className="px-4 pb-2.5 flex items-center justify-between gap-2 border-t border-white/5 pt-2">
+                                                  <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                                                    {metodo && <span className="text-[10px] text-white/45"><span className="text-white/25">Método:</span> {metodo}</span>}
+                                                    {billetera && (
+                                                      <button onClick={() => { navigator.clipboard.writeText(billetera); setCopiedBilletera(row.agent_user_id + 'ae'); setTimeout(() => setCopiedBilletera(null), 1500) }} className="flex items-center gap-1 group">
+                                                        <span className="text-[10px] text-white/25 shrink-0 font-semibold">Billetera:</span>
+                                                        <span className="text-[10px] font-mono text-amber-300/60 group-hover:text-amber-200 transition-colors truncate max-w-[120px]">{billetera}</span>
+                                                        {copiedBilletera === row.agent_user_id + 'ae' ? <Check className="w-3 h-3 text-green-400 shrink-0" /> : <Copy className="w-3 h-3 text-white/20 group-hover:text-amber-400 shrink-0 transition-colors" />}
+                                                      </button>
+                                                    )}
+                                                  </div>
+                                                  <div className="flex items-center gap-1.5 shrink-0">
+                                                    {row.colider_paid === true && <span className="text-[10px] bg-teal-500/15 border border-teal-500/25 text-teal-300 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">Colider ✓</span>}
+                                                    {row.colider_paid === false && <span className="text-[10px] bg-red-500/10 border border-red-500/20 text-red-300/70 px-2 py-0.5 rounded-full whitespace-nowrap">Sin pagar</span>}
+                                                    {(row.colider_paid === null || row.colider_paid === undefined) && <span className="text-[10px] text-white/20 whitespace-nowrap">Sin marcar</span>}
+                                                    {isConfirmed ? <span className="text-[10px] bg-green-500/10 border border-green-500/20 text-green-300 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">Confirmó ✓</span> : <span className="text-[10px] text-white/20 whitespace-nowrap">Sin confirmar</span>}
+                                                  </div>
                                                 </div>
                                               </div>
-                                              <div className="px-4 pb-2.5 flex items-center justify-between gap-2 border-t border-white/5 pt-2">
-                                                <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-
-
-                                                  {metodo && <span className="text-[10px] text-white/45"><span className="text-white/25">Método:</span> {metodo}</span>}
-                                                  {billetera && (
-                                                    <button onClick={() => { navigator.clipboard.writeText(billetera); setCopiedBilletera(row.id + 'ae'); setTimeout(() => setCopiedBilletera(null), 1500) }} className="flex items-center gap-1 group">
-                                                      <span className="text-[10px] font-mono text-amber-300/60 group-hover:text-amber-200 transition-colors truncate max-w-[120px]">{billetera}</span>
-                                                      <span className="text-[10px] text-white/25 shrink-0 font-semibold">Billetera:</span>
-                                                        <span className="text-[10px] font-mono text-amber-300/60 group-hover:text-amber-200 transition-colors truncate max-w-[110px]">{billetera}</span>
-                                                      {copiedBilletera === row.id + 'ae' ? <Check className="w-3 h-3 text-green-400 shrink-0" /> : <Copy className="w-3 h-3 text-white/20 group-hover:text-amber-400 shrink-0 transition-colors" />}
-                                                    </button>
-                                                  )}
-                                                </div>
-                                                <div className="flex items-center gap-1.5 shrink-0">
-                                                  {row.colider_paid === true && <span className="text-[10px] bg-teal-500/15 border border-teal-500/25 text-teal-300 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">Colider ✓</span>}
-                                                  {row.colider_paid === false && <span className="text-[10px] bg-red-500/10 border border-red-500/20 text-red-300/70 px-2 py-0.5 rounded-full whitespace-nowrap">Sin pagar</span>}
-                                                  {(row.colider_paid === null || row.colider_paid === undefined) && <span className="text-[10px] text-white/20 whitespace-nowrap">Sin marcar</span>}
-                                                  {isConfirmed ? <span className="text-[10px] bg-green-500/10 border border-green-500/20 text-green-300 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">Confirmó ✓</span> : <span className="text-[10px] text-white/20 whitespace-nowrap">Sin confirmar</span>}
-                                                </div>
-                                              </div>
-                                            </div>
-                                            )
-                                          })}
+                                              )
+                                            })}
+                                          </div>
                                         </div>
-                                      </div>
-                                    )}
+                                      )}
                                     {dualEfectivo.length > 0 && (
                                       <div>
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-violet-400/60 mb-2 px-1">🔗 Agente + Trabajadora</p>
@@ -2537,73 +2544,75 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                                       )
                                     })}
                                     {/* Agencia agents */}
-                                    {agentAgencia.length > 0 && (
-                                      <div>
-                                        <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400/50 mb-2 px-1">👑 Agente</p>
-                                        <div className="space-y-2">
-                                          {agentAgencia.map((row: any, idx: number) => {
-                                            const agentDisplayName = (agentNameMap[row.agent_name] ?? row.agent_name) || '—'
-                                            const agentInitial = agentDisplayName[0]?.toUpperCase() ?? '?'
-                                            const isConfirmed = agentConfirmedIds.has(row.id)
-                                            const isPaid = agentAdminPaidIds.has(row.agent_user_id)
-                                            const fullyDone = isPaid && isConfirmed
-                                            const usd = Number(row.total_commission_usd || 0)
-                                            const cupAmt = (rates['transferencia_agent'] ?? 0) > 0 ? Math.round(usd * rates['transferencia_agent']) : null
-                                            const billetera = agentBilleteraMap[row.agent_user_id]
-                                            const metodo = agentMetodoMap[row.agent_user_id]
-                                            return (
-                                            <div key={row.id ?? idx} className={`rounded-2xl overflow-hidden border transition-all ${fullyDone ? 'border-amber-500/30 bg-gradient-to-br from-amber-950/40 to-black/50' : 'border-white/8 bg-gradient-to-br from-white/3 to-black/40'}`}>
-                                              <div className="px-4 pt-3 pb-2 flex items-start gap-3">
-                                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-bold text-sm ${fullyDone ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-white/6 text-white/50 border border-white/10'}`}>
-                                                  {agentInitial}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                  <p className="text-sm font-bold text-white leading-tight">{agentDisplayName}</p>
-                                                  <div className="flex flex-wrap gap-1 mt-1.5">
-                                                    <span className="inline-flex items-center gap-1 bg-amber-500/8 border border-amber-500/15 rounded-lg px-2 py-0.5">
-                                                      <span className="text-[10px] text-amber-400/80 font-semibold">{row.app_name}</span>
-                                                    </span>
+                                    {agentAgenciaCards.length > 0 && (
+                                        <div>
+                                          <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400/50 mb-2 px-1">👑 Agente</p>
+                                          <div className="space-y-2">
+                                            {agentAgenciaCards.map((rows: any[], idx: number) => {
+                                              const row = rows[0]
+                                              const agentDisplayName = (agentNameMap[row.agent_name] ?? row.agent_name) || '—'
+                                              const agentInitial = agentDisplayName[0]?.toUpperCase() ?? '?'
+                                              const isConfirmed = rows.every((r:any) => agentConfirmedIds.has(r.id))
+                                              const isPaid = agentAdminPaidIds.has(row.agent_user_id)
+                                              const fullyDone = isPaid && isConfirmed
+                                              const usd = rows.reduce((s:number,r:any) => s + Number(r.total_commission_usd||0), 0)
+                                              const cupAmt = (rates['transferencia_agent'] ?? 0) > 0 ? Math.round(usd * rates['transferencia_agent']) : null
+                                              const billetera = agentBilleteraMap[row.agent_user_id]
+                                              const metodo = agentMetodoMap[row.agent_user_id]
+                                              return (
+                                              <div key={row.agent_user_id ?? idx} className={`rounded-2xl overflow-hidden border transition-all ${fullyDone ? 'border-amber-500/30 bg-gradient-to-br from-amber-950/40 to-black/50' : 'border-white/8 bg-gradient-to-br from-white/3 to-black/40'}`}>
+                                                <div className="px-4 pt-3 pb-2 flex items-start gap-3">
+                                                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-bold text-sm ${fullyDone ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-white/6 text-white/50 border border-white/10'}`}>
+                                                    {agentInitial}
+                                                  </div>
+                                                  <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-bold text-white leading-tight">{agentDisplayName}</p>
+                                                    <div className="flex flex-wrap gap-1 mt-1.5">
+                                                      {rows.map((r:any) => (
+                                                        <span key={r.id} className="inline-flex items-center gap-1 bg-amber-500/8 border border-amber-500/15 rounded-lg px-2 py-0.5">
+                                                          <span className="text-[10px] text-amber-400/80 font-semibold">{r.app_name}</span>
+                                                          <span className="text-[10px] text-amber-300/50">${Number(r.total_commission_usd||0).toFixed(2)}</span>
+                                                        </span>
+                                                      ))}
+                                                    </div>
+                                                  </div>
+                                                  <div className="text-right shrink-0">
+                                                    <p className="text-base font-bold text-amber-300 leading-tight">${usd.toFixed(2)}</p>
+                                                    {cupAmt ? <p className="text-xs text-amber-300/75 font-semibold mt-0.5">{cupAmt.toLocaleString('es-ES')} <span className="text-amber-300/40 font-normal text-[10px]">CUP</span></p> : null}
                                                   </div>
                                                 </div>
-                                                <div className="text-right shrink-0">
-                                                  <p className="text-base font-bold text-amber-300 leading-tight">${usd.toFixed(2)}</p>
-                                                  {cupAmt ? <p className="text-xs text-amber-300/75 font-semibold mt-0.5">{cupAmt.toLocaleString('es-ES')} <span className="text-amber-300/40 font-normal text-[10px]">CUP</span></p> : null}
-                                                </div>
-                                              </div>
-                                              <div className="px-4 pb-2.5 flex items-center justify-between gap-2 border-t border-white/5 pt-2">
-                                                <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                                                  {(rates['transferencia_agent'] ?? 0) > 0 && <span className="text-[10px] text-white/30 shrink-0">×{rates['transferencia_agent']}</span>}
-
-                                                  {metodo && <span className="text-[10px] text-white/45"><span className="text-white/25">Método:</span> {metodo}</span>}
-                                                  {billetera && (
-                                                    <button onClick={() => { navigator.clipboard.writeText(billetera); setCopiedBilletera(row.id + 'a'); setTimeout(() => setCopiedBilletera(null), 1500) }} className="flex items-center gap-1 group">
-
-                                                      <span className="text-[10px] text-white/25 shrink-0 font-semibold">Billetera:</span>
+                                                <div className="px-4 pb-2.5 flex items-center justify-between gap-2 border-t border-white/5 pt-2">
+                                                  <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                                                    {(rates['transferencia_agent'] ?? 0) > 0 && <span className="text-[10px] text-white/30 shrink-0">×{rates['transferencia_agent']}</span>}
+                                                    {metodo && <span className="text-[10px] text-white/45"><span className="text-white/25">Método:</span> {metodo}</span>}
+                                                    {billetera && (
+                                                      <button onClick={() => { navigator.clipboard.writeText(billetera); setCopiedBilletera(row.agent_user_id + 'a'); setTimeout(() => setCopiedBilletera(null), 1500) }} className="flex items-center gap-1 group">
+                                                        <span className="text-[10px] text-white/25 shrink-0 font-semibold">Billetera:</span>
                                                         <span className="text-[10px] font-mono text-amber-300/60 group-hover:text-amber-200 transition-colors truncate max-w-[110px]">{billetera}</span>
-                                                      {copiedBilletera === row.id + 'a' ? <Check className="w-3 h-3 text-green-400 shrink-0" /> : <Copy className="w-3 h-3 text-white/20 group-hover:text-amber-400 shrink-0 transition-colors" />}
+                                                        {copiedBilletera === row.agent_user_id + 'a' ? <Check className="w-3 h-3 text-green-400 shrink-0" /> : <Copy className="w-3 h-3 text-white/20 group-hover:text-amber-400 shrink-0 transition-colors" />}
+                                                      </button>
+                                                    )}
+                                                  </div>
+                                                  <div className="flex items-center gap-1.5 shrink-0">
+                                                    {isConfirmed ? <span className="text-[10px] bg-green-500/10 border border-green-500/20 text-green-300 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">Confirmó ✓</span> : <span className="text-[10px] text-white/20 whitespace-nowrap">Sin confirmar</span>}
+                                                    <button
+                                                      onClick={() => toggleAgentAdminPaid(row.agent_user_id, row.app_name, row.semana)}
+                                                      disabled={!row.agent_user_id || togglingAgentAdminPaid === row.agent_user_id}
+                                                      className={`flex items-center gap-1 transition-all ${!row.agent_user_id ? 'opacity-25 cursor-not-allowed' : 'cursor-pointer hover:opacity-80'}`}>
+                                                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${isPaid ? 'bg-purple-500 border-purple-500' : 'border-white/25 hover:border-purple-400/60'}`}>
+                                                        {isPaid && <Check className="w-2.5 h-2.5 text-white" />}
+                                                        {togglingAgentAdminPaid === row.agent_user_id && <div className="w-2 h-2 border border-white/50 border-t-transparent rounded-full animate-spin" />}
+                                                      </div>
+                                                      <span className={`text-[10px] font-medium whitespace-nowrap ${isPaid ? 'text-purple-300' : 'text-white/30'}`}>{isPaid ? 'Pagado ✓' : 'Marcar'}</span>
                                                     </button>
-                                                  )}
-                                                </div>
-                                                <div className="flex items-center gap-1.5 shrink-0">
-                                                  {isConfirmed ? <span className="text-[10px] bg-green-500/10 border border-green-500/20 text-green-300 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">Confirmó ✓</span> : <span className="text-[10px] text-white/20 whitespace-nowrap">Sin confirmar</span>}
-                                                  <button
-                                                    onClick={() => toggleAgentAdminPaid(row.agent_user_id, row.app_name, row.semana)}
-                                                    disabled={!row.agent_user_id || togglingAgentAdminPaid === row.agent_user_id}
-                                                    className={`flex items-center gap-1 transition-all ${!row.agent_user_id ? 'opacity-25 cursor-not-allowed' : 'cursor-pointer hover:opacity-80'}`}>
-                                                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${isPaid ? 'bg-purple-500 border-purple-500' : 'border-white/25 hover:border-purple-400/60'}`}>
-                                                      {isPaid && <Check className="w-2.5 h-2.5 text-white" />}
-                                                      {togglingAgentAdminPaid === row.agent_user_id && <div className="w-2 h-2 border border-white/50 border-t-transparent rounded-full animate-spin" />}
-                                                    </div>
-                                                    <span className={`text-[10px] font-medium whitespace-nowrap ${isPaid ? 'text-purple-300' : 'text-white/30'}`}>{isPaid ? 'Pagado ✓' : 'Marcar'}</span>
-                                                  </button>
+                                                  </div>
                                                 </div>
                                               </div>
-                                            </div>
-                                            )
-                                          })}
+                                              )
+                                            })}
+                                          </div>
                                         </div>
-                                      </div>
-                                    )}
+                                      )}
                                     {dualAgencia.length > 0 && (
                                       <div>
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-violet-400/60 mb-2 px-1">🔗 Agente + Trabajadora</p>
