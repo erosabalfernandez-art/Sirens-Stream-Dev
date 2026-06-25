@@ -256,9 +256,16 @@ function cleanNum(s: string | null | undefined): string { return (s ?? '').repla
       workers: dualWorkersByUid.get(uid) ?? [],
       agent: dualAgentByUid.get(uid)!,
     }))
-    const total = persons.length
-    const totalPaid = persons.filter(p => { const pa = p.apps.length > 0 ? p.apps : (p.app ? [p.app] : ['']); return pa.every(a => marks[`${p.person_uid}__${a}`] ?? false) }).length
-    const allPaid = total > 0 && totalPaid === total
+    // Count unique payable people: pure workers + pure agents + dual combined (no double-counting)
+      const total = pureWorkers.length + pureAgents.length + dualCombined.length
+      const totalPaid =
+        pureWorkers.filter(p => { const pa = p.apps.length > 0 ? p.apps : (p.app ? [p.app] : ['']); return pa.every(a => marks[`${p.person_uid}__${a}`] ?? false) }).length +
+        pureAgents.filter(p => { const pa = p.apps.length > 0 ? p.apps : (p.app ? [p.app] : ['']); return pa.every(a => marks[`${p.person_uid}__${a}`] ?? false) }).length +
+        dualCombined.filter(({ workers: ws, agent: ag }: any) => {
+          const allKeys = [...ws.map((w: any) => w.key), ag.key]
+          return allKeys.every((k: string) => marks[k] ?? false)
+        }).length
+      const allPaid = total > 0 && totalPaid === total
     const alreadyNotified = !!(weekStatus?.notified && !weekStatus?.admin_closed)
     const notifyLocked = !allPaid || alreadyNotified
     const listToShow = tab === 'workers' ? pureWorkers : tab === 'agents' ? pureAgents : []
