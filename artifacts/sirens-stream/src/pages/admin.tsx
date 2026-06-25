@@ -1186,7 +1186,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
           setAgentPhoneMap(pm2)
           setAgentUserIds(new Set(((agentProfileIds ?? []) as {id:string}[]).map(p => p.id)))
           if (entries) {
-            setWorkers(entries.map((e: any) => ({ ...e, profile_email: pm[e.user_id] ?? 'desconocido' })))
+            setWorkers(entries.map((e: any) => ({ ...e, profile_email: pm[e.user_id] ?? 'desconocido', agente: e.agente?.trim() ?? null })))
           }
         setLoadingData(false)
       }
