@@ -12,17 +12,17 @@ import { Clock, MessageCircle } from "lucide-react";
         cta: "Escrever pelo WhatsApp",
       },
       {
-        icon: FaInstagram, name: "Instagram", handle: "@eclipse_team.stre",
+        icon: FaInstagram, name: "Instagram", handle: "@katherineangelsteam",
         desc: "Siga-nos para ver depoimentos, novidades e conteúdo da agência. Você pode nos enviar um DM.",
         color: "#E1306C", bg: "rgba(225,48,108,0.1)", border: "rgba(225,48,108,0.2)",
-        href: "https://www.instagram.com/eclipse_angels.girls?igsh=MTY0bGpqd294NjBwYg==",
+        href: "https://www.instagram.com/katherineangelsteam?igsh=OWF0dmZwdXl5eWQ4",
         cta: "Ir para o Instagram",
       },
       {
-        icon: FaTiktok, name: "TikTok", handle: "@eclipse_team.stre",
+        icon: FaTiktok, name: "TikTok", handle: "@katherineangelsteam",
         desc: "Assista vídeos sobre como trabalhamos, depoimentos reais e dicas para streamers.",
         color: "#ffffff", bg: "rgba(255,255,255,0.06)", border: "rgba(255,255,255,0.12)",
-        href: "https://www.tiktok.com/@eclipse_team.stre?_r=1&_t=ZS-97VSKPpM7u9",
+        href: "https://www.tiktok.com/@katherineangelsteam?_r=1&_t=ZS-97VSKPpM7u9",
         cta: "Ver TikTok",
       },
     {
@@ -42,17 +42,17 @@ import { Clock, MessageCircle } from "lucide-react";
         cta: "Escribir por WhatsApp",
       },
       {
-        icon: FaInstagram, name: "Instagram", handle: "@eclipse_team.stre",
+        icon: FaInstagram, name: "Instagram", handle: "@katherineangelsteam",
         desc: "Síguenos para ver testimonios, novedades y contenido de la agencia. Puedes enviarnos un DM.",
         color: "#E1306C", bg: "rgba(225,48,108,0.1)", border: "rgba(225,48,108,0.2)",
-        href: "https://www.instagram.com/eclipse_angels.girls?igsh=MTY0bGpqd294NjBwYg==",
+        href: "https://www.instagram.com/katherineangelsteam?igsh=OWF0dmZwdXl5eWQ4",
         cta: "Ir a Instagram",
       },
       {
-        icon: FaTiktok, name: "TikTok", handle: "@eclipse_team.stre",
+        icon: FaTiktok, name: "TikTok", handle: "@katherineangelsteam",
         desc: "Mira videos sobre cómo trabajamos, testimonios reales y consejos para streamers.",
         color: "#ffffff", bg: "rgba(255,255,255,0.06)", border: "rgba(255,255,255,0.12)",
-        href: "https://www.tiktok.com/@eclipse_team.stre?_r=1&_t=ZS-97VSKPpM7u9",
+        href: "https://www.tiktok.com/@katherineangelsteam?_r=1&_t=ZS-97VSKPpM7u9",
         cta: "Ver TikTok",
       },
     {
