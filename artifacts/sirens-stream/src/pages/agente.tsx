@@ -833,41 +833,32 @@ import React, { useState, useEffect } from 'react'
                                 {expanded.has(sem) ? <ChevronUp className="w-4 h-4 text-white/30" /> : <ChevronDown className="w-4 h-4 text-white/30" />}
                               </div>
                             </button>
-                            {/* Confirm payment buttons — always visible, one per app commission */}
-                            {semanaComms.length > 0 && (
-                              <div className="border-t border-amber-500/10 px-5 py-3 space-y-2">
-                                {semanaComms.map(comm => {
-                                  const isConfirmed = agentConfirmed.has(comm.id)
-                                  const isConfirming = agentConfirming === comm.id
-                                  return (
-                                    <div key={comm.id}>
-                                      {isConfirmed ? (
-                                        <div className="flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-green-500/10 border border-green-500/20 text-green-400 text-sm font-bold">
-                                          <CheckCircle2 className="w-4 h-4 shrink-0" />
-                                          Pago recibido confirmado
-                                        </div>
-                                      ) : (
-                                        <button
-                                          onClick={() => { if (!isConfirming) confirmAgentPayment(comm.id, comm.semana, comm.app_name) }}
-                                          disabled={isConfirming}
-                                          className={`w-full py-3 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
-                                            isConfirming
-                                              ? 'bg-amber-600/40 text-white/50 cursor-wait border border-amber-500/20'
-                                              : 'bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-900/20'
-                                          }`}>
-                                          {isConfirming
-                                            ? <><div className="w-4 h-4 border-2 border-white/60 border-t-transparent rounded-full animate-spin shrink-0" /> Confirmando...</>
-                                            : <><CheckCircle2 className="w-4 h-4 shrink-0" />
-                                                CONFIRMAR PAGO RECIBIDO
-                                              </>
-                                          }
-                                        </button>
-                                      )}
-                                    </div>
-                                  )
-                                })}
-                              </div>
-                            )}
+                            {/* Single confirm button — confirms all app commissions for this week at once */}
+                              {semanaComms.length > 0 && !allSemConfirmed && (() => {
+                                const anySemConfirming = semanaComms.some(c => agentConfirming === c.id)
+                                const unconfirmed = semanaComms.filter(c => !agentConfirmed.has(c.id))
+                                return (
+                                  <div className="border-t border-amber-500/10 px-5 py-3">
+                                    <button
+                                      onClick={async () => { for (const comm of unconfirmed) { await confirmAgentPayment(comm.id, comm.semana, comm.app_name) } }}
+                                      disabled={anySemConfirming || unconfirmed.length === 0}
+                                      className={`w-full py-3 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${anySemConfirming ? 'bg-amber-600/40 text-white/50 cursor-wait border border-amber-500/20' : 'bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-900/20'}`}>
+                                      {anySemConfirming
+                                        ? <><div className="w-4 h-4 border-2 border-white/60 border-t-transparent rounded-full animate-spin shrink-0" /> Confirmando...</>
+                                        : <><CheckCircle2 className="w-4 h-4 shrink-0" />CONFIRMAR PAGO RECIBIDO</>
+                                      }
+                                    </button>
+                                  </div>
+                                )
+                              })()}
+                              {semanaComms.length > 0 && allSemConfirmed && (
+                                <div className="border-t border-amber-500/10 px-5 py-3">
+                                  <div className="flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-green-500/10 border border-green-500/20 text-green-400 text-sm font-bold">
+                                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                                    Pago recibido confirmado
+                                  </div>
+                                </div>
+                              )}
 
                             {expanded.has(sem) && (
                               <div className="border-t border-purple-500/10 px-5 py-4 space-y-2">
