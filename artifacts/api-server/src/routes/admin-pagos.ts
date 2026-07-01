@@ -28,8 +28,12 @@ import { Router } from 'express'
             .then((rows: any[]) => ({ app, semana: rows[0]?.semana ?? null }))
         )
       )
-      const appSemanas = semanaResults.filter(x => x.semana !== null) as { app: string; semana: string }[]
-      if (appSemanas.length === 0) { res.json({ appSemanas: [], salaries: [], adminPaidUids: [], coliderPaidUids: [] }); return }
+      const allAppSemanas = semanaResults.filter(x => x.semana !== null) as { app: string; semana: string }[]
+      if (allAppSemanas.length === 0) { res.json({ appSemanas: [], salaries: [], adminPaidUids: [], coliderPaidUids: [] }); return }
+
+      // Only include apps that have published for the most recent semana (avoids mixing old Waha + new Layla)
+      const mostRecentSemana = allAppSemanas.map(x => x.semana).sort().reverse()[0]
+      const appSemanas = allAppSemanas.filter(x => x.semana === mostRecentSemana)
 
       // 2. Build semana list for colider_marks query
       const semanas = [...new Set(appSemanas.map(x => x.semana))]
