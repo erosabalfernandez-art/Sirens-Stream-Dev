@@ -535,8 +535,11 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
           async function fetchAllPagosData() {
             setPagosLoading(true); setPagosNeedSetup(false)
             const _apiBaseAll = ((import.meta.env.VITE_API_URL as string|undefined) ?? '').replace(/\/$/, '')
+            // Pass cierre timestamp so backend only returns salaries published AFTER the last week close
+            const _cierreTs = (() => { try { return parseInt(localStorage.getItem('ea_cierre_done_ts') ?? '0') || 0 } catch { return 0 } })()
+            const _afterTsParam = _cierreTs > 0 ? `&after_ts=${_cierreTs}` : ''
             // Use API server (service role) to bypass RLS on published_salaries
-            const salApiRes = await fetch(`${_apiBaseAll}/api/admin/pagos-salaries?apps=Waha,Layla,Howdy`, { credentials: 'include' }).catch(() => null)
+            const salApiRes = await fetch(`${_apiBaseAll}/api/admin/pagos-salaries?apps=Waha,Layla,Howdy${_afterTsParam}`, { credentials: 'include' }).catch(() => null)
             if (!salApiRes?.ok) { setPagosData([]); setPagosSemana(''); setPagosLoading(false); fetchAgentPayData(); return }
             const salApiData = await salApiRes.json() as { appSemanas: {app:string;semana:string}[]; salaries: any[]; adminPaidUids: string[]; coliderPaidUids: string[] }
             const appSemanas = salApiData.appSemanas ?? []
