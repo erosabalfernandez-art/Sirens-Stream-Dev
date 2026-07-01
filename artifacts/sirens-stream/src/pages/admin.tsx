@@ -611,7 +611,7 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
             }))
             setPagosData(final)
             setPagosLoading(false)
-            fetchAgentPayData()
+            fetchAgentPayData(mostRecentSemana)
           }
 
   
@@ -644,13 +644,17 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
           setTogglingAgentAdminPaid(null)
         }
 
-        async function fetchAgentPayData() {
+        async function fetchAgentPayData(overrideSemana?: string) {
             setAgentPayLoading(true)
-            const { data: latestComm } = await supabase
-              .from('agent_commissions').select('semana')
-              .order('semana', { ascending: false }).limit(1).maybeSingle()
-            if (!latestComm) { setAgentPayData({confirmed: [], pending: []}); setAgentPayLoading(false); return }
-            const semana = latestComm.semana
+            let semana = overrideSemana ?? ''
+            if (!semana) {
+              const { data: latestComm } = await supabase
+                .from('agent_commissions').select('semana')
+                .neq('semana', '')
+                .order('semana', { ascending: false }).limit(1).maybeSingle()
+              if (!latestComm) { setAgentPayData({confirmed: [], pending: []}); setAgentPayLoading(false); return }
+              semana = latestComm.semana
+            }
             const { data: comms } = await supabase
               .from('agent_commissions')
               .select('id, agent_name, app_name, semana, total_commission_usd, agent_user_id')
@@ -1077,13 +1081,17 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
           setChannelMessages(prev => prev.filter(m => m.id !== id))
         }
 
-        async function fetchAgentPayData() {
+        async function fetchAgentPayData(overrideSemana?: string) {
                 setAgentPayLoading(true)
-                const { data: latestComm } = await supabase
-                  .from('agent_commissions').select('semana')
-                  .order('semana', { ascending: false }).limit(1).maybeSingle()
-                if (!latestComm) { setAgentPayData({confirmed: [], pending: []}); setAgentPayLoading(false); return }
-                const semana = latestComm.semana
+                let semana = overrideSemana ?? ''
+                if (!semana) {
+                  const { data: latestComm } = await supabase
+                    .from('agent_commissions').select('semana')
+                    .neq('semana', '')
+                    .order('semana', { ascending: false }).limit(1).maybeSingle()
+                  if (!latestComm) { setAgentPayData({confirmed: [], pending: []}); setAgentPayLoading(false); return }
+                  semana = latestComm.semana
+                }
                 const { data: comms } = await supabase
                   .from('agent_commissions')
                   .select('id, agent_name, app_name, semana, total_commission_usd, agent_user_id')
