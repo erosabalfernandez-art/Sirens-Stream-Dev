@@ -10,43 +10,74 @@ import { Router } from 'express'
   }
 
   /**
-   * GET /api/admin/pagos-salaries?apps=Waha,Layla,Howdy
-   * Returns latest published_salaries + admin_paid_marks + colider_marks for each app
-   * using service role (bypasses RLS completely).
+   * GET /api/admin/pagos-salaries?apps=Waha,Layla,Howdy[&after_ts=<unix_ms>]
+   * Returns published_salaries + admin_paid_marks + colider_marks for each app.
+   * When after_ts is provided, only returns salaries created AFTER that timestamp
+   * (used to exclude pre-cierre data). Falls back to latest-semana logic when absent.
    */
   router.get('/admin/pagos-salaries', async (req, res) => {
     const appsParam = (req.query.apps as string | undefined) ?? 'Waha,Layla,Howdy'
     const apps = appsParam.split(',').map(a => a.trim()).filter(Boolean)
     if (apps.length === 0) { res.json({ appSemanas: [], salaries: [], adminPaidUids: [], coliderPaidUids: [] }); return }
 
+    const afterTsMs = parseInt((req.query.after_ts as string | undefined) ?? '0') || 0
+    const afterIso = afterTsMs > 0 ? new Date(afterTsMs).toISOString() : null
+
     try {
-      // 1. Get latest semana per app
-      const semanaResults = await Promise.all(
-        apps.map(app =>
-          fetch(`${SB}/rest/v1/published_salaries?app_name=eq.${encodeURIComponent(app)}&select=semana&order=semana.desc&limit=1`, { headers: h() })
-            .then(r => r.ok ? r.json() : [])
-            .then((rows: any[]) => ({ app, semana: rows[0]?.semana ?? null }))
+      let allSalaries: any[] = []
+      let appSemanas: { app: string; semana: string }[] = []
+
+      if (afterIso) {
+        // ── Timestamp-based mode: only rows published after the cierre ──────────
+        const batches = await Promise.all(
+          apps.map(app =>
+            fetch(
+              `${SB}/rest/v1/published_salaries?app_name=eq.${encodeURIComponent(app)}&created_at=gt.${encodeURIComponent(afterIso)}&usd=gt.0&select=*`,
+              { headers: h() }
+            ).then(r => r.ok ? r.json() : [])
+              .then((rows: any[]) => rows.map((r: any) => ({ ...r, _app: app, _semana: r.semana })))
+          )
         )
-      )
-      const allAppSemanas = semanaResults.filter(x => x.semana !== null) as { app: string; semana: string }[]
-      if (allAppSemanas.length === 0) { res.json({ appSemanas: [], salaries: [], adminPaidUids: [], coliderPaidUids: [] }); return }
+        allSalaries = batches.flat()
+        // Build appSemanas from returned data (latest semana per app among results)
+        const appSemanaMap: Record<string, string> = {}
+        for (const row of allSalaries) {
+          const app = row._app as string
+          const sem = (row.semana as string) || ''
+          if (!appSemanaMap[app] || sem > appSemanaMap[app]) appSemanaMap[app] = sem
+        }
+        appSemanas = Object.entries(appSemanaMap).map(([app, semana]) => ({ app, semana }))
+      } else {
+        // ── Legacy mode: latest semana per app ───────────────────────────────────
+        const semanaResults = await Promise.all(
+          apps.map(app =>
+            fetch(`${SB}/rest/v1/published_salaries?app_name=eq.${encodeURIComponent(app)}&select=semana&order=semana.desc&limit=1`, { headers: h() })
+              .then(r => r.ok ? r.json() : [])
+              .then((rows: any[]) => ({ app, semana: rows[0]?.semana ?? null }))
+          )
+        )
+        const allAppSemanas = semanaResults.filter(x => x.semana !== null && x.semana !== '') as { app: string; semana: string }[]
+        if (allAppSemanas.length === 0) { res.json({ appSemanas: [], salaries: [], adminPaidUids: [], coliderPaidUids: [] }); return }
 
-      // Only include apps that have published for the most recent semana (avoids mixing old Waha + new Layla)
-      const mostRecentSemana = allAppSemanas.map(x => x.semana).sort().reverse()[0]
-      const appSemanas = allAppSemanas.filter(x => x.semana === mostRecentSemana)
+        // Only include apps whose latest semana matches the global most recent
+        const mostRecentSemana = allAppSemanas.map(x => x.semana).sort().reverse()[0]
+        appSemanas = allAppSemanas.filter(x => x.semana === mostRecentSemana)
 
-      // 2. Build semana list for colider_marks query
-      const semanas = [...new Set(appSemanas.map(x => x.semana))]
-
-      // 3. Fetch salaries + admin_paid_marks + colider_marks in parallel
-      const [salaryBatches, marksBatches, coliderRes] = await Promise.all([
-        Promise.all(
+        const salaryBatches = await Promise.all(
           appSemanas.map(({ app, semana }) =>
             fetch(`${SB}/rest/v1/published_salaries?app_name=eq.${encodeURIComponent(app)}&semana=eq.${encodeURIComponent(semana)}&usd=gt.0&select=*`, { headers: h() })
               .then(r => r.ok ? r.json() : [])
               .then((rows: any[]) => rows.map((r: any) => ({ ...r, _app: app, _semana: semana })))
           )
-        ),
+        )
+        allSalaries = salaryBatches.flat()
+      }
+
+      if (allSalaries.length === 0) { res.json({ appSemanas, salaries: [], adminPaidUids: [], coliderPaidUids: [] }); return }
+
+      const semanas = [...new Set(appSemanas.map(x => x.semana).filter(Boolean))]
+
+      const [marksBatches, coliderRes] = await Promise.all([
         Promise.all(
           appSemanas.map(({ app, semana }) =>
             fetch(`${SB}/rest/v1/admin_paid_marks?app_name=eq.${encodeURIComponent(app)}&semana=eq.${encodeURIComponent(semana)}&select=uid`, { headers: h() })
@@ -54,21 +85,20 @@ import { Router } from 'express'
               .then((rows: any[]) => rows.map((r: any) => r.uid as string))
           )
         ),
-        // colider_marks: fetch all paid workers across all relevant semanas
-        fetch(
-          `${SB}/rest/v1/colider_marks?person_type=eq.worker&semana=in.(${semanas.map(s => `"${s}"`).join(',')})&select=person_uid,person_app,paid`,
-          { headers: h() }
-        ).then(r => r.ok ? r.json() : []),
+        semanas.length > 0
+          ? fetch(
+              `${SB}/rest/v1/colider_marks?person_type=eq.worker&semana=in.(${semanas.map(s => `"${s}"`).join(',')})&select=person_uid,person_app,paid`,
+              { headers: h() }
+            ).then(r => r.ok ? r.json() : [])
+          : Promise.resolve([]),
       ])
 
-      const salaries: any[] = salaryBatches.flat()
       const adminPaidUids: string[] = marksBatches.flat().filter(Boolean)
-      // coliderPaidUids: array of user_ids where colider marked paid=true
       const coliderPaidUids: string[] = (coliderRes as any[])
         .filter((m: any) => m.paid === true)
         .map((m: any) => m.person_uid as string)
 
-      res.json({ appSemanas, salaries, adminPaidUids, coliderPaidUids })
+      res.json({ appSemanas, salaries: allSalaries, adminPaidUids, coliderPaidUids })
     } catch (e: unknown) {
       res.status(500).json({ error: e instanceof Error ? e.message : String(e) })
     }
@@ -84,14 +114,12 @@ import { Router } from 'express'
     if (!app) { res.status(400).json({ error: 'app requerido' }); return }
 
     try {
-      // Latest semana
       const semRes = await fetch(`${SB}/rest/v1/published_salaries?app_name=eq.${encodeURIComponent(app)}&select=semana&order=semana.desc&limit=1`, { headers: h() })
       if (!semRes.ok) { res.status(semRes.status).json({ error: await semRes.text() }); return }
       const semRows = await semRes.json() as { semana: string }[]
       if (!semRows[0]) { res.json({ semana: null, salaries: [], adminPaidUids: [], coliderPaidUids: [] }); return }
       const semana = semRows[0].semana
 
-      // Salaries + admin_paid_marks + colider_marks in parallel
       const [salRes, marksRes, coliderRes] = await Promise.all([
         fetch(`${SB}/rest/v1/published_salaries?app_name=eq.${encodeURIComponent(app)}&semana=eq.${encodeURIComponent(semana)}&usd=gt.0&select=*`, { headers: h() }),
         fetch(`${SB}/rest/v1/admin_paid_marks?app_name=eq.${encodeURIComponent(app)}&semana=eq.${encodeURIComponent(semana)}&select=uid`, { headers: h() }),
@@ -117,9 +145,6 @@ import { Router } from 'express'
 
   /**
    * GET /api/admin/agent-colider-marks?semana=20260601-20260607&agent_uids=uid1,uid2
-   * Returns colider_marks + admin_paid_marks for given agent user IDs,
-   * using service role to bypass RLS (colider marks are owned by the colider user,
-   * not the admin, so RLS would block the admin from reading them directly).
    */
   router.get('/admin/agent-colider-marks', async (req, res) => {
     const semana = (req.query.semana as string | undefined)?.trim()
@@ -148,4 +173,3 @@ import { Router } from 'express'
   })
 
   export default router
-  
