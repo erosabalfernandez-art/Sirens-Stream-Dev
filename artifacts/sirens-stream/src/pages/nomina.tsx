@@ -392,7 +392,7 @@ function getAppColor(app: string): AppColorEntry { return APP_COLORS[app] ?? DEF
         supabase.from('profiles').select('agent_name, colider_name, agent_code').or('is_agent.eq.true,is_colider.eq.true'),
         // Load already-published salaries for the current semana to prefill inputs
         activeSemana
-          ? supabase.from('published_salaries').select('user_id,diamantes,extras').eq('app_name', 'Layla').eq('semana', activeSemana)
+          ? supabase.from('published_salaries').select('user_id,diamantes,extras,created_at').eq('app_name', 'Layla').eq('semana', activeSemana)
           : Promise.resolve({ data: [] }),
       ]).then(([{ data: workerData }, { data: agentData }, { data: pubData }]) => {
         const workerList = (workerData ?? []) as WorkerEntry[]
@@ -413,6 +413,15 @@ function getAppColor(app: string): AppColorEntry { return APP_COLORS[app] ?? DEF
           }
         }
 
+        // Check if a cierre was done AFTER the salary was published — if so, don't mark as published
+        const cierreTs = (() => { try { return parseInt(localStorage.getItem('ea_cierre_done_ts') ?? '0') || 0 } catch { return 0 } })()
+        const pubRows = (pubData ?? []) as any[]
+        const latestPubTs = pubRows.reduce((max: number, r: any) => {
+          const t = r.created_at ? new Date(r.created_at).getTime() : 0
+          return t > max ? t : max
+        }, 0)
+        const publishedAfterCierre = cierreTs === 0 || latestPubTs > cierreTs
+
         // Merge: localStorage values win, but fill missing entries from published_salaries
         if (Object.keys(pubMap).length > 0) {
           setValues(prev => {
@@ -426,7 +435,7 @@ function getAppColor(app: string): AppColorEntry { return APP_COLORS[app] ?? DEF
             }
             return merged
           })
-          setPublishedOk(true)
+          if (publishedAfterCierre) setPublishedOk(true)
         }
 
         setLoadingWorkers(false)
@@ -763,7 +772,7 @@ function GenericManualSection({ appCatalog, exchangeRates = {} }: { appCatalog: 
       supabase.from('worker_entries').select('*').eq('app_name', appName),
       supabase.from('profiles').select('agent_name, colider_name, agent_code, id').or('is_agent.eq.true,is_colider.eq.true'),
       activeSemana
-        ? supabase.from('published_salaries').select('user_id,diamantes,extras').eq('app_name', appName).eq('semana', activeSemana)
+        ? supabase.from('published_salaries').select('user_id,diamantes,extras,created_at').eq('app_name', appName).eq('semana', activeSemana)
         : Promise.resolve({ data: [] }),
     ]).then(([{ data: workerData }, { data: agentData }, { data: pubData }]) => {
       const workerList = (workerData ?? []) as WorkerEntry[]
@@ -776,6 +785,14 @@ function GenericManualSection({ appCatalog, exchangeRates = {} }: { appCatalog: 
       setAgentNameMap(am); setAgentIdMap(aim)
       if (activeSemana) setSemana(activeSemana)
       if (pubData && (pubData as any[]).length > 0) {
+        // Check if a cierre was done AFTER the salary was published — if so, don't mark as published
+        const cierreTs = (() => { try { return parseInt(localStorage.getItem('ea_cierre_done_ts') ?? '0') || 0 } catch { return 0 } })()
+        const pubRows2 = (pubData ?? []) as any[]
+        const latestPubTs2 = pubRows2.reduce((max: number, r: any) => {
+          const t = r.created_at ? new Date(r.created_at).getTime() : 0
+          return t > max ? t : max
+        }, 0)
+        const publishedAfterCierre2 = cierreTs === 0 || latestPubTs2 > cierreTs
         setValues(prev => {
           const merged = { ...prev }
           for (const w of workerList) {
@@ -792,7 +809,7 @@ function GenericManualSection({ appCatalog, exchangeRates = {} }: { appCatalog: 
           }
           return merged
         })
-        setPublishedOk(true)
+        if (publishedAfterCierre2) setPublishedOk(true)
       }
       setLoadingWorkers(false)
     })
