@@ -362,7 +362,7 @@ function getAppColor(app: string): AppColorEntry { return APP_COLORS[app] ?? DEF
     const [open, setOpen] = useState<boolean>(false)
     const [workers, setWorkers] = useState<WorkerEntry[]>([])
     const [loadingWorkers, setLoadingWorkers] = useState(false)
-    const [semana, setSemana] = useState(() => { try { return localStorage.getItem('ea_active_semana') ?? '' } catch { return '' } })
+    const [semana, setSemana] = useState(() => { try { return localStorage.getItem('ea_active_semana') || isoWeekLabel() } catch { return isoWeekLabel() } })
     const [values, setValues] = useState<Record<string, { retiradas: string; comerciales: string; porcentaje: string }>>(() => {
       // Restore from localStorage on first render
       try {
@@ -401,7 +401,7 @@ function getAppColor(app: string): AppColorEntry { return APP_COLORS[app] ?? DEF
           ((agentData ?? []) as any[]).filter((a: any) => a.agent_code).map((a: any) => [a.agent_code, a.agent_name ?? a.colider_name ?? a.agent_code])
         )
         setAgentNameMap(am)
-        if (activeSemana) setSemana(activeSemana)
+        setSemana(activeSemana || isoWeekLabel())
 
         // Build a map from published_salaries: user_id → {retiradas, comerciales, porcentaje}
         const pubMap: Record<string, { retiradas: string; comerciales: string; porcentaje: string }> = {}
