@@ -545,9 +545,14 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
             const appSemanas = salApiData.appSemanas ?? []
             const apiAdminPaidUids: string[] = salApiData.adminPaidUids ?? []
             const apiColiderPaidUids: string[] = salApiData.coliderPaidUids ?? []
-            const mostRecentSemana = appSemanas.map((x: any) => x.semana).sort().reverse()[0] ?? ''
-            // Defensive: only keep salaries that belong to the most recent semana
-            const allSalaries: any[] = (salApiData.salaries ?? []).filter((s: any) => (s._semana ?? s.semana) === mostRecentSemana)
+            const mostRecentSemana = appSemanas.map((x: any) => x.semana).filter(Boolean).sort().reverse()[0] ?? ''
+            // Filter salaries by created_at > cierreTs (most reliable) or fall back to mostRecentSemana
+            const allSalaries: any[] = (salApiData.salaries ?? []).filter((s: any) => {
+              if (_cierreTs > 0 && s.created_at) {
+                return new Date(s.created_at).getTime() > _cierreTs
+              }
+              return mostRecentSemana ? (s._semana ?? s.semana) === mostRecentSemana : true
+            })
             if (appSemanas.length === 0 || allSalaries.length === 0) {
               setPagosData([]); setPagosSemana(''); setPagosLoading(false)
               fetchAgentPayData(mostRecentSemana); return
@@ -650,19 +655,25 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
 
         async function fetchAgentPayData(overrideSemana?: string) {
             setAgentPayLoading(true)
-            let semana = overrideSemana ?? ''
-            if (!semana) {
+            // Use created_at > cierreTs to only show commissions from the current week
+            const _cierreTs = (() => { try { return parseInt(localStorage.getItem('ea_cierre_done_ts') ?? '0') || 0 } catch { return 0 } })()
+            let commsQuery = supabase
+              .from('agent_commissions')
+              .select('id, agent_name, app_name, semana, total_commission_usd, agent_user_id, created_at')
+            if (_cierreTs > 0) {
+              commsQuery = commsQuery.gt('created_at', new Date(_cierreTs).toISOString())
+            } else if (overrideSemana) {
+              commsQuery = commsQuery.eq('semana', overrideSemana)
+            } else {
               const { data: latestComm } = await supabase
                 .from('agent_commissions').select('semana')
-                .neq('semana', '')
-                .order('semana', { ascending: false }).limit(1).maybeSingle()
+                .neq('semana', '').order('semana', { ascending: false }).limit(1).maybeSingle()
               if (!latestComm) { setAgentPayData({confirmed: [], pending: []}); setAgentPayLoading(false); return }
-              semana = latestComm.semana
+              commsQuery = commsQuery.eq('semana', latestComm.semana)
             }
-            const { data: comms } = await supabase
-              .from('agent_commissions')
-              .select('id, agent_name, app_name, semana, total_commission_usd, agent_user_id')
-              .eq('semana', semana)
+            const { data: comms } = await commsQuery
+            if (!comms || comms.length === 0) { setAgentPayData({confirmed: [], pending: []}); setAgentPayLoading(false); return }
+            const semana = (comms as any[])[0]?.semana ?? overrideSemana ?? ''
             const { data: confs } = await supabase
               .from('agent_payment_confirmations')
               .select('commission_id, confirmed_at')
@@ -692,7 +703,6 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                   _agentColiderMap = _coliderApiData.coliderMap ?? {}
                   _agentAdminPaidSet = new Set<string>(_coliderApiData.adminPaidIds ?? [])
                   const _agentBilleteraMapLocal: Record<string, string> = {}
-                  // Build profile fallback map (agent_payment_method stored when agent selects method)
                   const _profileMetodoMap: Record<string, string> = {}
                   for (const p of (_agProfiles ?? []) as any[]) {
                     if (p.agent_payment_method) _profileMetodoMap[p.id] = p.agent_payment_method
@@ -701,7 +711,6 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
                     if ((w as any).metodo_pago) _agentMetodoMapLocal[(w as any).user_id] = (w as any).metodo_pago
                     if ((w as any).billetera) _agentBilleteraMapLocal[(w as any).user_id] = (w as any).billetera
                   }
-                  // Fill gaps: use profile.agent_payment_method for agents not in worker_entries
                   for (const uid of _agentUids) {
                     if (!_agentMetodoMapLocal[uid] && _profileMetodoMap[uid]) {
                       _agentMetodoMapLocal[uid] = _profileMetodoMap[uid]
@@ -1087,19 +1096,24 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
 
         async function fetchAgentPayData(overrideSemana?: string) {
                 setAgentPayLoading(true)
-                let semana = overrideSemana ?? ''
-                if (!semana) {
-                  const { data: latestComm } = await supabase
-                    .from('agent_commissions').select('semana')
-                    .neq('semana', '')
-                    .order('semana', { ascending: false }).limit(1).maybeSingle()
-                  if (!latestComm) { setAgentPayData({confirmed: [], pending: []}); setAgentPayLoading(false); return }
-                  semana = latestComm.semana
-                }
-                const { data: comms } = await supabase
+                const _cierreTs2 = (() => { try { return parseInt(localStorage.getItem('ea_cierre_done_ts') ?? '0') || 0 } catch { return 0 } })()
+                let commsQuery2 = supabase
                   .from('agent_commissions')
-                  .select('id, agent_name, app_name, semana, total_commission_usd, agent_user_id')
-                  .eq('semana', semana)
+                  .select('id, agent_name, app_name, semana, total_commission_usd, agent_user_id, created_at')
+                if (_cierreTs2 > 0) {
+                  commsQuery2 = commsQuery2.gt('created_at', new Date(_cierreTs2).toISOString())
+                } else if (overrideSemana) {
+                  commsQuery2 = commsQuery2.eq('semana', overrideSemana)
+                } else {
+                  const { data: latestComm2 } = await supabase
+                    .from('agent_commissions').select('semana')
+                    .neq('semana', '').order('semana', { ascending: false }).limit(1).maybeSingle()
+                  if (!latestComm2) { setAgentPayData({confirmed: [], pending: []}); setAgentPayLoading(false); return }
+                  commsQuery2 = commsQuery2.eq('semana', latestComm2.semana)
+                }
+                const { data: comms } = await commsQuery2
+                if (!comms || comms.length === 0) { setAgentPayData({confirmed: [], pending: []}); setAgentPayLoading(false); return }
+                const semana = (comms as any[])[0]?.semana ?? overrideSemana ?? ''
                 const { data: confs } = await supabase
                   .from('agent_payment_confirmations')
                   .select('commission_id, confirmed_at')
