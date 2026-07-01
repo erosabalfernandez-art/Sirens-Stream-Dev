@@ -540,14 +540,15 @@ function cleanFullPhone(code: string | null | undefined, tel: string | null | un
             if (!salApiRes?.ok) { setPagosData([]); setPagosSemana(''); setPagosLoading(false); fetchAgentPayData(); return }
             const salApiData = await salApiRes.json() as { appSemanas: {app:string;semana:string}[]; salaries: any[]; adminPaidUids: string[]; coliderPaidUids: string[] }
             const appSemanas = salApiData.appSemanas ?? []
-            const allSalaries: any[] = salApiData.salaries ?? []
             const apiAdminPaidUids: string[] = salApiData.adminPaidUids ?? []
             const apiColiderPaidUids: string[] = salApiData.coliderPaidUids ?? []
+            const mostRecentSemana = appSemanas.map((x: any) => x.semana).sort().reverse()[0] ?? ''
+            // Defensive: only keep salaries that belong to the most recent semana
+            const allSalaries: any[] = (salApiData.salaries ?? []).filter((s: any) => (s._semana ?? s.semana) === mostRecentSemana)
             if (appSemanas.length === 0 || allSalaries.length === 0) {
               setPagosData([]); setPagosSemana(''); setPagosLoading(false)
-              fetchAgentPayData(); return
+              fetchAgentPayData(mostRecentSemana); return
             }
-            const mostRecentSemana = appSemanas.map(x => x.semana).sort().reverse()[0]
             setPagosSemana(mostRecentSemana)
             // 5. Collect ids for batch queries
             const userIds = [...new Set(allSalaries.map(s => s.user_id))] as string[]
