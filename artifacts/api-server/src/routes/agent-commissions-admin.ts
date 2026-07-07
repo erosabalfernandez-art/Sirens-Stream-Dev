@@ -271,6 +271,30 @@ const agents = Object.values(agentMap).map(a => ({ agent_name: a.agent_name, age
         await sbPost('published_agent_commissions?on_conflict=semana,agent_user_id,app_name,worker_name', rows, 'resolution=merge-duplicates,return=minimal')
         const total = billableCommissions.reduce((s, c) => s + (Number(c.commission_usd) || 0), 0)
         await sbPost('agent_commission_publish_log?on_conflict=semana,agent_user_id', { semana, agent_user_id: effectiveId, agent_name, total_usd: total, published_at: new Date().toISOString() }, 'resolution=merge-duplicates,return=minimal')
+        // Also ensure agent_commissions has a row — the agent's confirmation button and the
+        // admin progress bar both depend on it. Group published rows by app and upsert one
+        // aggregate row per (agent_name, app_name, semana).
+        try {
+          const byApp: Record<string, { workers: { uid: string | null; nombre: string; commission_usd: number }[]; total: number }> = {}
+          for (const row of rows) {
+            if (!byApp[row.app_name]) byApp[row.app_name] = { workers: [], total: 0 }
+            byApp[row.app_name].workers.push({ uid: row.worker_uid, nombre: row.worker_name, commission_usd: Number(row.commission_usd) || 0 })
+            byApp[row.app_name].total += Number(row.commission_usd) || 0
+          }
+          const agentCommRows = Object.entries(byApp).map(([app_name, data]) => ({
+            agent_name,
+            agent_user_id: rawAgentId || null,
+            app_name,
+            semana,
+            total_commission_usd: data.total,
+            workers_data: data.workers,
+          }))
+          if (agentCommRows.length > 0) {
+            await sbPost('agent_commissions?on_conflict=agent_name,app_name,semana', agentCommRows, 'resolution=merge-duplicates,return=minimal')
+          }
+        } catch (e) {
+          req.log.warn({ err: String(e) }, 'publish-agent-commission: agent_commissions sync failed (non-fatal)')
+        }
         if (rawAgentId && ensureVapid()) setImmediate(() => { dispatchPush([rawAgentId], '💰 Tu comisión está disponible', `Tu comisión de la semana ${semana} ha sido publicada.`, '/agente').catch(() => {}) })
         res.json({ ok: true, total_usd: total })
       } catch (e) { res.status(500).json({ error: String(e) }) }
