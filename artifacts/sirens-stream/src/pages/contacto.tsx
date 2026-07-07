@@ -15,7 +15,7 @@ import { Clock, MessageCircle } from "lucide-react";
         icon: FaInstagram, name: "Instagram", handle: "@katherineangelsteam",
         desc: "Siga-nos para ver depoimentos, novidades e conteúdo da agência. Você pode nos enviar um DM.",
         color: "#E1306C", bg: "rgba(225,48,108,0.1)", border: "rgba(225,48,108,0.2)",
-        href: "https://www.instagram.com/katherineangelsteam?igsh=OWF0dmZwdXl5eWQ4",
+        href: "https://www.instagram.com/katherineangelstream?igsh=MWR1Zm93M3AxN2Vqbg==",
         cta: "Ir para o Instagram",
       },
       {
@@ -45,7 +45,7 @@ import { Clock, MessageCircle } from "lucide-react";
         icon: FaInstagram, name: "Instagram", handle: "@katherineangelsteam",
         desc: "Síguenos para ver testimonios, novedades y contenido de la agencia. Puedes enviarnos un DM.",
         color: "#E1306C", bg: "rgba(225,48,108,0.1)", border: "rgba(225,48,108,0.2)",
-        href: "https://www.instagram.com/katherineangelsteam?igsh=OWF0dmZwdXl5eWQ4",
+        href: "https://www.instagram.com/katherineangelstream?igsh=MWR1Zm93M3AxN2Vqbg==",
         cta: "Ir a Instagram",
       },
       {
