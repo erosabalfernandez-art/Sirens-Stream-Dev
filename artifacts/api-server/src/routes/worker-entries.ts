@@ -58,13 +58,30 @@ import { Router } from 'express';
      */
     router.get('/active-semanas', async (req, res) => {
       try {
+        // Fetch all rows newest-first to determine the LATEST published state per semana.
+        // Querying only published=true would incorrectly include semanas where a newer
+        // row has published=false (e.g. after a cierre that inserts a published=false row).
         const r = await fetch(
-          sbUrl('nomina_history?published=eq.true&select=semana'),
+          sbUrl('nomina_history?select=semana,published&order=semana.asc,created_at.desc'),
           { headers: sbH() }
         );
         if (!r.ok) return res.status(r.status).json({ error: await r.text() });
-        const data = await r.json() as { semana: string }[];
-        return res.json({ semanas: data.map((d: { semana: string }) => d.semana) });
+        const data = await r.json() as { semana: string; published: boolean }[];
+
+        // Pick the latest (first seen in desc-created_at order) row per semana
+        const latestPerSemana = new Map<string, boolean>();
+        for (const row of data) {
+          if (!latestPerSemana.has(row.semana)) {
+            latestPerSemana.set(row.semana, row.published);
+          }
+        }
+
+        // Return only semanas whose latest state is published=true
+        const activeSemanas = [...latestPerSemana.entries()]
+          .filter(([, published]) => published)
+          .map(([semana]) => semana);
+
+        return res.json({ semanas: activeSemanas });
       } catch (err: any) {
         return res.status(500).json({ error: err?.message ?? 'Error interno' });
       }

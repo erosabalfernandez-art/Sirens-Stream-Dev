@@ -609,6 +609,15 @@ function getAppColor(app: string): AppColorEntry { return APP_COLORS[app] ?? DEF
         {/* Content */}
         {open && (
           <div className="border-t border-pink-500/10 p-5 space-y-5">
+            {/* Unpublished data warning */}
+            {!publishedOk && Object.values(values).some(v => Number(v.retiradas) > 0 || Number(v.comerciales) > 0) && (
+              <div className="flex items-start gap-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">
+                <span className="text-amber-400 mt-0.5">⚠️</span>
+                <p className="text-amber-300 text-sm font-medium leading-snug">
+                  Hay datos ingresados que <strong>aún no han sido publicados</strong>. Haz clic en "Publicar resultados" para que las trabajadoras puedan verlos. Si cierras la semana sin publicar, los datos se perderán.
+                </p>
+              </div>
+            )}
             {/* Conversion note */}
             <div className="flex items-center gap-2 text-white/25 text-xs">
               <span>📐</span>
