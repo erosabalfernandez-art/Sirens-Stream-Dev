@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 
   const API = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
 
-  interface WorkerRef { worker_uid: string | null; worker_name: string; agc_usd: number; salary_usd?: number; monedas: number | null; published_usd: number | null }
+  interface WorkerRef { worker_uid: string | null; worker_name: string; agc_usd: number; salary_usd?: number; monedas: number | null; published_usd: number | null; last_salary_usd?: number; last_salary_semana?: string | null }
   interface AgentApp { app_name: string; workers: WorkerRef[] }
   interface AgentRef { agent_name: string; agent_user_id: string | null; locked: boolean; apps: AgentApp[] }
 
@@ -275,12 +275,18 @@ import { useState, useEffect } from 'react'
                                       <p className="text-white/85 text-xs font-semibold truncate">{w.worker_name}</p>
                                       <p className="text-white/30 text-xs">
                                         {app.app_name === 'Layla'
-                                          ? 'Calculado desde nómina'
+                                          ? (w.monedas != null && w.monedas > 0)
+                                            ? 'Calculado desde nómina'
+                                            : (w.last_salary_usd ?? 0) > 0
+                                              ? `Última: ${w.last_salary_usd!.toFixed(2)} (${w.last_salary_semana})`
+                                              : 'Sin nómina esta semana'
                                           : w.agc_usd > 0
-                                            ? `AGC: $${(w.agc_usd ?? 0).toFixed(2)}`
+                                            ? `AGC: ${(w.agc_usd ?? 0).toFixed(2)}`
                                             : (w.salary_usd ?? 0) > 0
-                                              ? `Nómina: $${(w.salary_usd ?? 0).toFixed(2)} USD`
-                                              : 'Sin nómina esta semana'}
+                                              ? `Nómina: ${(w.salary_usd ?? 0).toFixed(2)} USD`
+                                              : (w.last_salary_usd ?? 0) > 0
+                                                ? `Última: ${w.last_salary_usd!.toFixed(2)} (${w.last_salary_semana})`
+                                                : 'Sin nómina esta semana'}
                                       </p>
                                     </div>
                                     <div className="flex items-center gap-1 shrink-0">

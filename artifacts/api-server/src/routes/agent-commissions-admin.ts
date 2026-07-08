@@ -185,7 +185,57 @@ import { Router } from 'express'
               salary_usd: salUsd,
               monedas: app === 'Layla' ? (laylaMonedas[worker.user_id] ?? null) : null,
               published_usd: pubMap[pubKey] ?? null,
+              last_salary_usd: 0,
+              last_salary_semana: null as string | null,
+              _fallback_user_id: worker.user_id,  // temp: used below for historical lookup
             })
+          }
+        }
+
+        // Fallback: for workers added via Step 3 with no current-semana salary (agc_usd=0 AND salary_usd=0),
+        // look up their most recent published salary from any past semana. This gives the admin
+        // a historical baseline reference (e.g. "Última: $21.00 (2026-S28)") instead of "Sin nómina".
+        try {
+          const noSalaryWorkers: Array<{ mapKey: string; app: string; workerName: string; userId: string }> = []
+          for (const [mKey, agInfo] of Object.entries(agentMap)) {
+            for (const [appName, workers] of Object.entries(agInfo.apps)) {
+              for (const w of workers as any[]) {
+                if ('_fallback_user_id' in w && w.salary_usd === 0 && w.agc_usd === 0) {
+                  noSalaryWorkers.push({ mapKey: mKey, app: appName, workerName: w.worker_name, userId: w._fallback_user_id })
+                }
+              }
+            }
+          }
+          if (noSalaryWorkers.length > 0) {
+            const uniqueIds = [...new Set(noSalaryWorkers.map(w => w.userId))]
+            const idStr = uniqueIds.map(id => `"${id}"`).join(',')
+            const recentSals = await sbGet(
+              `published_salaries?user_id=in.(${idStr})&select=user_id,app_name,usd,semana&order=semana.desc&limit=${uniqueIds.length * 15}`
+            )
+            // Latest salary > 0 per user+app (first hit since sorted by semana desc)
+            const latestMap: Record<string, { usd: number; semana: string }> = {}
+            for (const s of recentSals) {
+              const key = (s.user_id as string) + '__' + (s.app_name as string)
+              if (!latestMap[key] && Number(s.usd) > 0) {
+                latestMap[key] = { usd: Number(s.usd), semana: s.semana as string }
+              }
+            }
+            // Patch workers
+            for (const nw of noSalaryWorkers) {
+              const workers = agentMap[nw.mapKey]?.apps?.[nw.app]
+              if (!workers) continue
+              const wo = (workers as any[]).find((w: any) => w.worker_name === nw.workerName)
+              if (!wo) continue
+              const latest = latestMap[nw.userId + '__' + nw.app]
+              if (latest) { wo.last_salary_usd = latest.usd; wo.last_salary_semana = latest.semana }
+            }
+          }
+        } catch { /* best-effort */ }
+
+        // Clean up temp field
+        for (const agInfo of Object.values(agentMap)) {
+          for (const workers of Object.values(agInfo.apps)) {
+            for (const w of workers as any[]) { delete w._fallback_user_id }
           }
         }
 
