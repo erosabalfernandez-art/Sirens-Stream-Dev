@@ -1044,6 +1044,7 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
   const [cobradas, setCobradas] = useState<Matched[]>([])
   const [noCobro, setNoCobro] = useState<NoCobro[]>([])
   const [sinPerfil, setSinPerfil] = useState<NominaRow[]>([])
+  const [previousBatch, setPreviousBatch] = useState<{ cobradas: Matched[]; noCobro: NoCobro[]; sinPerfil: NominaRow[] } | null>(null)
   const [semana, setSemana] = useState('')
   const [fileName, setFileName] = useState('')
   const [tab, setTab] = useState<'cobradas' | 'nocobro' | 'sinperfil'>('cobradas')
@@ -1431,9 +1432,9 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
         setAgentPhoneMap(pm2)
         const workers: WorkerRow[] = (entries ?? []).map((e: any) => ({ ...e, profile_email: emailMap[e.user_id] ?? '' }))
 
-        const cobradasList: Matched[] = []
-        const noCobroList: NoCobro[] = []
-        const sinPerfilList: NominaRow[] = []
+        let cobradasList: Matched[] = []
+        let noCobroList: NoCobro[] = []
+        let sinPerfilList: NominaRow[] = []
         const matchedWorkerIDs = new Set<string>()
 
         for (const nom of nominaRows) {
@@ -1445,6 +1446,28 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
         }
         for (const w of workers) { if (!matchedWorkerIDs.has(w.id)) noCobroList.push({ worker: w, nomina: null }) }
         cobradasList.sort((a, b) => b.nomina.usd - a.nomina.usd)
+
+        // If this is another batch for the same semana (previousBatch present), merge instead of
+        // replacing — workers from the prior batch that don't appear in this file must stay visible.
+        if (previousBatch) {
+          const cobradasMap = new Map(previousBatch.cobradas.map(c => [c.worker.id, c]))
+          for (const c of cobradasList) cobradasMap.set(c.worker.id, c)
+          const mergedCobradas = Array.from(cobradasMap.values()).sort((a, b) => (b.nomina?.usd ?? 0) - (a.nomina?.usd ?? 0))
+
+          const noCobroMap = new Map(previousBatch.noCobro.map(c => [c.worker.id, c]))
+          for (const c of noCobroList) noCobroMap.set(c.worker.id, c)
+          for (const id of cobradasMap.keys()) noCobroMap.delete(id)
+          const mergedNoCobro = Array.from(noCobroMap.values())
+
+          const sinPerfilMap = new Map(previousBatch.sinPerfil.map(r => [r.uid, r]))
+          for (const r of sinPerfilList) sinPerfilMap.set(r.uid, r)
+          const mergedSinPerfil = Array.from(sinPerfilMap.values())
+
+          cobradasList = mergedCobradas
+          noCobroList = mergedNoCobro
+          sinPerfilList = mergedSinPerfil
+          setPreviousBatch(null)
+        }
 
         setCobradas(cobradasList); setNoCobro(noCobroList); setSinPerfil(sinPerfilList)
         try {
@@ -1608,6 +1631,11 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
   function onInput(e: React.ChangeEvent<HTMLInputElement>) { const f = e.target.files?.[0]; if (f) processFile(f) }
 
   function reset() {
+    if (publishedOk) {
+      setPreviousBatch({ cobradas, noCobro, sinPerfil })
+    } else {
+      setPreviousBatch(null)
+    }
     try { const all = JSON.parse(localStorage.getItem('ea_nomina_apps_v1') || '{}'); delete all[app]; localStorage.setItem('ea_nomina_apps_v1', JSON.stringify(all)) } catch {}
     setStep('upload'); setSemana(''); setCobradas([]); setNoCobro([]); setSinPerfil([])
     setExpanded(new Set()); setAiSummary(null); setPublishedOk(false); setPaidMarks(new Set()); setFileName('')
