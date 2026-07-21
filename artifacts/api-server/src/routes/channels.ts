@@ -119,12 +119,17 @@ import { Router } from 'express';
       if (created_by && adminRows.some(r => r.id === created_by)) idsSet.add(created_by);
       const ids = [...idsSet].filter(Boolean);
 
-      // Send push notifications to all eligible users (fire-and-forget)
+      // Send Telegram notifications to all eligible users with the full message content (fire-and-forget)
       setImmediate(async () => {
         try {
-          const preview = content?.trim().slice(0, 80) ?? '📷 Imagen';
+          // Send full content; cap at 3900 chars to stay under Telegram's 4096-char limit
+          const telegramBody = content?.trim()
+            ? content.trim().length > 3900
+              ? content.trim().slice(0, 3900) + '…'
+              : content.trim()
+            : '📷 Imagen';
           if (ids.length > 0) {
-            await dispatchPush(ids, `📢 Nuevo comunicado — ${app_name}`, `Se ha publicado un nuevo comunicado en el canal ${app_name}.`, '/canales');
+            await dispatchPush(ids, `📢 ${app_name}`, telegramBody, '/canales');
           }
         } catch {}
       });
