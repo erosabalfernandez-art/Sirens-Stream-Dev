@@ -14,11 +14,13 @@ const router = Router()
 //
 // Logic:
 // 1. Direct match by salary_id (fast path).
-// 2. For any salary that still appears unconfirmed, look up its user_id + app_name from
-//    published_salaries, then check whether that user has ANY confirmation for that app.
-//    This handles re-uploaded nóminas: the admin can re-upload a nómina with new semana dates
+// 2. For any salary that still appears unconfirmed, look up its user_id + app_name + semana from
+//    published_salaries, then check whether that user has a confirmation for that app AND the same semana.
+//    This handles re-uploaded nóminas: the admin can re-upload a nómina with new salary IDs
 //    without doing a cierre, generating new salary IDs. Workers who confirmed the previous
 //    salary_id are still counted as confirmed — because until cierre all uploads are the same week.
+//    IMPORTANT: semana must also match so that confirmations from previous weeks do NOT bleed
+//    into a new week after cierre.
 router.get('/payment-confirmations', async (req, res) => {
   const { salary_ids } = req.query as { salary_ids?: string }
   if (!salary_ids) { res.status(400).json({ error: 'salary_ids requerido' }); return }
@@ -40,16 +42,17 @@ router.get('/payment-confirmations', async (req, res) => {
     const unconfirmedIds = ids.filter(id => !directConfirmedIds.has(id))
     if (unconfirmedIds.length === 0) { res.json({ confirmations: directConfs }); return }
 
-    // --- Step 2: fallback — check by user_id + app_name ---
-    // A worker who confirmed any salary for the same app is counted as confirmed,
-    // because the admin may have re-uploaded the nómina without closing the week.
+    // --- Step 2: fallback — check by user_id + app_name + semana ---
+    // A worker who confirmed any salary for the same app AND same semana is counted as confirmed,
+    // because the admin may have re-uploaded the nómina without closing the week (new salary IDs).
+    // We MUST include semana so that confirmations from a previous cierre don't show up here.
     const salaryFilter = unconfirmedIds.map(id => `"${id}"`).join(',')
     const salariesR = await fetch(
-      `${SB}/rest/v1/published_salaries?id=in.(${salaryFilter})&select=id,user_id,app_name`,
+      `${SB}/rest/v1/published_salaries?id=in.(${salaryFilter})&select=id,user_id,app_name,semana`,
       { headers: h() }
     )
     if (!salariesR.ok) { res.json({ confirmations: directConfs }); return }
-    const salaries = await salariesR.json() as { id: string; user_id: string | null; app_name: string }[]
+    const salaries = await salariesR.json() as { id: string; user_id: string | null; app_name: string; semana: string }[]
 
     const withUser = salaries.filter(s => s.user_id)
     if (withUser.length === 0) { res.json({ confirmations: directConfs }); return }
@@ -57,26 +60,32 @@ router.get('/payment-confirmations', async (req, res) => {
     const userIds = [...new Set(withUser.map(s => s.user_id as string))]
     const userFilter = userIds.map(id => `"${id}"`).join(',')
 
+    // Collect unique semanas to filter confirmations
+    const semanas = [...new Set(withUser.map(s => s.semana).filter(Boolean))]
+    const semanaFilter = semanas.map(s => `"${s}"`).join(',')
+
     const userConfsR = await fetch(
-      `${SB}/rest/v1/payment_confirmations?user_id=in.(${userFilter})&select=salary_id,user_id,app_name,confirmed_at`,
+      `${SB}/rest/v1/payment_confirmations?user_id=in.(${userFilter})&semana=in.(${semanaFilter})&select=salary_id,user_id,app_name,semana,confirmed_at`,
       { headers: h() }
     )
     if (!userConfsR.ok) { res.json({ confirmations: directConfs }); return }
-    const userConfs = await userConfsR.json() as { salary_id: string; user_id: string; app_name: string; confirmed_at: string }[]
+    const userConfs = await userConfsR.json() as { salary_id: string; user_id: string; app_name: string; semana: string; confirmed_at: string }[]
 
-    // Map: "user_id::app_name" → earliest confirmed_at
+    // Map: "user_id::app_name::semana" → earliest confirmed_at
+    // semana must match so confirmations from a previous week never bleed into the current one
     const confirmedUserApps = new Map<string, string>()
     for (const c of userConfs) {
-      const key = `${c.user_id}::${c.app_name}`
+      const key = `${c.user_id}::${c.app_name}::${c.semana}`
       if (!confirmedUserApps.has(key) || c.confirmed_at < confirmedUserApps.get(key)!) {
         confirmedUserApps.set(key, c.confirmed_at)
       }
     }
 
-    // Build synthetic confirmations for unconfirmed salaries whose user already confirmed that app
+    // Build synthetic confirmations for unconfirmed salaries whose user already confirmed
+    // that app for the exact same semana
     const extraConfs: { salary_id: string; confirmed_at: string }[] = []
     for (const salary of withUser) {
-      const key = `${salary.user_id}::${salary.app_name}`
+      const key = `${salary.user_id}::${salary.app_name}::${salary.semana}`
       if (confirmedUserApps.has(key)) {
         extraConfs.push({ salary_id: salary.id, confirmed_at: confirmedUserApps.get(key)! })
       }
