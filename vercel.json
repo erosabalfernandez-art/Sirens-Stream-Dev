@@ -1,9 +1,13 @@
 {
-  "installCommand": "cd artifacts/sirens-stream && npm install --legacy-peer-deps",
+  "installCommand": "pnpm install --no-frozen-lockfile",
   "buildCommand": "cd artifacts/sirens-stream && BASE_PATH=/ npm run build",
   "outputDirectory": "artifacts/sirens-stream/dist",
   "framework": null,
   "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api"
+    },
     {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
