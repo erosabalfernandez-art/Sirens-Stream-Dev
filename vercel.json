@@ -1,5 +1,5 @@
 {
-  "installCommand": "pnpm install --no-frozen-lockfile",
+  "installCommand": "npx --yes pnpm@9 install --no-frozen-lockfile",
   "buildCommand": "cd artifacts/sirens-stream && BASE_PATH=/ npm run build",
   "outputDirectory": "artifacts/sirens-stream/dist",
   "framework": null,
