@@ -481,7 +481,7 @@ function getAppColor(app: string): AppColorEntry { return APP_COLORS[app] ?? DEF
 
       setPublishing(true)
       try {
-        const apiBase = (import.meta.env.VITE_API_URL as string | undefined) ?? ''
+        const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
 
         // Build salary inserts for workers
         const salaryInserts = workers
@@ -877,7 +877,7 @@ function GenericManualSection({ appCatalog, exchangeRates = {} }: { appCatalog: 
   async function publicar() {
     setPublishing(true)
     try {
-      const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
+      const apiBase = (((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')).replace(/\/$/, '')
       const salaryInserts = workers.map(w => {
         const usd = calcUSD(w.id)
         const usdBaseVal = parseFloat(getFieldVal(w.id, usdField?.key ?? '')) || 0
@@ -1112,7 +1112,7 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
           // Background check: if cierre was done, clear stale data
           void (async () => {
             try {
-              const _ab = (import.meta.env.VITE_API_URL as string | undefined) ?? ''
+              const _ab = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
               const _rb = await fetch(`${_ab}/api/nomina-state?app=${encodeURIComponent(app)}`)
               if (_rb.ok) {
                 const { entry: _eb } = await _rb.json() as { entry: { rows_data?: { cobradas?: unknown[]; noCobro?: unknown[]; sinPerfil?: unknown[] }; published?: boolean; created_at?: string } | null }
@@ -1136,7 +1136,7 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
       } catch {}
       // Fallback: load latest entry from API server (uses service role → bypasses RLS)
       try {
-        const apiBase = (import.meta.env.VITE_API_URL as string | undefined) ?? ''
+        const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
         const r = await fetch(`${apiBase}/api/nomina-state?app=${encodeURIComponent(app)}`)
         if (r.ok) {
           const { entry } = await r.json() as { entry: { app_name: string; semana: string; rows_data: { cobradas: Matched[]; noCobro: NoCobro[]; sinPerfil: NominaRow[] }; file_name?: string; published?: boolean } | null }
@@ -1210,7 +1210,7 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
   const refreshMarks = useCallback(async () => {
     if (!semana || !app) { setPaidMarks(new Set()); setColiderMarks(new Set()); return }
     setRefreshingMarks(true)
-    const _apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
+    const _apiBase = (((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')).replace(/\/$/, '')
     const [adminRes, marksJson] = await Promise.all([
       fetch(`${_apiBase}/api/admin-paid-marks?app_name=${encodeURIComponent(app)}&semana=${encodeURIComponent(semana)}`).then(r => r.json()).catch(() => ({ uids: [] })),
       fetch(`${_apiBase}/api/colider/marks?semana=${encodeURIComponent(semana)}`).then(r => r.json()).catch(() => ({ marks: [] })),
@@ -1278,7 +1278,7 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
         extras: n.extras,
       }))
       try {
-        const apiBase = (import.meta.env.VITE_API_URL as string | undefined) ?? ''
+        const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
         const r = await fetch(`${apiBase}/api/publish-salaries`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1332,7 +1332,7 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
       }))
       setPublishingAgents(true); setAgentPublishOk(false)
       try {
-        const apiBase = (import.meta.env.VITE_API_URL as string | undefined) ?? ''
+        const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
         const r = await fetch(`${apiBase}/api/publish-agents`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1486,7 +1486,7 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
         } catch {}
         loadPaidMarks(app, sem)
         try {
-          const apiBase = (import.meta.env.VITE_API_URL as string | undefined) ?? ''
+          const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
           await fetch(`${apiBase}/api/nomina-state`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1605,14 +1605,14 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
         }
       }
     async function loadPaidMarks(a: string, week: string) {
-    const _apiUrl = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
+    const _apiUrl = (((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')).replace(/\/$/, '')
     const res = await fetch(`${_apiUrl}/api/admin-paid-marks?app_name=${encodeURIComponent(a)}&semana=${encodeURIComponent(week)}`).then(r => r.json()).catch(() => ({ uids: [] }))
     setPaidMarks(new Set<string>((res.uids ?? []) as string[]))
   }
 
   async function togglePaid(uid: string) {
     setTogglingPaid(uid)
-    const _apiUrl = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
+    const _apiUrl = (((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')).replace(/\/$/, '')
     const isNowPaid = !paidMarks.has(uid)
     try {
       const r = await fetch(`${_apiUrl}/api/admin-paid-marks/toggle`, {
@@ -2368,7 +2368,7 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
   const [nominaSavingRate, setNominaSavingRate] = useState<string|null>(null)
   const [nominaRateSaved, setNominaRateSaved] = useState<string|null>(null)
   const [showCambio, setShowCambio] = useState(false)
-    const API_URL = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/,'')
+    const API_URL = (((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')).replace(/\/$/,'')
     const [showPersonalizado, setShowPersonalizado] = useState(false)
     const [customRates, setCustomRates] = useState<CustomWorkerRate[]>([])
     const [allWorkers, setAllWorkers] = useState<{user_id:string;app_name:string;nombre_en_app:string|null;nombre_real:string|null;metodo_pago:string|null;telefono:string|null;codigo_pais:string|null;id_aplicacion:string|null}[]>([])
@@ -2387,7 +2387,7 @@ function AppNominaSection({ app, reloadKey, exchangeRates = {}, appCatalogEntry 
   if (!profile?.is_admin) return <SplashLoader msg="Sin acceso" />
 
   useEffect(() => {
-    const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
+    const apiBase = (((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')).replace(/\/$/, '')
     fetch(`${apiBase}/api/apps-catalog`)
       .then(r => r.ok ? r.json() : null)
       .then(d => {
