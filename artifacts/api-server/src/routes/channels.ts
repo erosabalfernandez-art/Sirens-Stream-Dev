@@ -1,5 +1,6 @@
 import { Router } from 'express';
   import { dispatchPush, dispatchPushIndividual } from '../lib/push-dispatch';
+  import { logger } from '../lib/logger';
 
   const router = Router();
 
@@ -119,8 +120,9 @@ import { Router } from 'express';
       if (created_by && adminRows.some(r => r.id === created_by)) idsSet.add(created_by);
       const ids = [...idsSet].filter(Boolean);
 
-      // Send Telegram notifications to all eligible users with the full message content (fire-and-forget)
-      setImmediate(async () => {
+      // Vercel puede cerrar la función justo después de responder, así que
+        // esperamos el envío a Telegram antes de devolver la respuesta.
+        let telegramSent = 0;
         try {
           // Send full content; cap at 3900 chars to stay under Telegram's 4096-char limit
           const telegramBody = content?.trim()
@@ -129,12 +131,13 @@ import { Router } from 'express';
               : content.trim()
             : '📷 Imagen';
           if (ids.length > 0) {
-            await dispatchPush(ids, `📢 ${app_name}`, telegramBody, '/canales');
+            telegramSent = await dispatchPush(ids, `📢 ${app_name}`, telegramBody, '/canales');
           }
-        } catch {}
-      });
+        } catch (e) {
+          logger.warn({ err: String(e), app_name, recipientCount: ids.length }, '[channels] Telegram dispatch failed');
+        }
 
-      return res.json({ ok: true, message: msg, notified: ids.length });
+        return res.json({ ok: true, message: msg, notified: ids.length, telegramSent });
     } catch (e: unknown) {
       return res.status(500).json({ error: e instanceof Error ? e.message : 'error' });
     }
